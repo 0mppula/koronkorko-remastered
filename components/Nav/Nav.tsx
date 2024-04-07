@@ -8,13 +8,15 @@ const Nav = async () => {
 	const session = await getAuthSession();
 
 	return (
-		<nav className="fixed top-0 w-full h-14 flex justify-between items-center z-50 bg-background border-b-2">
-			<Logo />
+		<nav className="fixed inset-x-0 top-0 w-full z-50 bg-background/75 border-b-2 backdrop-blur-sm">
+			<div className="flex max-w-5xl items-center justify-between h-14 mx-auto">
+				<Logo />
 
-			<div className="flex items-center gap-2 mr-4">
-				<ThemeToggler />
+				<div className="flex items-center gap-2 mr-4">
+					<ThemeToggler />
 
-				{session?.user ? <UserAccountNav user={session.user} /> : <LoginModal />}
+					{session?.user ? <UserAccountNav user={session.user} /> : <LoginModal />}
+				</div>
 			</div>
 		</nav>
 	);

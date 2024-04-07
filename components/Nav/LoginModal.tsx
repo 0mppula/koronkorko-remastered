@@ -54,10 +54,7 @@ const LoginModal = () => {
 						<DialogTitle>Login to KoronKorko</DialogTitle>
 					</DialogHeader>
 
-					<form
-						className="gap-2 flex flex-col sm:flex-row mt-4"
-						onSubmit={(e) => e.preventDefault()}
-					>
+					<form className="gap-2 flex flex-col mt-4" onSubmit={(e) => e.preventDefault()}>
 						<ButtonWithIcon
 							loading={googleIsLoading}
 							disabled={googleIsLoading || githubIsLoading}
