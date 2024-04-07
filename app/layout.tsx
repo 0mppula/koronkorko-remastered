@@ -4,6 +4,7 @@ import { appName } from '@/constants';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
+import Nav from '@/components/Nav/Nav';
 
 const poppins = Poppins({
 	weight: ['100', '200', '300', '400', '500', '600', '700'],
@@ -23,14 +24,16 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
-			<NextSessionProvider>
-				<body className={poppins.className}>
+		<html lang="en" suppressHydrationWarning>
+			<body className={poppins.className}>
+				<NextSessionProvider>
+					<Nav />
+
 					{children}
 
 					<Toaster />
-				</body>
-			</NextSessionProvider>
+				</NextSessionProvider>
+			</body>
 		</html>
 	);
 }
