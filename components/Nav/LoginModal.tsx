@@ -54,7 +54,10 @@ const LoginModal = () => {
 						<DialogTitle>Login to KoronKorko</DialogTitle>
 					</DialogHeader>
 
-					<DialogFooter className="gap-2 sm:gap-0">
+					<form
+						className="gap-2 flex flex-col sm:flex-row mt-4"
+						onSubmit={(e) => e.preventDefault()}
+					>
 						<ButtonWithIcon
 							loading={googleIsLoading}
 							disabled={googleIsLoading || githubIsLoading}
@@ -76,7 +79,7 @@ const LoginModal = () => {
 						>
 							Continue with Github
 						</ButtonWithIcon>
-					</DialogFooter>
+					</form>
 				</DialogContent>
 			</Dialog>
 		</>
