@@ -13,7 +13,7 @@ const Logo = () => {
 		<div>
 			<Link
 				href="/"
-				className="gap-1 items-center justify-center flex ring-offset-background focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring rounded-md p-1"
+				className="gap-2 items-center justify-center flex ring-offset-background focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring rounded-md p-1"
 			>
 				<Image
 					src={resolvedTheme === 'dark' ? logo_dark : logo_light}
