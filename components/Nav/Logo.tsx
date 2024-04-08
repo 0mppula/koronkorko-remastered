@@ -10,7 +10,7 @@ const Logo = () => {
 	const { resolvedTheme } = useTheme();
 
 	return (
-		<div className="ml-4 self-center">
+		<div>
 			<Link
 				href="/"
 				className="gap-1 items-center justify-center flex ring-offset-background focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring rounded-md p-1"

@@ -9,10 +9,10 @@ const Nav = async () => {
 
 	return (
 		<nav className="fixed inset-x-0 top-0 w-full z-50 bg-background/75 border-b-2 backdrop-blur-sm">
-			<div className="flex max-w-5xl items-center justify-between h-14 mx-auto">
+			<div className="flex max-w-5xl items-center justify-between h-14 mx-auto px-4">
 				<Logo />
 
-				<div className="flex items-center gap-2 mr-4">
+				<div className="flex items-center gap-2">
 					<ThemeToggler />
 
 					{session?.user ? <UserAccountNav user={session.user} /> : <LoginModal />}

@@ -26,13 +26,15 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={poppins.className}>
-				<NextSessionProvider>
-					<Nav />
+				<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem)] max-w-5xl mt-10 items-center mx-auto px-4">
+					<NextSessionProvider>
+						<Nav />
 
-					{children}
+						{children}
 
-					<Toaster />
-				</NextSessionProvider>
+						<Toaster />
+					</NextSessionProvider>
+				</main>
 			</body>
 		</html>
 	);
