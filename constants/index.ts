@@ -37,7 +37,7 @@ export const calculators = [
 		description:
 			'Calculate the difference between the cost and the selling price of your product. Additionally, logged in users can save their calculations.',
 	},
-];
+] as const;
 
 export const featuredApps = [
 	{
