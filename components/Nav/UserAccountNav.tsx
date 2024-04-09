@@ -12,6 +12,7 @@ import {
 import { LogOut } from 'lucide-react';
 import type { User } from 'next-auth';
 import { signOut } from 'next-auth/react';
+import { useMemo } from 'react';
 import { Button } from '../ui/button';
 
 interface UserAccountNavProps {
@@ -19,16 +20,23 @@ interface UserAccountNavProps {
 }
 
 const UserAccountNav = ({ user }: UserAccountNavProps) => {
+	const initials = useMemo(() => {
+		return user?.name
+			?.split(' ', 2)
+			.map((name) => name[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2);
+	}, [user.name]);
+
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="icon" suppressHydrationWarning>
 					<Avatar className="h-[1.625rem] w-[1.625rem]">
-						<AvatarImage src={user?.image ? user.image : './images/placeholder'} />
+						<AvatarImage src={user?.image ? user.image : ''} />
 
-						<AvatarFallback>
-							<span className="sr-only ">{user?.name}</span>
-						</AvatarFallback>
+						<AvatarFallback className="text-[0.75rem]">{initials}</AvatarFallback>
 					</Avatar>
 				</Button>
 			</DropdownMenuTrigger>
