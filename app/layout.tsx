@@ -1,5 +1,6 @@
 import Footer from '@/components/Footer.tsx';
 import Nav from '@/components/Nav/Nav';
+import ToTop from '@/components/ToTop';
 import NextSessionProvider from '@/components/providers/NextSessionProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { appName } from '@/constants';
@@ -37,6 +38,7 @@ export default function RootLayout({
 
 					<Footer />
 
+					<ToTop />
 					<Toaster />
 				</NextSessionProvider>
 			</body>
