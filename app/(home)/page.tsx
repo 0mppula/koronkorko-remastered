@@ -1,66 +1,61 @@
-import Link from 'next/link';
-import { calculators } from './calculators';
-import { ExternalLink } from 'lucide-react';
 import TypographyH1 from '@/components/TypographyH1';
+import TypographyH2 from '@/components/TypographyH2';
 import { Card } from '@/components/ui/card';
-
-const featuredApps = [
-	{
-		name: 'CoinCaps',
-		url: 'https://coincaps.netlify.app/',
-		description:
-			'A web-application where the user can view the 1000 most valuable cryptocurrencies by market capitalization.',
-	},
-	{
-		name: 'WSB-Tickers',
-		url: 'https://wsb-tickers.netlify.app/',
-		description:
-			'App that displays the top 50 stocks discussed on reddit.com/r/wallstreetbets/',
-	},
-];
+import { Separator } from '@/components/ui/separator';
+import { calculators, featuredApps } from '@/constants';
+import { ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
 	return (
 		<>
-			<TypographyH1 className="mb-4">Home</TypographyH1>
+			<TypographyH1 className="mb-8 lg:mb-12">Home</TypographyH1>
 
-			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2 bg-test">
+			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">
 				{calculators.map((calculator, i) => (
-					<Card key={`calculator-${i}`} className="p-4">
-						<Link className="" href={`/${calculator.url}`}>
-							<div>
-								<h2>{calculator.name}</h2>
-								<hr />
-								<p>{calculator.description}</p>
-							</div>
-						</Link>
-					</Card>
+					<Link
+						key={`calculator-${i}`}
+						href={`/${calculator.url}`}
+						className="p-4 hover:bg-muted focus-visible:bg-muted transition-all border-2 relative rounded-lg bg-card group"
+					>
+						<Card className="border-none group-hover:bg-muted group-focus-visible:bg-muted transition-all">
+							<TypographyH2 className="mb-2">{calculator.name}</TypographyH2>
+
+							<Separator />
+
+							<p className="mt-4 text-neutral-700 dark:text-neutral-300">
+								{calculator.description}
+							</p>
+						</Card>
+					</Link>
 				))}
 			</div>
 
 			<div className="flex justify-center items-center my-4 gap-8 w-full">
-				<div className="bg-border h-[2px] grow-1 w-full" />
-				<h2 className="scroll-m-20 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
-					Featured
-				</h2>
-				<div className="bg-border h-[2px] grow-1 w-full" />
+				<div className="bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
+				<TypographyH2>Featured</TypographyH2>
+				<div className="bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
 			</div>
 
-			<div className="">
+			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">
 				{featuredApps.map((app, i) => (
 					<a
 						key={`app-${i}`}
-						className=""
+						className="p-4 hover:bg-muted focus-visible:bg-muted transition-all border-2 rounded-lg bg-card group relative"
 						href={`${app.url}`}
 						rel="noreferrer"
 						target="_blank"
 					>
-						<h2>{app.name}</h2>
-						<div className="">
-							<ExternalLink />
+						<TypographyH2 className="mb-2">{app.name}</TypographyH2>
+						<div className="absolute top-[26px] right-[20px]">
+							<ExternalLink className="w-[1.25rem] h-[1.25rem]" />
 						</div>
-						<hr />
-						<p>{app.description}</p>
+
+						<Separator />
+
+						<p className="mt-4 text-neutral-700 dark:text-neutral-300">
+							{app.description}
+						</p>
 					</a>
 				))}
 			</div>

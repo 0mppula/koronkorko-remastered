@@ -26,7 +26,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={poppins.className}>
-				<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem)] max-w-5xl mt-10 items-center mx-auto px-4">
+				<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem)] max-w-6xl mt-10 items-center mx-auto px-4 sm:px-8 pb-32">
 					<NextSessionProvider>
 						<Nav />
 
