@@ -1,3 +1,4 @@
+import Footer from '@/components/Footer.tsx';
 import Nav from '@/components/Nav/Nav';
 import NextSessionProvider from '@/components/providers/NextSessionProvider';
 import { Toaster } from '@/components/ui/toaster';
@@ -33,6 +34,8 @@ export default function RootLayout({
 					<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem-1.6px)] max-w-6xl items-center mx-auto px-4 md:px-8 pb-32">
 						{children}
 					</main>
+
+					<Footer />
 
 					<Toaster />
 				</NextSessionProvider>

@@ -1,3 +1,5 @@
+import { FaCode, FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
+
 export const appName = 'KoronKorko';
 
 export const calculators = [
@@ -51,5 +53,82 @@ export const featuredApps = [
 		url: 'https://moneymapper.vercel.app/',
 		description:
 			'An all-in-one personal finance tracker. Users can track their money, income, net worth, debts, and everything in between.',
+	},
+];
+
+export const footerLinks = [
+	{
+		title: 'Technologies',
+		links: [
+			{ url: 'https://nextjs.org/', text: 'Next.js' },
+			{ url: 'https://reactjs.org/', text: 'React.js' },
+			{ url: 'https://www.mongodb.com/', text: 'MongoDB' },
+			{ url: 'https://www.prisma.io/', text: 'Prisma' },
+			{ url: 'https://zustand-demo.pmnd.rs/', text: 'Zustand' },
+			{ url: 'https://tanstack.com/query/latest', text: 'TanStack Query' },
+		],
+	},
+	{
+		title: 'Resources',
+		links: [
+			{
+				url: 'https://tailwindcss.com/',
+				text: 'Tailwind CSS',
+			},
+			{
+				url: 'https://ui.shadcn.com/',
+				text: 'shadcn/ui',
+			},
+			{ url: 'https://github.com/reactchartjs/react-chartjs-2', text: 'React Chartjs 2' },
+			{
+				url: 'https://lucide.dev/',
+				text: 'Lucide',
+			},
+		],
+	},
+	{
+		title: 'Developer',
+		links: [
+			{ url: 'https://www.omarkraidie.com/', text: 'Omar Kraidié Portfolio' },
+			{ url: 'https://moneymapper.vercel.app/', text: 'Project: Money Mapper' },
+			{ url: 'https://coincaps.netlify.app/', text: 'Project: CoinCaps' },
+			{
+				url: 'https://www.goodreads.com/review/list/135003326-0mppu?ref=nav_mybooks&shelf=programming',
+				text: 'Technology Books',
+			},
+		],
+	},
+	{
+		title: 'Other',
+		links: [
+			{
+				url: 'https://en.wikipedia.org/wiki/Compound_interest',
+				text: 'Compound Interest (Wikipedia)',
+			},
+			{ url: 'https://www.investopedia.com/', text: 'Investopedia' },
+		],
+	},
+];
+
+export const footerSocialMedia = [
+	{
+		name: 'GitHub',
+		url: 'https://github.com/0mppula',
+		Icon: FaGithub,
+	},
+	{
+		name: 'LinkedIn',
+		url: 'https://www.linkedin.com/in/omarkraidie/',
+		Icon: FaLinkedin,
+	},
+	{
+		name: 'Email',
+		url: 'mailto:devomarkraidie@gmail.com',
+		Icon: FaEnvelope,
+	},
+	{
+		name: 'Source Code',
+		url: 'https://github.com/0mppula/money-mapper',
+		Icon: FaCode,
 	},
 ];
