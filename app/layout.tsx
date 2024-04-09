@@ -1,7 +1,7 @@
 import Footer from '@/components/Footer.tsx';
-import Nav from '@/components/Nav/Nav';
+import Nav from '@/components/Nav';
 import ToTop from '@/components/ToTop';
-import NextSessionProvider from '@/components/providers/NextSessionProvider';
+import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { appName } from '@/constants';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={cn(poppins.className, 'overflow-y-scroll')}>
-				<NextSessionProvider>
+				<Providers>
 					<Nav />
 
 					<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem-1.6px)] max-w-6xl items-center mx-auto px-4 md:px-8 pb-32">
@@ -40,7 +40,7 @@ export default function RootLayout({
 
 					<ToTop />
 					<Toaster />
-				</NextSessionProvider>
+				</Providers>
 			</body>
 		</html>
 	);
