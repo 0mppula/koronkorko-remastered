@@ -8,8 +8,8 @@ const year = new Date(Date.now()).getFullYear();
 
 const Footer = () => {
 	return (
-		<footer className="bg-header pt-11 pb-6 border-t-2 px-8">
-			<div className="max-w-6xl mx-auto">
+		<footer className="bg-header pt-11 pb-6 border-t-2">
+			<div className="max-w-6xl mx-auto px-8">
 				{/* Top */}
 				<div className="grid xl:grid-cols-12 gap-y-8 gap-x-4 pb-8">
 					<div className="flex flex-col col-span-12 xl:col-span-4">
@@ -38,7 +38,7 @@ const Footer = () => {
 					</div>
 				</div>
 
-				<Separator className="mb-12" />
+				<Separator className="mb-12 bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
 
 				{/* Bottom */}
 				<div className="mt-12 mb-4 flex items-center flex-col justify-center">
