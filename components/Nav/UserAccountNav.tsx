@@ -36,7 +36,9 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 					<Avatar className="h-[1.625rem] w-[1.625rem]">
 						<AvatarImage src={user?.image ? user.image : ''} />
 
-						<AvatarFallback className="text-[0.75rem]">{initials}</AvatarFallback>
+						<AvatarFallback className="text-[0.75rem] border-card-foreground border-2">
+							{initials}
+						</AvatarFallback>
 					</Avatar>
 				</Button>
 			</DropdownMenuTrigger>
