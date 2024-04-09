@@ -20,11 +20,13 @@ const Logo = () => {
 				href="/"
 				className="gap-2 items-center justify-center flex ring-offset-background focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring rounded-md p-1"
 			>
-				<Image
-					src={logo}
-					alt="KoronKorko Logo"
-					className="h-[30px] w-[30px] cursor-pointer select-none min-h-[30px] min-w-[30px]"
-				/>
+				{logo && logo_dark && logo_light && (
+					<Image
+						src={logo}
+						alt="KoronKorko Logo"
+						className="h-[30px] w-[30px] cursor-pointer select-none min-h-[30px] min-w-[30px]"
+					/>
+				)}
 
 				<p className="font-bold text-2xl hidden sm:block">KoronKorko</p>
 			</Link>
