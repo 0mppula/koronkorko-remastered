@@ -8,7 +8,7 @@ const Nav = async () => {
 	const session = await getAuthSession();
 
 	return (
-		<nav className="fixed inset-x-0 top-0 w-screen z-50 bg-background/75 border-b-2 backdrop-blur-sm">
+		<header className="sticky inset-x-0 top-0 w-full z-50 bg-background/75 border-b-2 backdrop-blur-sm">
 			<div className="flex max-w-6xl items-center justify-between h-14 mx-auto px-4 sm:px-8">
 				<Logo />
 
@@ -18,7 +18,7 @@ const Nav = async () => {
 					{session?.user ? <UserAccountNav user={session.user} /> : <LoginModal />}
 				</div>
 			</div>
-		</nav>
+		</header>
 	);
 };
 
