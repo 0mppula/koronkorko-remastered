@@ -108,7 +108,6 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 		}
 
 		if (data?.preferences?.currency) {
-			console.log('SETTING CURRENCY');
 			setCurrency(data.preferences.currency as (typeof currencies)[number]);
 		}
 	}, [data?.preferences]);
