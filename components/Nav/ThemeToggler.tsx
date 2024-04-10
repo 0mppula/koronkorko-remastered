@@ -8,12 +8,14 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Laptop, Moon, Sun } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 
 interface ThemeTogglerProps {}
 
 const ThemeToggler = ({}: ThemeTogglerProps) => {
 	const { resolvedTheme, setTheme } = useTheme();
+	const { data: session, status } = useSession();
 
 	return (
 		<DropdownMenu>

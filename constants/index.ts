@@ -132,3 +132,11 @@ export const footerSocialMedia = [
 		Icon: FaCode,
 	},
 ];
+
+export const currencies = [
+	{ name: 'dollar', value: 'usd', label: '$', locale: 'en-US' },
+	{ name: 'euro', value: 'eur', label: '€', locale: 'fi-FI' },
+	{ name: 'pound ', value: 'gbp', label: '£', locale: 'en-US' },
+	{ name: 'yen', value: 'jpy', label: '¥', locale: 'en-US' },
+	{ name: 'rupee', value: 'inr', label: '₹', locale: 'en-US' },
+] as const;
