@@ -1,7 +1,5 @@
 'use client';
 
-import { Laptop, Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import {
 	DropdownMenu,
@@ -9,9 +7,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Laptop, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
-const ThemeToggler = () => {
-	const { setTheme } = useTheme();
+interface ThemeTogglerProps {}
+
+const ThemeToggler = ({}: ThemeTogglerProps) => {
+	const { resolvedTheme, setTheme } = useTheme();
 
 	return (
 		<DropdownMenu>
