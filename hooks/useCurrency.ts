@@ -13,7 +13,10 @@ const useCurrencyStore = create<CurrencyStore>()(
 			currency: currencies[0],
 			setCurrency: (currency) => set({ currency }),
 		}),
-		{ name: 'currency', storage: createJSONStorage(() => localStorage) }
+		{
+			name: 'currency',
+			storage: createJSONStorage(() => localStorage),
+		}
 	)
 );
 
