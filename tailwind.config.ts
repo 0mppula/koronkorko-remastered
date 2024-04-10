@@ -10,6 +10,9 @@ const config = {
 	],
 	prefix: '',
 	theme: {
+		animation: {
+			'spin-slow': 'spin 1.2s linear infinite',
+		},
 		container: {
 			center: true,
 			padding: '2rem',

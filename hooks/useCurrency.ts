@@ -1,6 +1,6 @@
 import { currencies } from '@/constants';
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface CurrencyStore {
 	currency: (typeof currencies)[number];
@@ -8,14 +8,12 @@ interface CurrencyStore {
 }
 
 const useCurrencyStore = create<CurrencyStore>()(
-	devtools(
-		persist(
-			(set) => ({
-				currency: currencies[0],
-				setCurrency: (currency) => set({ currency }),
-			}),
-			{ name: 'currency' }
-		)
+	persist(
+		(set) => ({
+			currency: currencies[0],
+			setCurrency: (currency) => set({ currency }),
+		}),
+		{ name: 'currency' }
 	)
 );
 

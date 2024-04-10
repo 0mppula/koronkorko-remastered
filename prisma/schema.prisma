@@ -27,23 +27,23 @@ model Account {
 }
 
 type preferences {
-  theme    String   @default("system")
+  theme    String
   currency currency
 }
 
 type currency {
-  name   String @default("dollar")
-  value  String @default("usd")
-  label  String @default("$")
-  locale String @default("en-US")
+  name   String
+  value  String
+  label  String
+  locale String
 }
 
 model User {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
-  email         String?     @unique
+  email         String?      @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
-  preferences   preferences
+  preferences   preferences?
 }
