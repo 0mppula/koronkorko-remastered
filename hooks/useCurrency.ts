@@ -1,6 +1,6 @@
 import { currencies } from '@/constants';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface CurrencyStore {
 	currency: (typeof currencies)[number];
@@ -13,7 +13,7 @@ const useCurrencyStore = create<CurrencyStore>()(
 			currency: currencies[0],
 			setCurrency: (currency) => set({ currency }),
 		}),
-		{ name: 'currency' }
+		{ name: 'currency', storage: createJSONStorage(() => localStorage) }
 	)
 );
 
