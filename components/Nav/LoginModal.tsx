@@ -3,7 +3,6 @@
 import {
 	Dialog,
 	DialogContent,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
@@ -35,6 +34,7 @@ const LoginModal = () => {
 			if (callback?.error) {
 				toast({
 					description: 'An error occurred. Please try again later.',
+					variant: 'destructive',
 				});
 			}
 		});

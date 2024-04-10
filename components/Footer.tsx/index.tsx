@@ -30,7 +30,11 @@ const Footer = () => {
 
 								<ul>
 									{section.links.map((link) => (
-										<Link url={link.url} text={link.text} />
+										<Link
+											key={`link-${link.url}`}
+											url={link.url}
+											text={link.text}
+										/>
 									))}
 								</ul>
 							</div>

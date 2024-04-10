@@ -1,12 +1,38 @@
 import db from '@/lib/db';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import NextAuth, { AuthOptions } from 'next-auth';
-import { Adapter } from 'next-auth/adapters';
+import { Adapter, AdapterUser } from 'next-auth/adapters';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 
+function CustomPrismaAdapter(p: typeof prisma): Adapter {
+	// @ts-ignore
+	return {
+		// @ts-ignore
+		...PrismaAdapter(p),
+		async createUser(user) {
+			const created = await p?.user.create({
+				data: {
+					...user,
+					preferences: {
+						theme: 'system',
+						currency: {
+							name: 'dollar',
+							value: 'usd',
+							label: '$',
+							locale: 'en-US',
+						},
+					},
+				},
+			});
+
+			return created as AdapterUser;
+		},
+	};
+}
+
 export const authOptions: AuthOptions = {
-	adapter: PrismaAdapter(db) as Adapter,
+	adapter: CustomPrismaAdapter(db) as Adapter,
 	providers: [
 		GitHubProvider({
 			clientId: process.env.GITHUB_ID as string,
@@ -22,7 +48,7 @@ export const authOptions: AuthOptions = {
 		maxAge: 30 * 24 * 60 * 60, // 30 days
 	},
 	callbacks: {
-		jwt: async ({ token }) => {
+		async jwt({ token }) {
 			const db_user = await db.user.findFirst({
 				where: {
 					email: token?.email as string,
