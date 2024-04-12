@@ -6,9 +6,9 @@ import { ThemeProvider } from 'next-themes';
 import { PropsWithChildren } from 'react';
 import UserPreferencesProvider from './UserPreferencesProvider';
 
-const Providers = ({ children }: PropsWithChildren) => {
-	const queryClient = new QueryClient();
+const queryClient = new QueryClient();
 
+const Providers = ({ children }: PropsWithChildren) => {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
