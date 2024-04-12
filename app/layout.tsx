@@ -5,6 +5,7 @@ import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/toaster';
 import { appName } from '@/constants';
 import { cn } from '@/lib/utils';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
@@ -40,6 +41,7 @@ export default function RootLayout({
 
 					<ToTop />
 					<Toaster />
+					<ReactQueryDevtools initialIsOpen={false} />
 				</Providers>
 			</body>
 		</html>

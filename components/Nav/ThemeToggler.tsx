@@ -7,6 +7,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import useAuthLoadingStore from '@/hooks/useAuthLoading';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,11 +20,18 @@ const ThemeToggler = () => {
 	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 	const { theme, setTheme } = useTheme();
+	const { setIsLoadingUserPreferences } = useAuthLoadingStore();
 
 	const { mutate } = useMutation({
 		mutationFn: updateUserPreferences,
+		onMutate: () => {
+			setIsLoadingUserPreferences(true);
+		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user'] });
+		},
+		onSettled: () => {
+			setIsLoadingUserPreferences(false);
 		},
 	});
 

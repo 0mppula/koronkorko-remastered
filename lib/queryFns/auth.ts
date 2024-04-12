@@ -12,7 +12,13 @@ export const getUser = async (
 	}
 
 	try {
-		const response = await axios.get(API_URL);
+		const response = await axios.get(API_URL, {
+			headers: {
+				'Cache-Control': 'no-cache',
+				Pragma: 'no-cache',
+				Expires: '0',
+			},
+		});
 		const data = await response.data;
 
 		return data.data;
@@ -36,10 +42,20 @@ export const updateUserPreferences = async (variables: {
 	}
 
 	try {
-		const response = await axios.put(`${API_URL}/preferences`, {
-			theme: variables.theme,
-			currency: variables.currency,
-		});
+		const response = await axios.put(
+			`${API_URL}/preferences`,
+			{
+				theme: variables.theme,
+				currency: variables.currency,
+			},
+			{
+				headers: {
+					'Cache-Control': 'no-cache',
+					Pragma: 'no-cache',
+					Expires: '0',
+				},
+			}
+		);
 		const data = await response.data;
 
 		return data.data;
