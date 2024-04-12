@@ -33,7 +33,9 @@ const Logo = () => {
 					<Skeleton className="h-[30px] w-[30px] rounded-full" />
 				)}
 
-				<p className="font-bold text-2xl hidden sm:block">KoronKorko</p>
+				<p aria-hidden className="font-bold text-2xl hidden xs:block">
+					KoronKorko
+				</p>
 			</Link>
 		</div>
 	);

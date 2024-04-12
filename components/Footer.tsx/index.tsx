@@ -8,14 +8,17 @@ const year = new Date(Date.now()).getFullYear();
 
 const Footer = () => {
 	return (
-		<footer className="bg-header pt-11 pb-6 border-t-2">
+		<footer className="bg-header pt-11 pb-6 border-t-2 overflow-hidden">
 			<div className="max-w-6xl mx-auto px-8">
 				{/* Top */}
 				<div className="grid xl:grid-cols-12 gap-y-8 gap-x-4 pb-8">
 					<div className="flex flex-col col-span-12 xl:col-span-4">
 						<div className="flex items-center gap-2">
 							<Logo />
-							<TypographyH2 className="scroll-m-20 text-4xl font-extrabold tracking-tight select-none mt-[4px]">
+							<TypographyH2
+								aria-hidden
+								className="scroll-m-20 text-4xl font-extrabold tracking-tight select-none mt-[4px] hidden xs:block"
+							>
 								KoronKorko
 							</TypographyH2>
 						</div>
@@ -24,7 +27,7 @@ const Footer = () => {
 					<div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4 col-span-12 xl:col-span-8">
 						{footerLinks.map((section) => (
 							<div key={`section-${section.title}`}>
-								<div className="mb-4 xl:h-[50px] flex items-end">
+								<div className="mb-4 xl:h-12 flex items-end">
 									<TypographyH2>{section.title}</TypographyH2>
 								</div>
 
@@ -60,21 +63,24 @@ const Footer = () => {
 						))}
 					</div>
 
-					<p className="text-sm mb-2">
-						Developed by{' '}
-						<a
-							className="text-neutral-700 dark:text-neutral-300 hover:underline hover:text-primary dark:hover:text-primary"
-							href="https://www.omarkraidie.com/"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							Omar Kraidié
-						</a>
-					</p>
-					<p className="text-sm mb-2">
-						Copyright <span className="text-primary">{year}&copy;</span> Lahti, Finland.
-						All Rights Reserved.
-					</p>
+					<div className="flex items-center flex-col text-neutral-700 dark:text-neutral-300">
+						<p className="text-sm mb-2 ">
+							Developed by{' '}
+							<a
+								className="hover:underline hover:text-primary dark:hover:text-primary"
+								href="https://www.omarkraidie.com/"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								Omar Kraidié
+							</a>
+						</p>
+
+						<p className="text-sm mb-2">
+							Copyright <span className="text-primary">{year}&copy;</span> Lahti,
+							Finland. All Rights Reserved.
+						</p>
+					</div>
 				</div>
 			</div>
 		</footer>
