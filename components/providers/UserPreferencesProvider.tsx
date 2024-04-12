@@ -36,12 +36,7 @@ const getUser = async (
 const updateUserPreferences = async (variables: {
 	sessionStatus: 'loading' | 'authenticated' | 'unauthenticated';
 	theme: string;
-	currency: {
-		name: string;
-		value: string;
-		label: string;
-		locale: string;
-	};
+	currency: string;
 }) => {
 	if (variables.sessionStatus !== 'authenticated') {
 		return null;
@@ -108,7 +103,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 		}
 
 		if (data?.preferences?.currency) {
-			setCurrency(data.preferences.currency as (typeof currencies)[number]);
+			setCurrency(data.preferences.currency as (typeof currencies)[number]['value']);
 		}
 	}, [data?.preferences]);
 

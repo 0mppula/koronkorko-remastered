@@ -28,14 +28,7 @@ model Account {
 
 type preferences {
   theme    String
-  currency currency
-}
-
-type currency {
-  name   String
-  value  String
-  label  String
-  locale String
+  currency String
 }
 
 model User {

@@ -134,9 +134,9 @@ export const footerSocialMedia = [
 ];
 
 export const currencies = [
-	{ name: 'dollar', value: 'usd', label: '$', locale: 'en-US' },
-	{ name: 'euro', value: 'eur', label: '€', locale: 'fi-FI' },
-	{ name: 'pound ', value: 'gbp', label: '£', locale: 'en-US' },
-	{ name: 'yen', value: 'jpy', label: '¥', locale: 'en-US' },
-	{ name: 'rupee', value: 'inr', label: '₹', locale: 'en-US' },
+	{ name: 'United States dollar', value: 'usd', symbol: '$', locale: 'en-US' },
+	{ name: 'Euro', value: 'eur', symbol: '€', locale: 'fi-FI' },
+	{ name: 'British Pound Sterling ', value: 'gbp', symbol: '£', locale: 'en-US' },
+	{ name: 'Japanese Yen', value: 'jpy', symbol: '¥', locale: 'en-US' },
+	{ name: 'Indian Rupee', value: 'inr', symbol: '₹', locale: 'en-US' },
 ] as const;
