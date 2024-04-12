@@ -1,6 +1,7 @@
 import { getAuthSession } from '@/app/actions/auth';
 import LoginModal from './LoginModal';
 import Logo from './Logo';
+import PreferredCurrencyToggler from './PreferredCurrencyToggler';
 import ThemeToggler from './ThemeToggler';
 import UserAccountNav from './UserAccountNav';
 
@@ -13,6 +14,8 @@ const Nav = async () => {
 				<Logo />
 
 				<div className="flex items-center gap-2">
+					<PreferredCurrencyToggler />
+
 					<ThemeToggler />
 
 					{session?.user ? <UserAccountNav user={session.user} /> : <LoginModal />}

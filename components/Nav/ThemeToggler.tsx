@@ -7,13 +7,35 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import useCurrencyStore from '@/hooks/useCurrency';
+import { updateUserPreferences } from '@/lib/queryFns/auth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Laptop, Moon, Sun } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 
-interface ThemeTogglerProps {}
+const ThemeToggler = () => {
+	const { currency } = useCurrencyStore();
+	const queryClient = useQueryClient();
+	const { status: sessionStatus } = useSession();
+	const { theme, setTheme } = useTheme();
 
-const ThemeToggler = ({}: ThemeTogglerProps) => {
-	const { setTheme } = useTheme();
+	const { mutate } = useMutation({
+		mutationFn: updateUserPreferences,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['user'] });
+		},
+	});
+
+	const handleThemeChange = (themeParam: string) => {
+		if (themeParam === theme) return;
+
+		setTheme(themeParam);
+
+		if (sessionStatus === 'authenticated') {
+			mutate({ sessionStatus, theme: themeParam, currency });
+		}
+	};
 
 	return (
 		<DropdownMenu>
@@ -26,13 +48,13 @@ const ThemeToggler = ({}: ThemeTogglerProps) => {
 			</DropdownMenuTrigger>
 
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem onClick={() => setTheme('light')}>
+				<DropdownMenuItem onClick={() => handleThemeChange('light')}>
 					<Sun className="mr-2 h-[1.125rem] w-[1.125rem]" /> Light
 				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme('dark')}>
+				<DropdownMenuItem onClick={() => handleThemeChange('dark')}>
 					<Moon className="mr-2 h-[1.125rem] w-[1.125rem]" /> Dark
 				</DropdownMenuItem>
-				<DropdownMenuItem onClick={() => setTheme('system')}>
+				<DropdownMenuItem onClick={() => handleThemeChange('system')}>
 					<Laptop className="mr-2 h-[1.125rem] w-[1.125rem]" /> System
 				</DropdownMenuItem>
 			</DropdownMenuContent>
