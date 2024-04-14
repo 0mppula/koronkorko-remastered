@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function Home() {
 	return (
 		<>
-			<TypographyH1 className="mb-8 lg:mb-12">Home</TypographyH1>
+			<TypographyH1 className="mb-6">Home</TypographyH1>
 
 			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">
 				{calculators.map((calculator, i) => (

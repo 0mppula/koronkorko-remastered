@@ -1,3 +1,5 @@
+import BackButton from '@/components/Form/BackButton';
+import CalculatorContainer from '@/components/Form/CalculatorContainer';
 import TypographyH1 from '@/components/TypographyH1';
 import { appName } from '@/constants';
 import { getCalculatorWithPathname } from '@/lib/utils';
@@ -13,7 +15,11 @@ export const metadata: Metadata = {
 const page = () => {
 	return (
 		<>
-			<TypographyH1>{calculator.name}</TypographyH1>
+			<TypographyH1 className="text-center mb-6">{calculator.name}</TypographyH1>
+
+			<CalculatorContainer>
+				<BackButton />
+			</CalculatorContainer>
 		</>
 	);
 };
