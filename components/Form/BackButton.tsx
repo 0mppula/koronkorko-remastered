@@ -11,7 +11,7 @@ const BackButton = ({ href = '/' }: BackButtonProps) => {
 		<div className="w-full mb-1">
 			<Button asChild variant="link" size="sm" className="px-1">
 				<Link href={href}>
-					<ArrowLeft className="mr-2 h-4 w-4 mb-[1px]" /> Calculators
+					<ArrowLeft className="mr-2 h-4 w-4" /> Calculators
 				</Link>
 			</Button>
 		</div>
