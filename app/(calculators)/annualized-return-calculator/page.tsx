@@ -1,5 +1,6 @@
 import BackButton from '@/components/Form/BackButton';
 import CalculatorContainer from '@/components/Form/CalculatorContainer';
+import FormContainer from '@/components/Form/FormContainer';
 import TypographyH1 from '@/components/TypographyH1';
 import { appName } from '@/constants';
 import { getCalculatorWithPathname } from '@/lib/utils';
@@ -19,6 +20,8 @@ const page = () => {
 
 			<CalculatorContainer>
 				<BackButton />
+
+				<FormContainer></FormContainer>
 			</CalculatorContainer>
 		</>
 	);
