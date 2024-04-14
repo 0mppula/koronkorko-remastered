@@ -21,7 +21,7 @@ export default function Home() {
 						<Card className="border-none group-hover:bg-muted group-focus-visible:bg-muted transition-all">
 							<TypographyH2 className="mb-2">{calculator.name}</TypographyH2>
 
-							<Separator />
+							<Separator className="h-[1.6px]" />
 
 							<p className="mt-4 text-neutral-700 dark:text-neutral-300">
 								{calculator.description}
@@ -51,7 +51,7 @@ export default function Home() {
 							<ExternalLink className="w-[1.25rem] h-[1.25rem]" />
 						</div>
 
-						<Separator />
+						<Separator className="h-[1.6px]" />
 
 						<p className="mt-4 text-neutral-700 dark:text-neutral-300">
 							{app.description}

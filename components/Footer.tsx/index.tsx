@@ -45,7 +45,7 @@ const Footer = () => {
 					</div>
 				</div>
 
-				<Separator className="mb-12 bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
+				<Separator className="mb-12 h-[2px] grow-1 w-full" />
 
 				{/* Bottom */}
 				<div className="mt-12 mb-4 flex items-center flex-col justify-center">
