@@ -2,6 +2,7 @@
 
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
+import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import { Button } from '@/components/ui/button';
 import {
 	Form,
@@ -11,7 +12,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -47,13 +47,15 @@ const Calculator = ({}: CalculatorProps) => {
 									<FormLabel>Cost</FormLabel>
 
 									<FormControl>
-										<Input
+										<NumberInputWithIcon
 											{...field}
+											iconType="currency"
 											name="cost"
-											onBlur={(e) => form.setValue('cost', 0)}
-											type="number"
-											step="0.01"
-											placeholder="1000"
+											onBlur={(e) => {
+												if (e.target.value === '') {
+													form.setValue('cost', 0);
+												}
+											}}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -69,13 +71,16 @@ const Calculator = ({}: CalculatorProps) => {
 									<FormLabel>Sales Price</FormLabel>
 
 									<FormControl>
-										<Input
+										<NumberInputWithIcon
 											{...field}
+											iconType="currency"
 											type="number"
-											onBlur={() => form.setValue('salesPrice', 0)}
+											onBlur={(e) => {
+												if (e.target.value === '') {
+													form.setValue('salesPrice', 0);
+												}
+											}}
 											name="salesPrice"
-											step="0.01"
-											placeholder="1000"
 										/>
 									</FormControl>
 									<FormMessage />

@@ -41,7 +41,7 @@ export default function Home() {
 				{featuredApps.map((app, i) => (
 					<a
 						key={`app-${i}`}
-						className="p-4 hover:bg-muted focus-visible:bg-muted transition-all border-2 rounded-lg bg-card group relative"
+						className="p-4 hover:bg-muted focus-visible:bg-muted transition-all border-2 rounded-lg bg-card relative"
 						href={`${app.url}`}
 						rel="noreferrer"
 						target="_blank"
