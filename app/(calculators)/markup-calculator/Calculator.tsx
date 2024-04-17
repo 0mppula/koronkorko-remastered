@@ -12,6 +12,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
+import { useToast } from '@/components/ui/use-toast';
 import { markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ export interface ReportProps {
 const Calculator = () => {
 	const [report, setReport] = useState<ReportProps | null>(null);
 
+	const { toast } = useToast();
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
 		resolver: zodResolver(markupCalculatorSchema),
 		defaultValues: {
@@ -35,19 +37,27 @@ const Calculator = () => {
 		},
 	});
 
-	function onSubmit(values: z.infer<typeof markupCalculatorSchema>) {
+	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
 		const { salesPrice, cost } = values;
 
 		const profit = salesPrice - cost;
 		const markup = (profit / cost) * 100;
 
 		setReport({ profit, markup });
-	}
+	};
+
+	const resetForm = () => {
+		form.reset();
+		setReport(null);
+		toast({
+			description: 'Form cleared',
+		});
+	};
 
 	return (
 		<>
 			<FormContainer>
-				<FormControlsTop />
+				<FormControlsTop reset={resetForm} />
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

@@ -3,9 +3,11 @@ import { ImSpinner8 } from 'react-icons/im';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 
-interface FormControlsTopProps {}
+interface FormControlsTopProps {
+	reset: () => void;
+}
 
-const FormControlsTop = ({}: FormControlsTopProps) => {
+const FormControlsTop = ({ reset }: FormControlsTopProps) => {
 	const saveLoading = false;
 
 	return (
@@ -50,7 +52,12 @@ const FormControlsTop = ({}: FormControlsTopProps) => {
 						<span className="sr-only">Save calculation</span>
 					</Button>
 
-					<Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="h-8 w-8 hover:text-destructive"
+						onClick={reset}
+					>
 						<RotateCw className="h-4 w-4 " />
 
 						<span className="sr-only">Reset calculator</span>
