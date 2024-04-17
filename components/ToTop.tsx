@@ -38,7 +38,7 @@ const ToTop = () => {
 			tabIndex={active ? 0 : -1}
 			onClick={scrollToTop}
 			className={cn(
-				'flex items-center justify-center fixed bottom-4 right-4 md:bottom-6 md:right-6 h-[46px] w-[46px] bg-header text-foreground cursor-pointer rounded-full transition-all duration-200 z-[200] hover:text-primary focus-visible:text-primary border-card-foreground border-2 hover:bg-card focus-visible:bg-card p-0',
+				'flex items-center justify-center fixed bottom-4 right-4 md:bottom-6 md:right-6 h-[46px] w-[46px] bg-card text-foreground cursor-pointer rounded-full transition-all duration-200 z-[200] hover:text-primary focus-visible:text-primary border-card-foreground border-2 hover:bg-card focus-visible:bg-card p-0',
 				active ? 'opacity-1' : 'opacity-0 pointer-events-none'
 			)}
 		>
