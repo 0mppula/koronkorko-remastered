@@ -65,7 +65,7 @@ const FormControlsTop = ({ reset }: FormControlsTopProps) => {
 				</div>
 			</div>
 
-			<Separator className="h-[1.6px] mb-3" />
+			<Separator className="h-[1px] bg-input dark:bg-input my-1 mb-3" />
 		</>
 	);
 };

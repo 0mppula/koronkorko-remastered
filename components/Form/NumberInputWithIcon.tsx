@@ -88,7 +88,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 					{...props}
 				/>
 
-				<div className="absolute top-[4px] right-[4px] pointer-events-none flex items-center justify-center p-2 opacity-50 transition-all text-neutral-700 dark:text-neutral-300">
+				<div className="absolute top-[4px] right-[4px] pointer-events-none flex items-center justify-center p-2 transition-all text-neutral-700 dark:text-neutral-300">
 					{getIcon()}
 				</div>
 			</div>
