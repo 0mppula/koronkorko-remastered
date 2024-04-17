@@ -11,11 +11,11 @@ const ReportSummaryContainer = ({ title = 'Summary', children }: ReportSummaryCo
 		<div>
 			<TypographyH2 className="mb-3 text-3xl">{title}</TypographyH2>
 
-			<Separator className="h-[1.6px]" />
+			<Separator className="h-[2px] bg-primary dark:bg-primary" />
 
 			{children}
 
-			<Separator className="h-[1.6px]" />
+			<Separator className="h-[2px] bg-primary dark:bg-primary" />
 		</div>
 	);
 };
