@@ -1,3 +1,4 @@
+import { currencies } from '@/constants';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 import { DollarSign, Euro, IndianRupee, JapaneseYen, Percent, PoundSterling } from 'lucide-react';
@@ -13,21 +14,63 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {
-			if (iconType === 'percentage') return <Percent className="h-4 w-4" />;
+			if (iconType === 'percentage')
+				return (
+					<>
+						<Percent className="h-4 w-4" />
+						<span className="sr-only">Percent</span>
+					</>
+				);
+
+			const SRCurrencyName = (
+				<span className="sr-only">
+					{currencies.find((c) => c.value === currency)?.name}
+				</span>
+			);
 
 			switch (currency) {
 				case 'eur':
-					return <Euro className="h-4 w-4" />;
+					return (
+						<>
+							<Euro className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 				case 'usd':
-					return <DollarSign className="h-4 w-4" />;
+					return (
+						<>
+							<DollarSign className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 				case 'gbp':
-					return <PoundSterling className="h-4 w-4" />;
+					return (
+						<>
+							<PoundSterling className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 				case 'jpy':
-					return <JapaneseYen className="h-4 w-4" />;
+					return (
+						<>
+							<JapaneseYen className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 				case 'inr':
-					return <IndianRupee className="h-4 w-4" />;
+					return (
+						<>
+							<IndianRupee className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 				default:
-					return <DollarSign className="h-4 w-4" />;
+					return (
+						<>
+							<DollarSign className="h-4 w-4" />
+							{SRCurrencyName}
+						</>
+					);
 			}
 		};
 

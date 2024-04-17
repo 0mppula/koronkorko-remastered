@@ -11,10 +11,10 @@ const FormControlsTop = ({}: FormControlsTopProps) => {
 	return (
 		<>
 			<div className="flex flex-wrap justify-between items-center gap-1 pb-1">
-				<div className="flex flex-wrap gap-1 items-center order-1 xs:order-none">
-					<>
-						<p className="mr-1">calculation name</p>
+				<div className="flex flex-wrap gap-1 items-center order-1 xs:order-none w-full xs:w-auto justify-between xs:justify-normal">
+					<p className="mr-1">calculation name</p>
 
+					<div className="flex gap-1">
 						<Button variant="ghost" size="icon" className="h-8 w-8">
 							<SquarePen className="h-4 w-4" aria-hidden />
 
@@ -30,7 +30,7 @@ const FormControlsTop = ({}: FormControlsTopProps) => {
 
 							<span className="sr-only">Close calculation</span>
 						</Button>
-					</>
+					</div>
 				</div>
 
 				<div className="flex flex-wrap gap-1 justify-end xs:justify-normal w-full xs:w-auto">
