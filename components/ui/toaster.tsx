@@ -17,7 +17,7 @@ export function Toaster() {
 		<ToastProvider duration={TOAST_REMOVE_DELAY}>
 			{toasts.map(function ({ id, title, description, action, ...props }) {
 				return (
-					<Toast key={id} {...props}>
+					<Toast key={id} {...props} className="bg-card mt-0 mb-2 sm:mb-0  sm:mt-2">
 						<div className="grid gap-1">
 							{title && <ToastTitle>{title}</ToastTitle>}
 							{description && <ToastDescription>{description}</ToastDescription>}
