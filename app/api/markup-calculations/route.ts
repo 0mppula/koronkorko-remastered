@@ -1,10 +1,10 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
+import { calculationNameStringSchema, markupCalculatorSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
 	const session = await getAuthSession();
 	const body = await req.json();
 
@@ -14,10 +14,9 @@ export async function GET(req: Request) {
 		}
 
 		const { cost, salesPrice } = markupCalculatorSchema.parse(body.formData);
-		const name = calculationNameSchema.parse(body.name);
+		const name = calculationNameStringSchema.parse(body.name);
 
-		// TODO VALIDATE NAME
-		const calculation = db.markupCalculation.create({
+		const calculation = await db.markupCalculation.create({
 			data: {
 				name,
 				formData: {
