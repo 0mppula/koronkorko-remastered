@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+export const calculationNameSchema = z
+	.string({
+		required_error: 'Name is required',
+		invalid_type_error: 'Name is has to be a string',
+	})
+	.trim()
+	.min(1, {
+		message: 'Name cannot be empty',
+	})
+	.max(30, {
+		message: 'Name cannot be longer than 30 characters',
+	});
+
 export const markupCalculatorSchema = z.object({
 	cost: z.coerce
 		.number({
