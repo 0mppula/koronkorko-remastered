@@ -1,4 +1,3 @@
-import { toast } from '@/components/ui/use-toast';
 import { User } from '@prisma/client';
 import axios from 'axios';
 
@@ -11,25 +10,16 @@ export const getUser = async (
 		return null;
 	}
 
-	try {
-		const response = await axios.get(API_URL, {
-			headers: {
-				'Cache-Control': 'no-cache',
-				Pragma: 'no-cache',
-				Expires: '0',
-			},
-		});
-		const data = await response.data;
+	const response = await axios.get(API_URL, {
+		headers: {
+			'Cache-Control': 'no-cache',
+			Pragma: 'no-cache',
+			Expires: '0',
+		},
+	});
+	const data = await response.data;
 
-		return data.data;
-	} catch (error) {
-		toast({
-			variant: 'destructive',
-			description: 'Something went wrong while fetching your info. Please try again later.',
-		});
-
-		return null;
-	}
+	return data.data;
 };
 
 export const updateUserPreferences = async (variables: {
@@ -41,23 +31,21 @@ export const updateUserPreferences = async (variables: {
 		return null;
 	}
 
-	try {
-		const response = await axios.put(
-			`${API_URL}/preferences`,
-			{
-				theme: variables.theme,
-				currency: variables.currency,
+	const response = await axios.put(
+		`${API_URL}/preferences`,
+		{
+			theme: variables.theme,
+			currency: variables.currency,
+		},
+		{
+			headers: {
+				'Cache-Control': 'no-cache',
+				Pragma: 'no-cache',
+				Expires: '0',
 			},
-			{
-				headers: {
-					'Cache-Control': 'no-cache',
-					Pragma: 'no-cache',
-					Expires: '0',
-				},
-			}
-		);
-		const data = await response.data;
+		}
+	);
+	const data = await response.data;
 
-		return data.data;
-	} catch (error) {}
+	return data.data;
 };

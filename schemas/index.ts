@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const calculationNameSchema = z
+export const calculationNameStringSchema = z
 	.string({
 		required_error: 'Name is required',
 		invalid_type_error: 'Name is has to be a string',
@@ -12,6 +12,10 @@ export const calculationNameSchema = z
 	.max(30, {
 		message: 'Name cannot be longer than 30 characters',
 	});
+
+export const calculationNameSchema = z.object({
+	name: calculationNameStringSchema,
+});
 
 export const markupCalculatorSchema = z.object({
 	cost: z.coerce

@@ -5,9 +5,10 @@ import { Separator } from '../ui/separator';
 
 interface FormControlsTopProps {
 	reset: () => void;
+	handleSaveUpdateStart: () => void;
 }
 
-const FormControlsTop = ({ reset }: FormControlsTopProps) => {
+const FormControlsTop = ({ reset, handleSaveUpdateStart }: FormControlsTopProps) => {
 	const saveLoading = false;
 
 	return (
@@ -42,7 +43,12 @@ const FormControlsTop = ({ reset }: FormControlsTopProps) => {
 						<span className="sr-only">Import calculation</span>
 					</Button>
 
-					<Button variant="ghost" size="icon" className="h-8 w-8">
+					<Button
+						onClick={handleSaveUpdateStart}
+						variant="ghost"
+						size="icon"
+						className="h-8 w-8"
+					>
 						{saveLoading ? (
 							<ImSpinner8 className="h-4 w-4 animate-spin" />
 						) : (

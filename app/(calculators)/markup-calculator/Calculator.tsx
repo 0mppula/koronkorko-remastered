@@ -3,6 +3,7 @@
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
+import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
 import { Button } from '@/components/ui/button';
 import {
 	Form,
@@ -13,8 +14,13 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
-import { markupCalculatorSchema } from '@/schemas';
+import useLoadingStore from '@/hooks/useLoadingStore';
+import useMarkupalculatorStore from '@/hooks/useMarkupalculatorStore';
+import { ISaveCalculationParam, saveCalculation } from '@/lib/queryFns/markup-calculations';
+import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { MarkupCalculation } from '@prisma/client';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -26,9 +32,15 @@ export interface ReportProps {
 }
 
 const Calculator = () => {
+	const [saveModalOpen, setSaveModalOpen] = useState(false);
+	const [importModalOpen, setImportModalOpen] = useState(false);
+	const [renameModalOpen, setRenameModalOpen] = useState(false);
 	const [report, setReport] = useState<ReportProps | null>(null);
 
+	const { setIsGlobalLoading } = useLoadingStore();
+	const { activeCalculation, setActiveCalculation } = useMarkupalculatorStore();
 	const { toast } = useToast();
+
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
 		resolver: zodResolver(markupCalculatorSchema),
 		defaultValues: {
@@ -36,6 +48,32 @@ const Calculator = () => {
 			salesPrice: 0,
 		},
 	});
+
+	const { mutate: saveMutation } = useMutation<MarkupCalculation, unknown, ISaveCalculationParam>(
+		{
+			mutationFn: saveCalculation,
+			onMutate: () => {
+				setIsGlobalLoading(true);
+			},
+			onSuccess: (calculation) => {
+				toast({
+					description: 'Calculation created successfully',
+				});
+				setActiveCalculation(calculation);
+				setSaveModalOpen(false);
+			},
+			onError: () => {
+				toast({
+					variant: 'destructive',
+					description:
+						'Something went wrong while saving your calculation. Please try again later.',
+				});
+			},
+			onSettled: () => {
+				setIsGlobalLoading(false);
+			},
+		}
+	);
 
 	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
 		const { salesPrice, cost } = values;
@@ -54,10 +92,33 @@ const Calculator = () => {
 		});
 	};
 
+	const handleSaveUpdateStart = () => {
+		if (activeCalculation) {
+			// update
+			console.log('Update calculation');
+		} else {
+			setSaveModalOpen(true);
+		}
+	};
+
+	const closeSaveModal = () => {
+		setSaveModalOpen(false);
+	};
+
+	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
+		saveMutation({ name: data.name, data: form.getValues() });
+	};
+
 	return (
 		<>
+			<SaveCalculationModal
+				isOpen={saveModalOpen}
+				handleClose={closeSaveModal}
+				save={handleSave}
+			/>
+
 			<FormContainer>
-				<FormControlsTop reset={resetForm} />
+				<FormControlsTop reset={resetForm} handleSaveUpdateStart={handleSaveUpdateStart} />
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
