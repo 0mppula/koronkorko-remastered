@@ -1,7 +1,7 @@
 'use client';
 
 import { currencies } from '@/constants';
-import useAuthLoadingStore from '@/hooks/useAuthLoading';
+import useLoadingStore from '@/hooks/useLoadingStore';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { getUser, updateUserPreferences } from '@/lib/queryFns/auth';
 import { User } from '@prisma/client';
@@ -10,12 +10,13 @@ import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { PropsWithChildren, useEffect } from 'react';
 import LargeSpinner from '../Spinners/LargeSpinner';
+import { toast } from '../ui/use-toast';
 
 const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const { theme, setTheme } = useTheme();
 	const { status: sessionStatus } = useSession();
 	const { currency, setCurrency } = useCurrencyStore();
-	const { isLoadingUserPreferences, setIsLoadingUserPreferences } = useAuthLoadingStore();
+	const { isGlobalLoading, setIsGlobalLoading } = useLoadingStore();
 	const queryClient = useQueryClient();
 
 	const { data, isLoading, isFetching } = useQuery<User | null>({
@@ -26,13 +27,20 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const { mutate } = useMutation({
 		mutationFn: updateUserPreferences,
 		onMutate: () => {
-			setIsLoadingUserPreferences(true);
+			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user'] });
 		},
+		onError: () => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while fetching your info. Please try again later.',
+			});
+		},
 		onSettled: () => {
-			setIsLoadingUserPreferences(false);
+			setIsGlobalLoading(false);
 		},
 	});
 
@@ -60,10 +68,9 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 
 	return (
 		<>
-			{(isLoading ||
-				isFetching ||
-				sessionStatus === 'loading' ||
-				isLoadingUserPreferences) && <LargeSpinner />}
+			{(isLoading || isFetching || sessionStatus === 'loading' || isGlobalLoading) && (
+				<LargeSpinner />
+			)}
 
 			{children}
 		</>

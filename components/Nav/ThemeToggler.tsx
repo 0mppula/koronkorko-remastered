@@ -7,31 +7,39 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import useAuthLoadingStore from '@/hooks/useAuthLoading';
+import useLoadingStore from '@/hooks/useLoadingStore';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Laptop, Moon, Sun } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
+import { toast } from '../ui/use-toast';
 
 const ThemeToggler = () => {
 	const { currency } = useCurrencyStore();
 	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 	const { theme, setTheme } = useTheme();
-	const { setIsLoadingUserPreferences } = useAuthLoadingStore();
+	const { setIsGlobalLoading } = useLoadingStore();
 
 	const { mutate } = useMutation({
 		mutationFn: updateUserPreferences,
 		onMutate: () => {
-			setIsLoadingUserPreferences(true);
+			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user'] });
 		},
+		onError: () => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while saving your theme preferences. Please try again',
+			});
+		},
 		onSettled: () => {
-			setIsLoadingUserPreferences(false);
+			setIsGlobalLoading(false);
 		},
 	});
 

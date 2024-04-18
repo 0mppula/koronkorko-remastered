@@ -8,30 +8,38 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { currencies } from '@/constants';
-import useAuthLoadingStore from '@/hooks/useAuthLoading';
 import useCurrencyStore from '@/hooks/useCurrency';
+import useLoadingStore from '@/hooks/useLoadingStore';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
+import { toast } from '../ui/use-toast';
 
 const PreferredCurrencyToggler = () => {
 	const { currency, setCurrency } = useCurrencyStore();
 	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 	const { resolvedTheme } = useTheme();
-	const { setIsLoadingUserPreferences } = useAuthLoadingStore();
+	const { setIsGlobalLoading } = useLoadingStore();
 
 	const { mutate } = useMutation({
 		mutationFn: updateUserPreferences,
 		onMutate: () => {
-			setIsLoadingUserPreferences(true);
+			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['user'] });
 		},
+		onError: () => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while saving your currency preferences. Please try again',
+			});
+		},
 		onSettled: () => {
-			setIsLoadingUserPreferences(false);
+			setIsGlobalLoading(false);
 		},
 	});
 
