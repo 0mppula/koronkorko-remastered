@@ -199,7 +199,7 @@ const Calculator = () => {
 		toast({
 			description: 'Form cleared',
 		});
-		form.reset();
+		form.reset(defaultValues);
 	};
 
 	const handleSaveUpdateStart = () => {
@@ -230,15 +230,18 @@ const Calculator = () => {
 	const handleCloseCalculation = () => {
 		setActiveCalculation(null);
 		setReport(null);
-		form.reset();
+		form.reset(defaultValues);
 		toast({
 			description: 'Calculation closed',
 		});
 	};
 
 	const handleImport = (calculation: MarkupCalculation) => {
-		const { cost, salesPrice } = calculation.formData;
-		const markupData = calculateMarkup(cost, salesPrice);
+		const calculationformData = calculation.formData;
+		const markupData = calculateMarkup(
+			calculationformData.cost,
+			calculationformData.salesPrice
+		);
 
 		setActiveCalculation(calculation);
 		toast({
@@ -247,8 +250,7 @@ const Calculator = () => {
 		setImportModalOpen(false);
 		setReport(markupData);
 
-		form.setValue('cost', cost);
-		form.setValue('salesPrice', salesPrice);
+		form.reset(calculationformData);
 	};
 
 	return (

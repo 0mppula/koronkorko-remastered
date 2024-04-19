@@ -38,7 +38,7 @@ const RenameCalculationModal = ({
 				name: activeCalculation?.name,
 			});
 		}
-	}, [isOpen, form]);
+	}, [isOpen]);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
