@@ -7,7 +7,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { currencies } from '@/constants';
+import { USER_QUERY_KEY, currencies } from '@/constants';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
@@ -29,7 +29,7 @@ const PreferredCurrencyToggler = () => {
 			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['user'] });
+			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
 			toast({

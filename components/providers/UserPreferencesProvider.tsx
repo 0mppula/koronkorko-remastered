@@ -1,8 +1,8 @@
 'use client';
 
-import { currencies } from '@/constants';
-import useLoadingStore from '@/hooks/useLoadingStore';
+import { USER_QUERY_KEY, currencies } from '@/constants';
 import useCurrencyStore from '@/hooks/useCurrency';
+import useLoadingStore from '@/hooks/useLoadingStore';
 import { getUser, updateUserPreferences } from '@/lib/queryFns/auth';
 import { User } from '@prisma/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +20,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const queryClient = useQueryClient();
 
 	const { data, isLoading, isFetching } = useQuery<User | null>({
-		queryKey: ['user', { sessionStatus }],
+		queryKey: [USER_QUERY_KEY, { sessionStatus }],
 		queryFn: () => getUser(sessionStatus),
 	});
 
@@ -30,7 +30,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['user'] });
+			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
 			toast({

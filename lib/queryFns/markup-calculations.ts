@@ -19,3 +19,11 @@ export const saveCalculation = async (variables: ISaveCalculationParam) => {
 
 	return data;
 };
+
+export const getCalculations = async () => {
+	const response = await axios.get(`${API_URL}`);
+
+	const data = await response.data;
+
+	return data;
+};

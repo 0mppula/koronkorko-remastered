@@ -13,6 +13,7 @@ interface FormControlsTopProps {
 	activeCalculation: MarkupCalculation | null;
 	closeCalcultion: () => void;
 	rename: () => void;
+	importCalculationStart: () => void;
 }
 
 const FormControlsTop = ({
@@ -21,6 +22,7 @@ const FormControlsTop = ({
 	activeCalculation,
 	closeCalcultion,
 	rename,
+	importCalculationStart,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
 	const { toast } = useToast();
@@ -30,7 +32,7 @@ const FormControlsTop = ({
 
 	const handleImport = () => {
 		if (isAuthenticated) {
-			// Open import modal
+			importCalculationStart();
 		} else {
 			toast({
 				description: 'Please login to import a calculation',

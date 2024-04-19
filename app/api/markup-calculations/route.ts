@@ -36,3 +36,23 @@ export async function POST(req: Request) {
 		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 }
+
+export async function GET() {
+	const session = await getAuthSession();
+
+	try {
+		if (!session) {
+			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
+		}
+
+		const calculations = await db.markupCalculation.findMany({
+			where: {
+				userId: session?.user.id,
+			},
+		});
+
+		return NextResponse.json(calculations);
+	} catch (error) {
+		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+	}
+}

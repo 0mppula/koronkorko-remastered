@@ -140,3 +140,6 @@ export const currencies = [
 	{ name: 'Japanese Yen', value: 'jpy', symbol: '¥', locale: 'en-US' },
 	{ name: 'Indian Rupee', value: 'inr', symbol: '₹', locale: 'en-US' },
 ] as const;
+
+export const USER_QUERY_KEY = 'user';
+export const MARKUP_CALCULATIONS_QUERY_KEY = 'markup-calculations';

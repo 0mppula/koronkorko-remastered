@@ -3,6 +3,7 @@
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
+import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
 import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,13 +15,18 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
+import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import useMarkupalculatorStore from '@/hooks/useMarkupalculatorStore';
-import { ISaveCalculationParam, saveCalculation } from '@/lib/queryFns/markup-calculations';
+import {
+	ISaveCalculationParam,
+	getCalculations,
+	saveCalculation,
+} from '@/lib/queryFns/markup-calculations';
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,6 +43,7 @@ const Calculator = () => {
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
 	const [report, setReport] = useState<ReportProps | null>(null);
 
+	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
 	const { activeCalculation, setActiveCalculation } = useMarkupalculatorStore();
 	const { toast } = useToast();
@@ -47,6 +54,15 @@ const Calculator = () => {
 			cost: 0,
 			salesPrice: 0,
 		},
+	});
+
+	const {
+		data: calculations,
+		isLoading: isCalculationsLoading,
+		isFetching,
+	} = useQuery<MarkupCalculation[]>({
+		queryKey: [MARKUP_CALCULATIONS_QUERY_KEY],
+		queryFn: getCalculations,
 	});
 
 	const { mutate: saveMutation } = useMutation<MarkupCalculation, unknown, ISaveCalculationParam>(
@@ -71,6 +87,7 @@ const Calculator = () => {
 			},
 			onSettled: () => {
 				setIsGlobalLoading(false);
+				queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
 			},
 		}
 	);
@@ -100,10 +117,6 @@ const Calculator = () => {
 		}
 	};
 
-	const handleRenameStart = () => {
-		setRenameModalOpen(true);
-	};
-
 	const closeSaveModal = () => {
 		setSaveModalOpen(false);
 	};
@@ -128,13 +141,22 @@ const Calculator = () => {
 				save={handleSave}
 			/>
 
+			<ImportCalculationModal
+				isOpen={importModalOpen}
+				setImportModalOpen={setImportModalOpen}
+				calculations={calculations}
+				isLoading={isCalculationsLoading || isFetching}
+				setActiveCalculation={setActiveCalculation}
+			/>
+
 			<FormContainer>
 				<FormControlsTop
 					reset={resetForm}
 					saveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
 					closeCalcultion={handleCloseCalcultion}
-					rename={handleRenameStart}
+					importCalculationStart={() => setImportModalOpen(true)}
+					rename={() => setRenameModalOpen(false)}
 				/>
 
 				<Form {...form}>

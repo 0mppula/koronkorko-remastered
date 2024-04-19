@@ -7,8 +7,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import useLoadingStore from '@/hooks/useLoadingStore';
+import { USER_QUERY_KEY } from '@/constants';
 import useCurrencyStore from '@/hooks/useCurrency';
+import useLoadingStore from '@/hooks/useLoadingStore';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Laptop, Moon, Sun } from 'lucide-react';
@@ -29,7 +30,7 @@ const ThemeToggler = () => {
 			setIsGlobalLoading(true);
 		},
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['user'] });
+			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
 			toast({
