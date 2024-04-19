@@ -1,9 +1,7 @@
-import { MarkupReportProps } from '@/app/(calculators)/markup-calculator/Calculator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MarkupCalculation } from '@prisma/client';
 import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Dispatch, SetStateAction } from 'react';
 import { ImSpinner8 } from 'react-icons/im';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -13,10 +11,9 @@ interface FormControlsTopProps {
 	reset: () => void;
 	saveUpdateStart: () => void;
 	activeCalculation: MarkupCalculation | null;
-	setActiveCalculation: (calculation: MarkupCalculation | null) => void;
-	setReport: Dispatch<SetStateAction<MarkupReportProps | null>>;
 	rename: () => void;
 	importCalculationStart: () => void;
+	handleCloseCalculation: () => void;
 }
 
 const FormControlsTop = ({
@@ -25,8 +22,7 @@ const FormControlsTop = ({
 	activeCalculation,
 	rename,
 	importCalculationStart,
-	setActiveCalculation,
-	setReport,
+	handleCloseCalculation,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
 	const { toast } = useToast();
@@ -34,20 +30,13 @@ const FormControlsTop = ({
 	const isAuthenticated = sessionStatus === 'authenticated';
 	const saveLoading = false;
 
-	const handleCloseCalculation = () => {
-		setActiveCalculation(null);
-		setReport(null);
-		toast({
-			description: 'Calculation closed',
-		});
-	};
-
 	const handleImport = () => {
 		if (isAuthenticated) {
 			importCalculationStart();
 		} else {
 			toast({
 				description: 'Please login to import a calculation',
+				variant: 'destructive',
 			});
 		}
 	};
@@ -58,6 +47,7 @@ const FormControlsTop = ({
 		} else {
 			toast({
 				description: 'Please login to save calculation',
+				variant: 'destructive',
 			});
 		}
 	};

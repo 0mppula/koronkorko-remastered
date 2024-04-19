@@ -23,8 +23,8 @@ import {
 	ISaveCalculationParam,
 	deleteCalculation,
 	getCalculations,
+	renameCalculation,
 	saveCalculation,
-	updateCalculation,
 } from '@/lib/queryFns/markup-calculations';
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,6 +40,18 @@ export interface MarkupReportProps {
 	markup: number;
 }
 
+const defaultValues = {
+	cost: 0,
+	salesPrice: 0,
+};
+
+const calculateMarkup = (cost: number, salesPrice: number) => {
+	const profit = salesPrice - cost;
+	const markup = (profit / cost) * 100;
+
+	return { profit, markup };
+};
+
 const Calculator = () => {
 	const [saveModalOpen, setSaveModalOpen] = useState(false);
 	const [importModalOpen, setImportModalOpen] = useState(false);
@@ -53,10 +65,7 @@ const Calculator = () => {
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
 		resolver: zodResolver(markupCalculatorSchema),
-		defaultValues: {
-			cost: 0,
-			salesPrice: 0,
-		},
+		defaultValues,
 	});
 
 	const {
@@ -118,6 +127,7 @@ const Calculator = () => {
 
 			if (activeCalculation?.id === variables.id) {
 				setActiveCalculation(null);
+				setReport(null);
 			}
 		},
 		onError: () => {
@@ -132,7 +142,7 @@ const Calculator = () => {
 	});
 
 	const { mutate: renameMutation } = useMutation({
-		mutationFn: updateCalculation,
+		mutationFn: renameCalculation,
 		onMutate(variables) {
 			const previousRecords: MarkupCalculation[] | undefined = queryClient.getQueryData([
 				MARKUP_CALCULATIONS_QUERY_KEY,
@@ -179,19 +189,17 @@ const Calculator = () => {
 
 	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
 		const { salesPrice, cost } = values;
+		const markupData = calculateMarkup(cost, salesPrice);
 
-		const profit = salesPrice - cost;
-		const markup = (profit / cost) * 100;
-
-		setReport({ profit, markup });
+		setReport(markupData);
 	};
 
 	const resetForm = () => {
-		form.reset();
 		setReport(null);
 		toast({
 			description: 'Form cleared',
 		});
+		form.reset();
 	};
 
 	const handleSaveUpdateStart = () => {
@@ -219,6 +227,30 @@ const Calculator = () => {
 		deleteMutation(id);
 	};
 
+	const handleCloseCalculation = () => {
+		setActiveCalculation(null);
+		setReport(null);
+		form.reset();
+		toast({
+			description: 'Calculation closed',
+		});
+	};
+
+	const handleImport = (calculation: MarkupCalculation) => {
+		const { cost, salesPrice } = calculation.formData;
+		const markupData = calculateMarkup(cost, salesPrice);
+
+		setActiveCalculation(calculation);
+		toast({
+			description: `${calculation.name} imported successfully`,
+		});
+		setImportModalOpen(false);
+		setReport(markupData);
+
+		form.setValue('cost', cost);
+		form.setValue('salesPrice', salesPrice);
+	};
+
 	return (
 		<>
 			<SaveCalculationModal
@@ -233,7 +265,7 @@ const Calculator = () => {
 				handleDelete={handleDelete}
 				calculations={calculations}
 				isLoading={isCalculationsLoading || isFetching}
-				setActiveCalculation={setActiveCalculation}
+				handleImport={handleImport}
 			/>
 
 			<RenameCalculationModal
@@ -248,8 +280,7 @@ const Calculator = () => {
 					reset={resetForm}
 					saveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
-					setActiveCalculation={setActiveCalculation}
-					setReport={setReport}
+					handleCloseCalculation={handleCloseCalculation}
 					importCalculationStart={() => setImportModalOpen(true)}
 					rename={() => setRenameModalOpen(true)}
 				/>

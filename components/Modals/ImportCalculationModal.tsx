@@ -9,15 +9,14 @@ import { Dispatch, Fragment, SetStateAction } from 'react';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
-import { toast } from '../ui/use-toast';
 
 interface ImportCalculationModalProps {
 	isOpen: boolean;
 	setImportModalOpen: Dispatch<SetStateAction<boolean>>;
 	calculations?: MarkupCalculation[];
 	isLoading: boolean;
-	setActiveCalculation: (value: MarkupCalculation | null) => void;
 	handleDelete: (id: string) => void;
+	handleImport: (calculation: MarkupCalculation) => void;
 }
 
 const ImportCalculationModal = ({
@@ -25,17 +24,9 @@ const ImportCalculationModal = ({
 	setImportModalOpen,
 	calculations,
 	isLoading,
-	setActiveCalculation,
 	handleDelete,
+	handleImport,
 }: ImportCalculationModalProps) => {
-	const handleImport = (calculation: MarkupCalculation) => {
-		setActiveCalculation(calculation);
-		toast({
-			description: `${calculation.name} imported successfully`,
-		});
-		setImportModalOpen(false);
-	};
-
 	const handleDeleteCalculation = (id: string) => {
 		handleDelete(id);
 	};

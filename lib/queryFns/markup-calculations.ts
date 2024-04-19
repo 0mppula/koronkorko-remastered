@@ -42,7 +42,7 @@ export const deleteCalculation = async (id: string) => {
 	return data;
 };
 
-export const updateCalculation = async (updatedCalculation: MarkupCalculation) => {
+export const renameCalculation = async (updatedCalculation: MarkupCalculation) => {
 	const response = await axios.put(`${API_URL}/${updatedCalculation.id}`, updatedCalculation);
 
 	const data = await response.data;
