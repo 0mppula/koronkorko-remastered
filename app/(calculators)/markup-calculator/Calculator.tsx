@@ -147,7 +147,9 @@ const Calculator = () => {
 
 					const index = old.findIndex((record) => record.id === variables.id);
 
-					return old.splice(index, 1, variables);
+					old.splice(index, 1, variables);
+
+					return old;
 				}
 			);
 
