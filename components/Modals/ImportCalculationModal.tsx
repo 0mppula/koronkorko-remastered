@@ -9,6 +9,7 @@ import { Dispatch, Fragment, SetStateAction } from 'react';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
+import { toast } from '../ui/use-toast';
 
 interface ImportCalculationModalProps {
 	isOpen: boolean;
@@ -29,6 +30,9 @@ const ImportCalculationModal = ({
 }: ImportCalculationModalProps) => {
 	const handleImport = (calculation: MarkupCalculation) => {
 		setActiveCalculation(calculation);
+		toast({
+			description: `${calculation.name} imported successfully`,
+		});
 		setImportModalOpen(false);
 	};
 

@@ -4,6 +4,7 @@ import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
+import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
 import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +24,7 @@ import {
 	deleteCalculation,
 	getCalculations,
 	saveCalculation,
+	updateCalculation,
 } from '@/lib/queryFns/markup-calculations';
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -129,6 +131,50 @@ const Calculator = () => {
 		},
 	});
 
+	const { mutate: renameMutation } = useMutation({
+		mutationFn: updateCalculation,
+		onMutate(variables) {
+			const previousRecords: MarkupCalculation[] | undefined = queryClient.getQueryData([
+				MARKUP_CALCULATIONS_QUERY_KEY,
+			]);
+
+			const uneditedRecord = previousRecords?.find((record) => record.id === variables.id);
+
+			queryClient.setQueryData<MarkupCalculation[]>(
+				[MARKUP_CALCULATIONS_QUERY_KEY],
+				(old) => {
+					if (!old) return;
+
+					const index = old.findIndex((record) => record.id === variables.id);
+
+					return old.splice(index, 1, variables);
+				}
+			);
+
+			setActiveCalculation(variables);
+			setRenameModalOpen(false);
+
+			return { uneditedRecord };
+		},
+		onSuccess: () => {
+			toast({
+				description: 'Calculation renamed successfully',
+			});
+		},
+		onError: (err, _, context) => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while renaming your calculation. Please try again later.',
+			});
+
+			setActiveCalculation(context?.uneditedRecord || null);
+			setRenameModalOpen(true);
+
+			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
+		},
+	});
+
 	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
 		const { salesPrice, cost } = values;
 
@@ -148,7 +194,7 @@ const Calculator = () => {
 
 	const handleSaveUpdateStart = () => {
 		if (activeCalculation) {
-			console.log('Update calculation');
+			// Update
 		} else {
 			setSaveModalOpen(true);
 		}
@@ -160,6 +206,11 @@ const Calculator = () => {
 
 	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
 		saveMutation({ name: data.name, data: form.getValues() });
+	};
+
+	const handleEdit = (data: z.infer<typeof calculationNameSchema>) => {
+		if (!activeCalculation) return;
+		renameMutation({ ...activeCalculation, name: data.name });
 	};
 
 	const handleDelete = (id: string) => {
@@ -183,6 +234,13 @@ const Calculator = () => {
 				setActiveCalculation={setActiveCalculation}
 			/>
 
+			<RenameCalculationModal
+				isOpen={renameModalOpen}
+				handleClose={() => setRenameModalOpen(false)}
+				edit={handleEdit}
+				activeCalculation={activeCalculation}
+			/>
+
 			<FormContainer>
 				<FormControlsTop
 					reset={resetForm}
@@ -191,7 +249,7 @@ const Calculator = () => {
 					setActiveCalculation={setActiveCalculation}
 					setReport={setReport}
 					importCalculationStart={() => setImportModalOpen(true)}
-					rename={() => setRenameModalOpen(false)}
+					rename={() => setRenameModalOpen(true)}
 				/>
 
 				<Form {...form}>
