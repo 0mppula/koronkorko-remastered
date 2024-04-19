@@ -20,6 +20,7 @@ import useLoadingStore from '@/hooks/useLoadingStore';
 import useMarkupalculatorStore from '@/hooks/useMarkupalculatorStore';
 import {
 	ISaveCalculationParam,
+	deleteCalculation,
 	getCalculations,
 	saveCalculation,
 } from '@/lib/queryFns/markup-calculations';
@@ -30,9 +31,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import CalculatationReport from './CalculatationReport';
+import CalculationReport from './CalculatationReport';
 
-export interface ReportProps {
+export interface MarkupReportProps {
 	profit: number;
 	markup: number;
 }
@@ -41,7 +42,7 @@ const Calculator = () => {
 	const [saveModalOpen, setSaveModalOpen] = useState(false);
 	const [importModalOpen, setImportModalOpen] = useState(false);
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
-	const [report, setReport] = useState<ReportProps | null>(null);
+	const [report, setReport] = useState<MarkupReportProps | null>(null);
 
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
@@ -92,6 +93,42 @@ const Calculator = () => {
 		}
 	);
 
+	const { mutate: deleteMutation } = useMutation<MarkupCalculation, unknown, string>({
+		mutationFn: deleteCalculation,
+		onMutate: (id) => {
+			const previousRecords: MarkupCalculation[] | undefined = queryClient.getQueryData([
+				MARKUP_CALCULATIONS_QUERY_KEY,
+			]);
+
+			queryClient.setQueryData<MarkupCalculation[]>(
+				[MARKUP_CALCULATIONS_QUERY_KEY],
+				(old) => {
+					return old?.filter((record) => record.id !== id);
+				}
+			);
+
+			return { previousRecords };
+		},
+		onSuccess: (variables) => {
+			toast({
+				description: 'Calculation deleted successfully',
+			});
+
+			if (activeCalculation?.id === variables.id) {
+				setActiveCalculation(null);
+			}
+		},
+		onError: () => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while deleting your calculation. Please try again later.',
+			});
+
+			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
+		},
+	});
+
 	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
 		const { salesPrice, cost } = values;
 
@@ -125,12 +162,8 @@ const Calculator = () => {
 		saveMutation({ name: data.name, data: form.getValues() });
 	};
 
-	const handleCloseCalcultion = () => {
-		setActiveCalculation(null);
-		setReport(null);
-		toast({
-			description: 'Calculation closed',
-		});
+	const handleDelete = (id: string) => {
+		deleteMutation(id);
 	};
 
 	return (
@@ -144,6 +177,7 @@ const Calculator = () => {
 			<ImportCalculationModal
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
+				handleDelete={handleDelete}
 				calculations={calculations}
 				isLoading={isCalculationsLoading || isFetching}
 				setActiveCalculation={setActiveCalculation}
@@ -154,7 +188,8 @@ const Calculator = () => {
 					reset={resetForm}
 					saveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
-					closeCalcultion={handleCloseCalcultion}
+					setActiveCalculation={setActiveCalculation}
+					setReport={setReport}
 					importCalculationStart={() => setImportModalOpen(true)}
 					rename={() => setRenameModalOpen(false)}
 				/>
@@ -219,7 +254,7 @@ const Calculator = () => {
 				</Form>
 			</FormContainer>
 
-			{report && <CalculatationReport report={report} />}
+			{report && <CalculationReport report={report} />}
 		</>
 	);
 };

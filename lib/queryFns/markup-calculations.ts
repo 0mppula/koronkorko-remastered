@@ -27,3 +27,11 @@ export const getCalculations = async () => {
 
 	return data;
 };
+
+export const deleteCalculation = async (id: string) => {
+	const response = await axios.delete(`${API_URL}/${id}`);
+
+	const data = await response.data;
+
+	return data;
+};

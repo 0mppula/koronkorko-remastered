@@ -16,6 +16,7 @@ interface ImportCalculationModalProps {
 	calculations?: MarkupCalculation[];
 	isLoading: boolean;
 	setActiveCalculation: (value: MarkupCalculation | null) => void;
+	handleDelete: (id: string) => void;
 }
 
 const ImportCalculationModal = ({
@@ -24,14 +25,15 @@ const ImportCalculationModal = ({
 	calculations,
 	isLoading,
 	setActiveCalculation,
+	handleDelete,
 }: ImportCalculationModalProps) => {
 	const handleImport = (calculation: MarkupCalculation) => {
 		setActiveCalculation(calculation);
 		setImportModalOpen(false);
 	};
 
-	const handleDeleteCalculation = () => {
-		// delete calculation
+	const handleDeleteCalculation = (id: string) => {
+		handleDelete(id);
 	};
 
 	return (
@@ -80,7 +82,9 @@ const ImportCalculationModal = ({
 											<Tooltip>
 												<TooltipTrigger asChild>
 													<Button
-														onClick={handleDeleteCalculation}
+														onClick={() =>
+															handleDeleteCalculation(calculation.id)
+														}
 														variant="ghost"
 														size="icon"
 														className="h-8 w-8 hover:text-destructive"

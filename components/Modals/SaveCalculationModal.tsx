@@ -29,7 +29,7 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 		if (isOpen) {
 			form.reset();
 		}
-	}, [isOpen]);
+	}, [isOpen, form]);
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
