@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 			},
 		});
 
-		return NextResponse.json({ data: calculation });
+		return NextResponse.json(calculation);
 	} catch (error) {
 		if (error instanceof ZodError) {
 			return NextResponse.json({ error: error.issues }, { status: 400 });

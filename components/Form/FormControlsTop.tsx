@@ -1,43 +1,89 @@
+import { MarkupCalculation } from '@prisma/client';
 import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { ImSpinner8 } from 'react-icons/im';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
+import { useToast } from '../ui/use-toast';
 
 interface FormControlsTopProps {
 	reset: () => void;
-	handleSaveUpdateStart: () => void;
+	saveUpdateStart: () => void;
+	activeCalculation: MarkupCalculation | null;
+	closeCalcultion: () => void;
+	rename: () => void;
 }
 
-const FormControlsTop = ({ reset, handleSaveUpdateStart }: FormControlsTopProps) => {
+const FormControlsTop = ({
+	reset,
+	saveUpdateStart,
+	activeCalculation,
+	closeCalcultion,
+	rename,
+}: FormControlsTopProps) => {
+	const { status: sessionStatus } = useSession();
+	const { toast } = useToast();
+
+	const isAuthenticated = sessionStatus === 'authenticated';
 	const saveLoading = false;
+
+	const handleImport = () => {
+		if (isAuthenticated) {
+			// Open import modal
+		} else {
+			toast({
+				description: 'Please login to import a calculation',
+			});
+		}
+	};
+
+	const handleSaveUpdateStart = () => {
+		if (isAuthenticated) {
+			saveUpdateStart();
+		} else {
+			toast({
+				description: 'Please login to save calculation',
+			});
+		}
+	};
 
 	return (
 		<>
 			<div className="flex flex-wrap justify-between items-center gap-1 pb-1">
 				<div className="flex flex-wrap gap-1 items-center order-1 xs:order-none w-full xs:w-auto justify-between xs:justify-normal">
-					<p className="mr-1">calculation name</p>
+					{activeCalculation && (
+						<>
+							<p className="mr-1">{activeCalculation.name}</p>
 
-					<div className="flex gap-1">
-						<Button variant="ghost" size="icon" className="h-8 w-8">
-							<SquarePen className="h-4 w-4" aria-hidden />
+							<div className="flex gap-1">
+								<Button
+									onClick={rename}
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8"
+								>
+									<SquarePen className="h-4 w-4" aria-hidden />
 
-							<span className="sr-only">Rename calculation</span>
-						</Button>
+									<span className="sr-only">Rename calculation</span>
+								</Button>
 
-						<Button
-							variant="ghost"
-							size="icon"
-							className="h-8 w-8 hover:text-destructive"
-						>
-							<X className="h-4 w-4" aria-hidden />
+								<Button
+									onClick={closeCalcultion}
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 hover:text-destructive"
+								>
+									<X className="h-4 w-4" aria-hidden />
 
-							<span className="sr-only">Close calculation</span>
-						</Button>
-					</div>
+									<span className="sr-only">Close calculation</span>
+								</Button>
+							</div>
+						</>
+					)}
 				</div>
 
 				<div className="flex flex-wrap gap-1 justify-end xs:justify-normal w-full xs:w-auto">
-					<Button variant="ghost" size="icon" className="h-8 w-8">
+					<Button onClick={handleImport} variant="ghost" size="icon" className="h-8 w-8">
 						<FileDown className="h-4 w-4" aria-hidden />
 
 						<span className="sr-only">Import calculation</span>

@@ -6,6 +6,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { calculationNameSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Form } from '../ui/form';
@@ -24,14 +25,14 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 		},
 	});
 
+	useEffect(() => {
+		if (isOpen) {
+			form.reset();
+		}
+	}, [isOpen]);
+
 	return (
-		<Dialog
-			open={isOpen}
-			onOpenChange={() => {
-				form.reset();
-				handleClose();
-			}}
-		>
+		<Dialog open={isOpen} onOpenChange={handleClose}>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Save Calculation</DialogTitle>
@@ -46,14 +47,27 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 										<FormLabel>Calculation name</FormLabel>
 
 										<FormControl>
-											<Input placeholder="shadcn" {...field} />
+											<Input placeholder="Calculation name" {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
 
-							<Button type="submit">Submit</Button>
+							<div className="flex justify-center items-end gap-4">
+								<Button
+									onClick={handleClose}
+									type="button"
+									variant="secondary"
+									className="basis-1/2"
+								>
+									Cancel
+								</Button>
+
+								<Button type="submit" className="basis-1/2">
+									Save
+								</Button>
+							</div>
 						</form>
 					</Form>
 				</DialogHeader>

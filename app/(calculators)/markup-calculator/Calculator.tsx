@@ -94,11 +94,14 @@ const Calculator = () => {
 
 	const handleSaveUpdateStart = () => {
 		if (activeCalculation) {
-			// update
 			console.log('Update calculation');
 		} else {
 			setSaveModalOpen(true);
 		}
+	};
+
+	const handleRenameStart = () => {
+		setRenameModalOpen(true);
 	};
 
 	const closeSaveModal = () => {
@@ -107,6 +110,14 @@ const Calculator = () => {
 
 	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
 		saveMutation({ name: data.name, data: form.getValues() });
+	};
+
+	const handleCloseCalcultion = () => {
+		setActiveCalculation(null);
+		setReport(null);
+		toast({
+			description: 'Calculation closed',
+		});
 	};
 
 	return (
@@ -118,7 +129,13 @@ const Calculator = () => {
 			/>
 
 			<FormContainer>
-				<FormControlsTop reset={resetForm} handleSaveUpdateStart={handleSaveUpdateStart} />
+				<FormControlsTop
+					reset={resetForm}
+					saveUpdateStart={handleSaveUpdateStart}
+					activeCalculation={activeCalculation}
+					closeCalcultion={handleCloseCalcultion}
+					rename={handleRenameStart}
+				/>
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

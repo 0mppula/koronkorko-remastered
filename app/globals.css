@@ -15,8 +15,8 @@
 		/* #634587 */
 		--primary: 267.27 32.35% 40%;
 		--primary-foreground: 0 0% 98.04%;
-		--secondary: 0 0% 94.12%;
-		--secondary-foreground: 0 0% 10.59%;
+		--secondary: 0 0% 32.94%;
+		--secondary-foreground: 0 0% 98.04%;
 		/* #F5F8FB */
 		--muted: 210 42.86% 97.25%;
 		--muted-foreground: 0 0% 10.59%;
@@ -47,8 +47,8 @@
 		/* #B69ED3 */
 		--primary: 267.17 37.59% 72.35%;
 		--primary-foreground: 0 0% 10.59%;
-		--secondary: 0 0% 20.78%;
-		--secondary-foreground: 0 0% 98.04%;
+		--secondary: 0 0% 68.24%;
+		--secondary-foreground: 0 0% 10.59%;
 		/* #2B282F */
 		--muted: 265.71 8.05% 17.06%;
 		--muted-foreground: 0 0% 98.04%;
