@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { MarkupCalculation } from '@prisma/client';
 import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -56,64 +57,109 @@ const FormControlsTop = ({
 							<p className="mr-1">{activeCalculation.name}</p>
 
 							<div className="flex gap-1">
-								<Button
-									onClick={rename}
-									variant="ghost"
-									size="icon"
-									className="h-8 w-8"
-								>
-									<SquarePen className="h-4 w-4" aria-hidden />
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											onClick={rename}
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8"
+										>
+											<SquarePen className="h-4 w-4" aria-hidden />
 
-									<span className="sr-only">Rename calculation</span>
-								</Button>
+											<span className="sr-only">Rename calculation</span>
+										</Button>
+									</TooltipTrigger>
 
-								<Button
-									onClick={closeCalcultion}
-									variant="ghost"
-									size="icon"
-									className="h-8 w-8 hover:text-destructive"
-								>
-									<X className="h-4 w-4" aria-hidden />
+									<TooltipContent>
+										<p>Rename calculation</p>
+									</TooltipContent>
+								</Tooltip>
 
-									<span className="sr-only">Close calculation</span>
-								</Button>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											onClick={closeCalcultion}
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8 hover:text-destructive"
+										>
+											<X className="h-4 w-4" aria-hidden />
+
+											<span className="sr-only">Close calculation</span>
+										</Button>
+									</TooltipTrigger>
+
+									<TooltipContent>
+										<p>Close calculation</p>
+									</TooltipContent>
+								</Tooltip>
 							</div>
 						</>
 					)}
 				</div>
 
 				<div className="flex flex-wrap gap-1 justify-end xs:justify-normal w-full xs:w-auto">
-					<Button onClick={handleImport} variant="ghost" size="icon" className="h-8 w-8">
-						<FileDown className="h-4 w-4" aria-hidden />
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								onClick={handleImport}
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+							>
+								<FileDown className="h-4 w-4" aria-hidden />
 
-						<span className="sr-only">Import calculation</span>
-					</Button>
+								<span className="sr-only">Import calculation</span>
+							</Button>
+						</TooltipTrigger>
 
-					<Button
-						onClick={handleSaveUpdateStart}
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8"
-					>
-						{saveLoading ? (
-							<ImSpinner8 className="h-4 w-4 animate-spin" />
-						) : (
-							<Save className="h-4 w-4" aria-hidden />
-						)}
+						<TooltipContent>
+							<p>Import calculation</p>
+						</TooltipContent>
+					</Tooltip>
 
-						<span className="sr-only">Save calculation</span>
-					</Button>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								onClick={handleSaveUpdateStart}
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8"
+							>
+								{saveLoading ? (
+									<ImSpinner8 className="h-4 w-4 animate-spin" />
+								) : (
+									<Save className="h-4 w-4" aria-hidden />
+								)}
 
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-8 w-8 hover:text-destructive"
-						onClick={reset}
-					>
-						<RotateCw className="h-4 w-4 " />
+								<span className="sr-only">Save calculation</span>
+							</Button>
+						</TooltipTrigger>
 
-						<span className="sr-only">Reset calculator</span>
-					</Button>
+						<TooltipContent>
+							<p>Save calculation</p>
+						</TooltipContent>
+					</Tooltip>
+
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8 hover:text-destructive"
+								onClick={reset}
+							>
+								<RotateCw className="h-4 w-4 " />
+
+								<span className="sr-only">Reset calculator</span>
+							</Button>
+						</TooltipTrigger>
+
+						<TooltipContent>
+							<p>Reset calculator</p>
+						</TooltipContent>
+					</Tooltip>
 				</div>
 			</div>
 
