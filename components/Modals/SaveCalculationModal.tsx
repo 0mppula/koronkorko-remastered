@@ -34,7 +34,7 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 		>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Save Your Calculation</DialogTitle>
+					<DialogTitle>Save Calculation</DialogTitle>
 
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(save)} className="space-y-4">
