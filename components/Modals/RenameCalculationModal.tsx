@@ -15,14 +15,14 @@ import { Form } from '../ui/form';
 interface RenameCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
-	edit: (data: z.infer<typeof calculationNameSchema>) => void;
+	rename: (data: z.infer<typeof calculationNameSchema>) => void;
 	activeCalculation: MarkupCalculation | null;
 }
 
 const RenameCalculationModal = ({
 	isOpen,
 	handleClose,
-	edit,
+	rename,
 	activeCalculation,
 }: RenameCalculationModalProps) => {
 	const form = useForm<z.infer<typeof calculationNameSchema>>({
@@ -48,7 +48,7 @@ const RenameCalculationModal = ({
 				</DialogHeader>
 
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(edit)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(rename)} className="space-y-4">
 						<FormField
 							control={form.control}
 							name="name"

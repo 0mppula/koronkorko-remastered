@@ -242,7 +242,7 @@ const Calculator = () => {
 			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
 				updateMutation({ ...activeCalculation, formData: form.getValues() });
 			} else {
-				toast.info('No changes to save');
+				toast.success('Calculation updated');
 			}
 		} else {
 			setSaveModalOpen(true);
@@ -257,9 +257,14 @@ const Calculator = () => {
 		saveMutation({ name: data.name, formData: form.getValues() });
 	};
 
-	const handleEdit = (data: z.infer<typeof calculationNameSchema>) => {
+	const handleRename = (data: z.infer<typeof calculationNameSchema>) => {
 		if (!activeCalculation) return;
-		renameMutation({ ...activeCalculation, name: data.name });
+		// Only update if the name has changed
+		if (activeCalculation.name === data.name) {
+			setRenameModalOpen(false);
+		} else {
+			renameMutation({ ...activeCalculation, name: data.name });
+		}
 	};
 
 	const handleDelete = (id: string) => {
@@ -304,7 +309,7 @@ const Calculator = () => {
 			<RenameCalculationModal
 				isOpen={renameModalOpen}
 				handleClose={() => setRenameModalOpen(false)}
-				edit={handleEdit}
+				rename={handleRename}
 				activeCalculation={activeCalculation}
 			/>
 
