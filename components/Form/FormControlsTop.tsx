@@ -3,9 +3,9 @@ import { MarkupCalculation } from '@prisma/client';
 import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { ImSpinner8 } from 'react-icons/im';
+import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
-import { useToast } from '../ui/use-toast';
 
 interface FormControlsTopProps {
 	reset: () => void;
@@ -25,7 +25,6 @@ const FormControlsTop = ({
 	handleCloseCalculation,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
-	const { toast } = useToast();
 
 	const isAuthenticated = sessionStatus === 'authenticated';
 	const saveLoading = false;
@@ -34,10 +33,7 @@ const FormControlsTop = ({
 		if (isAuthenticated) {
 			importCalculationStart();
 		} else {
-			toast({
-				description: 'Please login to import a calculation',
-				variant: 'destructive',
-			});
+			toast.error('Please login to import a calculation');
 		}
 	};
 
@@ -45,10 +41,7 @@ const FormControlsTop = ({
 		if (isAuthenticated) {
 			saveUpdateStart();
 		} else {
-			toast({
-				description: 'Please login to save calculation',
-				variant: 'destructive',
-			});
+			toast.error('Please login to save calculation');
 		}
 	};
 

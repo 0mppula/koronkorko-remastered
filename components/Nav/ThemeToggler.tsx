@@ -15,7 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Laptop, Moon, Sun } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { toast } from '../ui/use-toast';
+import { toast } from 'sonner';
 
 const ThemeToggler = () => {
 	const { currency } = useCurrencyStore();
@@ -33,11 +33,9 @@ const ThemeToggler = () => {
 			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while saving your theme preferences. Please try again',
-			});
+			toast.error(
+				'Something went wrong while saving your theme preferences. Please try again'
+			);
 		},
 		onSettled: () => {
 			setIsGlobalLoading(false);

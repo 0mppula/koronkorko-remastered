@@ -14,7 +14,7 @@ import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
-import { toast } from '../ui/use-toast';
+import { toast } from 'sonner';
 
 const PreferredCurrencyToggler = () => {
 	const { currency, setCurrency } = useCurrencyStore();
@@ -32,11 +32,9 @@ const PreferredCurrencyToggler = () => {
 			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while saving your currency preferences. Please try again',
-			});
+			toast.error(
+				'Something went wrong while saving your currency preferences. Please try again'
+			);
 		},
 		onSettled: () => {
 			setIsGlobalLoading(false);

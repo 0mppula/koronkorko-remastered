@@ -11,15 +11,13 @@ import { LogIn } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { FaGithub, FaGoogle } from 'react-icons/fa';
+import { toast } from 'sonner';
 import { ButtonWithIcon } from '../ButtonWithIcon';
 import { Button } from '../ui/button';
-import { useToast } from '../ui/use-toast';
 
 const LoginModal = () => {
 	const [googleIsLoading, setGoogleIsLoading] = useState(false);
 	const [githubIsLoading, setGithubIsLoading] = useState(false);
-
-	const { toast } = useToast();
 
 	const socialAction = async (provider: string) => {
 		if (provider === 'google') {
@@ -32,10 +30,7 @@ const LoginModal = () => {
 
 		await signIn(provider).then((callback) => {
 			if (callback?.error) {
-				toast({
-					description: 'An error occurred while trying to login. Please try again.',
-					variant: 'destructive',
-				});
+				toast.error('An error occurred while trying to login. Please try again.');
 			}
 		});
 	};

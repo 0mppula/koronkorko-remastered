@@ -15,7 +15,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
 import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import {
@@ -32,6 +31,7 @@ import { MarkupCalculation } from '@prisma/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import CalculationReport from './CalculatationReport';
 
@@ -63,7 +63,6 @@ const Calculator = () => {
 
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
-	const { toast } = useToast();
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
 		resolver: zodResolver(markupCalculatorSchema),
@@ -86,16 +85,14 @@ const Calculator = () => {
 				setIsGlobalLoading(true);
 			},
 			onSuccess: (calculation) => {
-				toast({ description: 'Calculation created' });
+				toast.success('Calculation created');
 				setActiveCalculation(calculation);
 				setSaveModalOpen(false);
 			},
 			onError: () => {
-				toast({
-					variant: 'destructive',
-					description:
-						'Something went wrong while saving your calculation. Please try again later.',
-				});
+				toast.error(
+					'Something went wrong while saving your calculation. Please try again later.'
+				);
 			},
 			onSettled: () => {
 				setIsGlobalLoading(false);
@@ -121,7 +118,7 @@ const Calculator = () => {
 			return { prevCalculations };
 		},
 		onSuccess: (variables) => {
-			toast({ description: 'Calculation deleted' });
+			toast.success('Calculation deleted');
 
 			if (activeCalculation?.id === variables.id) {
 				setActiveCalculation(null);
@@ -129,11 +126,9 @@ const Calculator = () => {
 			}
 		},
 		onError: () => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while deleting your calculation. Please try again later.',
-			});
+			toast.error(
+				'Something went wrong while deleting your calculation. Please try again later.'
+			);
 
 			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
 		},
@@ -169,14 +164,12 @@ const Calculator = () => {
 			return { uneditedCalculation };
 		},
 		onSuccess: () => {
-			toast({ description: 'Calculation renamed' });
+			toast.success('Calculation renamed');
 		},
 		onError: (err, _, context) => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while renaming your calculation. Please try again later.',
-			});
+			toast.error(
+				'Something went wrong while renaming your calculation. Please try again later.'
+			);
 
 			setActiveCalculation(context?.uneditedCalculation || null);
 			setRenameModalOpen(true);
@@ -215,14 +208,12 @@ const Calculator = () => {
 			return { uneditedCalculation };
 		},
 		onSuccess: () => {
-			toast({ description: 'Calculation updated' });
+			toast.success('Calculation updated');
 		},
 		onError: (err, _, context) => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while saving your calculation. Please try again later.',
-			});
+			toast.error(
+				'Something went wrong while saving your calculation. Please try again later.'
+			);
 
 			setActiveCalculation(context?.uneditedCalculation || null);
 
@@ -236,7 +227,8 @@ const Calculator = () => {
 
 	const resetForm = () => {
 		setReport(null);
-		toast({ description: 'Form cleared' });
+		toast.success('Form cleared');
+
 		form.reset(defaultValues);
 	};
 
@@ -269,16 +261,14 @@ const Calculator = () => {
 		setActiveCalculation(null);
 		setReport(null);
 		form.reset(defaultValues);
-		toast({
-			description: 'Calculation closed',
-		});
+		toast.success('Calculation closed');
 	};
 
 	const handleImport = (calculation: MarkupCalculation) => {
 		const { formData, name } = calculation;
 
 		setActiveCalculation(calculation);
-		toast({ description: `${name} imported` });
+		toast.success(`${name} imported`);
 		setImportModalOpen(false);
 		setReport(calculateMarkup(formData));
 

@@ -9,8 +9,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { PropsWithChildren, useEffect } from 'react';
+import { toast } from 'sonner';
 import LargeSpinner from '../Spinners/LargeSpinner';
-import { toast } from '../ui/use-toast';
 
 const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const { theme, setTheme } = useTheme();
@@ -33,11 +33,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 			queryClient.invalidateQueries({ queryKey: [USER_QUERY_KEY] });
 		},
 		onError: () => {
-			toast({
-				variant: 'destructive',
-				description:
-					'Something went wrong while fetching your info. Please try again later.',
-			});
+			toast.error('Something went wrong while fetching your info. Please try again later.');
 		},
 		onSettled: () => {
 			setIsGlobalLoading(false);

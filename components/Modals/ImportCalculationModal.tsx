@@ -54,7 +54,7 @@ const ImportCalculationModal = ({
 											{calculation.name}
 										</div>
 
-										<div className="flex gap-2">
+										<div className="flex gap-2 pr-1">
 											<Tooltip>
 												<TooltipTrigger asChild>
 													<Button

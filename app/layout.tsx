@@ -2,7 +2,7 @@ import Footer from '@/components/Footer.tsx';
 import Nav from '@/components/Nav';
 import ToTop from '@/components/ToTop';
 import Providers from '@/components/providers';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from '@/components/ui/sonner';
 import { appName } from '@/constants';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
