@@ -18,7 +18,6 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
 import useLoadingStore from '@/hooks/useLoadingStore';
-import useMarkupalculatorStore from '@/hooks/useMarkupalculatorStore';
 import {
 	ISaveCalculationParam,
 	deleteCalculation,
@@ -56,11 +55,11 @@ const Calculator = () => {
 	const [saveModalOpen, setSaveModalOpen] = useState(false);
 	const [importModalOpen, setImportModalOpen] = useState(false);
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
+	const [activeCalculation, setActiveCalculation] = useState<MarkupCalculation | null>(null);
 	const [report, setReport] = useState<MarkupReportProps | null>(null);
 
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
-	const { activeCalculation, setActiveCalculation } = useMarkupalculatorStore();
 	const { toast } = useToast();
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
