@@ -22,6 +22,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const { data, isLoading, isFetching } = useQuery<User | null>({
 		queryKey: [USER_QUERY_KEY, { sessionStatus }],
 		queryFn: () => getUser(sessionStatus),
+		enabled: sessionStatus === 'authenticated',
 	});
 
 	const { mutate } = useMutation({
