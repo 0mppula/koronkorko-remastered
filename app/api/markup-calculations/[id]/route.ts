@@ -4,9 +4,10 @@ import { calculationNameStringSchema, markupCalculatorSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-export async function PUT(req: Request) {
+export const PUT = async (req: Request, { params }: { params: { id: string } }) => {
 	const session = await getAuthSession();
 	const body = await req.json();
+	const calculationId = params.id;
 
 	try {
 		if (!session) {
@@ -26,7 +27,7 @@ export async function PUT(req: Request) {
 
 		const calculation = await db.markupCalculation.update({
 			where: {
-				id: body.id as string,
+				id: calculationId as string,
 				userId: session?.user.id,
 			},
 			data: {
@@ -39,10 +40,11 @@ export async function PUT(req: Request) {
 	} catch (error) {
 		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
-}
+};
 
-export async function DELETE({ params: { id: calculationId } }: { params: { id: string } }) {
+export const DELETE = async (_: Request, { params }: { params: { id: string } }) => {
 	const session = await getAuthSession();
+	const calculationId = params.id;
 
 	try {
 		if (!session) {
@@ -60,4 +62,4 @@ export async function DELETE({ params: { id: calculationId } }: { params: { id: 
 	} catch (error) {
 		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
-}
+};

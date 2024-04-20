@@ -39,12 +39,14 @@ export interface MarkupReportProps {
 	markup: number;
 }
 
-const defaultValues = {
+const defaultValues: z.infer<typeof markupCalculatorSchema> = {
 	cost: 0,
 	salesPrice: 0,
 };
 
-const calculateMarkup = (cost: number, salesPrice: number) => {
+const calculateMarkup = (formData: z.infer<typeof markupCalculatorSchema>) => {
+	const { cost, salesPrice } = formData;
+
 	const profit = salesPrice - cost;
 	const markup = (profit / cost) * 100;
 
@@ -83,9 +85,7 @@ const Calculator = () => {
 				setIsGlobalLoading(true);
 			},
 			onSuccess: (calculation) => {
-				toast({
-					description: 'Calculation created successfully',
-				});
+				toast({ description: 'Calculation created successfully' });
 				setActiveCalculation(calculation);
 				setSaveModalOpen(false);
 			},
@@ -120,9 +120,7 @@ const Calculator = () => {
 			return { previousRecords };
 		},
 		onSuccess: (variables) => {
-			toast({
-				description: 'Calculation deleted successfully',
-			});
+			toast({ description: 'Calculation deleted successfully' });
 
 			if (activeCalculation?.id === variables.id) {
 				setActiveCalculation(null);
@@ -168,9 +166,7 @@ const Calculator = () => {
 			return { uneditedRecord };
 		},
 		onSuccess: () => {
-			toast({
-				description: 'Calculation renamed successfully',
-			});
+			toast({ description: 'Calculation renamed successfully' });
 		},
 		onError: (err, _, context) => {
 			toast({
@@ -187,17 +183,12 @@ const Calculator = () => {
 	});
 
 	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
-		const { salesPrice, cost } = values;
-		const markupData = calculateMarkup(cost, salesPrice);
-
-		setReport(markupData);
+		setReport(calculateMarkup(values));
 	};
 
 	const resetForm = () => {
 		setReport(null);
-		toast({
-			description: 'Form cleared',
-		});
+		toast({ description: 'Form cleared' });
 		form.reset(defaultValues);
 	};
 
@@ -236,20 +227,14 @@ const Calculator = () => {
 	};
 
 	const handleImport = (calculation: MarkupCalculation) => {
-		const calculationformData = calculation.formData;
-		const markupData = calculateMarkup(
-			calculationformData.cost,
-			calculationformData.salesPrice
-		);
+		const { formData, name } = calculation;
 
 		setActiveCalculation(calculation);
-		toast({
-			description: `${calculation.name} imported successfully`,
-		});
+		toast({ description: `${name} imported successfully` });
 		setImportModalOpen(false);
-		setReport(markupData);
+		setReport(calculateMarkup(formData));
 
-		form.reset(calculationformData);
+		form.reset(formData);
 	};
 
 	return (
