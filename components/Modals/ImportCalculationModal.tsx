@@ -13,7 +13,7 @@ import { Skeleton } from '../ui/skeleton';
 interface ImportCalculationModalProps {
 	isOpen: boolean;
 	setImportModalOpen: Dispatch<SetStateAction<boolean>>;
-	calculations?: MarkupCalculation[];
+	calculations?: MarkupCalculation[] | null;
 	isLoading: boolean;
 	handleDelete: (id: string) => void;
 	handleImport: (calculation: MarkupCalculation) => void;

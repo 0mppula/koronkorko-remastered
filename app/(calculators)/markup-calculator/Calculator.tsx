@@ -29,6 +29,7 @@ import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -63,6 +64,7 @@ const Calculator = () => {
 
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
+	const { status: sessionStatus } = useSession();
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
 		resolver: zodResolver(markupCalculatorSchema),
@@ -73,9 +75,11 @@ const Calculator = () => {
 		data: calculations,
 		isLoading: isCalculationsLoading,
 		isFetching,
-	} = useQuery<MarkupCalculation[]>({
+	} = useQuery<MarkupCalculation[] | null>({
 		queryKey: [MARKUP_CALCULATIONS_QUERY_KEY],
 		queryFn: getCalculations,
+		staleTime: 1_000 * 60 * 10, // 10 minutes
+		enabled: sessionStatus === 'authenticated',
 	});
 
 	const { mutate: saveMutation } = useMutation<MarkupCalculation, unknown, ISaveCalculationParam>(
@@ -234,7 +238,12 @@ const Calculator = () => {
 
 	const handleSaveUpdateStart = () => {
 		if (activeCalculation) {
-			updateMutation({ ...activeCalculation, formData: form.getValues() });
+			// Only update if the form data has changed
+			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
+				updateMutation({ ...activeCalculation, formData: form.getValues() });
+			} else {
+				toast.info('No changes to save');
+			}
 		} else {
 			setSaveModalOpen(true);
 		}
