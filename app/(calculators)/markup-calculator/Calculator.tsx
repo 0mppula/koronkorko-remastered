@@ -24,6 +24,7 @@ import {
 	getCalculations,
 	renameCalculation,
 	saveCalculation,
+	updateCalculation,
 } from '@/lib/queryFns/markup-calculations';
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -85,7 +86,7 @@ const Calculator = () => {
 				setIsGlobalLoading(true);
 			},
 			onSuccess: (calculation) => {
-				toast({ description: 'Calculation created successfully' });
+				toast({ description: 'Calculation created' });
 				setActiveCalculation(calculation);
 				setSaveModalOpen(false);
 			},
@@ -106,7 +107,7 @@ const Calculator = () => {
 	const { mutate: deleteMutation } = useMutation<MarkupCalculation, unknown, string>({
 		mutationFn: deleteCalculation,
 		onMutate: (id) => {
-			const previousRecords: MarkupCalculation[] | undefined = queryClient.getQueryData([
+			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
 				MARKUP_CALCULATIONS_QUERY_KEY,
 			]);
 
@@ -117,10 +118,10 @@ const Calculator = () => {
 				}
 			);
 
-			return { previousRecords };
+			return { prevCalculations };
 		},
 		onSuccess: (variables) => {
-			toast({ description: 'Calculation deleted successfully' });
+			toast({ description: 'Calculation deleted' });
 
 			if (activeCalculation?.id === variables.id) {
 				setActiveCalculation(null);
@@ -141,11 +142,13 @@ const Calculator = () => {
 	const { mutate: renameMutation } = useMutation({
 		mutationFn: renameCalculation,
 		onMutate(variables) {
-			const previousRecords: MarkupCalculation[] | undefined = queryClient.getQueryData([
+			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
 				MARKUP_CALCULATIONS_QUERY_KEY,
 			]);
 
-			const uneditedRecord = previousRecords?.find((record) => record.id === variables.id);
+			const uneditedCalculation = prevCalculations?.find(
+				(record) => record.id === variables.id
+			);
 
 			queryClient.setQueryData<MarkupCalculation[]>(
 				[MARKUP_CALCULATIONS_QUERY_KEY],
@@ -163,10 +166,10 @@ const Calculator = () => {
 			setActiveCalculation(variables);
 			setRenameModalOpen(false);
 
-			return { uneditedRecord };
+			return { uneditedCalculation };
 		},
 		onSuccess: () => {
-			toast({ description: 'Calculation renamed successfully' });
+			toast({ description: 'Calculation renamed' });
 		},
 		onError: (err, _, context) => {
 			toast({
@@ -175,8 +178,53 @@ const Calculator = () => {
 					'Something went wrong while renaming your calculation. Please try again later.',
 			});
 
-			setActiveCalculation(context?.uneditedRecord || null);
+			setActiveCalculation(context?.uneditedCalculation || null);
 			setRenameModalOpen(true);
+
+			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
+		},
+	});
+
+	const { mutate: updateMutation } = useMutation({
+		mutationFn: updateCalculation,
+		onMutate(variables) {
+			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
+				MARKUP_CALCULATIONS_QUERY_KEY,
+			]);
+
+			const uneditedCalculation = prevCalculations?.find(
+				(record) => record.id === variables.id
+			);
+
+			queryClient.setQueryData<MarkupCalculation[]>(
+				[MARKUP_CALCULATIONS_QUERY_KEY],
+				(old) => {
+					if (!old) return;
+
+					const index = old.findIndex((record) => record.id === variables.id);
+
+					old.splice(index, 1, variables);
+
+					return old;
+				}
+			);
+
+			setActiveCalculation(variables);
+			setRenameModalOpen(false);
+
+			return { uneditedCalculation };
+		},
+		onSuccess: () => {
+			toast({ description: 'Calculation updated' });
+		},
+		onError: (err, _, context) => {
+			toast({
+				variant: 'destructive',
+				description:
+					'Something went wrong while saving your calculation. Please try again later.',
+			});
+
+			setActiveCalculation(context?.uneditedCalculation || null);
 
 			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
 		},
@@ -194,7 +242,7 @@ const Calculator = () => {
 
 	const handleSaveUpdateStart = () => {
 		if (activeCalculation) {
-			// Update
+			updateMutation({ ...activeCalculation, formData: form.getValues() });
 		} else {
 			setSaveModalOpen(true);
 		}
@@ -205,7 +253,7 @@ const Calculator = () => {
 	};
 
 	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
-		saveMutation({ name: data.name, data: form.getValues() });
+		saveMutation({ name: data.name, formData: form.getValues() });
 	};
 
 	const handleEdit = (data: z.infer<typeof calculationNameSchema>) => {
@@ -230,7 +278,7 @@ const Calculator = () => {
 		const { formData, name } = calculation;
 
 		setActiveCalculation(calculation);
-		toast({ description: `${name} imported successfully` });
+		toast({ description: `${name} imported` });
 		setImportModalOpen(false);
 		setReport(calculateMarkup(formData));
 

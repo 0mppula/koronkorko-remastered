@@ -30,10 +30,7 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 				id: calculationId as string,
 				userId: session?.user.id,
 			},
-			data: {
-				formData,
-				name,
-			},
+			data: { formData, name },
 		});
 
 		return NextResponse.json(calculation);

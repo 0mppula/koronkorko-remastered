@@ -33,7 +33,7 @@ const LoginModal = () => {
 		await signIn(provider).then((callback) => {
 			if (callback?.error) {
 				toast({
-					description: 'An error occurred. Please try again later.',
+					description: 'An error occurred while trying to login. Please try again.',
 					variant: 'destructive',
 				});
 			}

@@ -48,7 +48,11 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 									<FormLabel>Calculation name</FormLabel>
 
 									<FormControl>
-										<Input placeholder="Calculation name" {...field} />
+										<Input
+											placeholder="Calculation name"
+											{...field}
+											maxLength={30}
+										/>
 									</FormControl>
 									<FormMessage />
 								</FormItem>

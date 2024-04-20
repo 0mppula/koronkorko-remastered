@@ -58,7 +58,9 @@ const FormControlsTop = ({
 				<div className="flex flex-wrap gap-1 items-center order-1 xs:order-none w-full xs:w-auto justify-between xs:justify-normal">
 					{activeCalculation && (
 						<>
-							<p className="mr-1">{activeCalculation.name}</p>
+							<p className="text-ellipsis whitespace-nowrap overflow-hidden w-44 xs:w-auto">
+								{activeCalculation.name}
+							</p>
 
 							<div className="flex gap-1">
 								<Tooltip>

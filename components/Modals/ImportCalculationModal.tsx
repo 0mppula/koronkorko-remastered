@@ -38,10 +38,10 @@ const ImportCalculationModal = ({
 					<DialogTitle>Import Calculation</DialogTitle>
 				</DialogHeader>
 
-				<ScrollArea className="max-h-[min(50svh,500px)] p-6 pt-0">
+				<ScrollArea className="min-h-[272px] max-h-[min(50svh,512px)] p-6 pt-0">
 					{isLoading ? (
 						<div className="flex flex-col gap-4">
-							{Array.from({ length: 3 }).map((_, i) => (
+							{Array.from({ length: 5 }).map((_, i) => (
 								<Skeleton key={`markup-calculation-${i}`} className="h-8" />
 							))}
 						</div>
@@ -49,8 +49,10 @@ const ImportCalculationModal = ({
 						<ul className="flex flex-col">
 							{calculations.map((calculation) => (
 								<Fragment key={calculation.id}>
-									<li className="flex items-center justify-between">
-										<div>{calculation.name}</div>
+									<li className="flex items-center gap-x-4 gap-y-2 flex-wrap justify-between">
+										<div className="text-ellipsis whitespace-nowrap overflow-hidden w-44 xs:w-auto">
+											{calculation.name}
+										</div>
 
 										<div className="flex gap-2">
 											<Tooltip>

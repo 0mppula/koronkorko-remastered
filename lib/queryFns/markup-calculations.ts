@@ -7,19 +7,11 @@ const API_URL = '/api/markup-calculations';
 
 export interface ISaveCalculationParam {
 	name: string;
-	data: z.infer<typeof markupCalculatorSchema>;
+	formData: z.infer<typeof markupCalculatorSchema>;
 }
 
-export interface IUpdateCalculationParam {
-	name?: string;
-	data?: z.infer<typeof markupCalculatorSchema>;
-}
-
-export const saveCalculation = async (variables: ISaveCalculationParam) => {
-	const response = await axios.post(`${API_URL}`, {
-		name: variables.name,
-		formData: variables.data,
-	});
+export const saveCalculation = async ({ name, formData }: ISaveCalculationParam) => {
+	const response = await axios.post(`${API_URL}`, { name, formData });
 
 	const data = await response.data;
 
@@ -44,6 +36,14 @@ export const deleteCalculation = async (id: string) => {
 
 export const renameCalculation = async (updatedCalculation: MarkupCalculation) => {
 	const response = await axios.put(`${API_URL}/${updatedCalculation.id}`, updatedCalculation);
+
+	const data = await response.data;
+
+	return data;
+};
+
+export const updateCalculation = async ({ id, formData, name }: MarkupCalculation) => {
+	const response = await axios.put(`${API_URL}/${id}`, { formData, name });
 
 	const data = await response.data;
 
