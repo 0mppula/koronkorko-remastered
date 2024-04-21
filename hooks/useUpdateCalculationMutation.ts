@@ -1,37 +1,38 @@
-import { HasId } from '@/types/calculations';
+import { IUpdateCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { IHasFormData } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
-const useUpdateCalculationMutation = <TCalculation extends HasId>(
+const useUpdateCalculationMutation = <TFormData, TCalculation extends IHasFormData<TFormData>>(
 	queryKey: string,
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
-	mutationFn: MutationFunction<TCalculation, TCalculation>
+	mutationFn: MutationFunction<TCalculation, IUpdateCalculationParam<TFormData, TCalculation>>
 ) => {
 	const queryClient = useQueryClient();
 
 	const mutation = useMutation({
 		mutationFn,
-		onMutate(variables) {
+		onMutate(params) {
 			const prevCalculations: TCalculation[] | undefined = queryClient.getQueryData([
 				queryKey,
 			]);
 
 			const uneditedCalculation = prevCalculations?.find(
-				(record) => record.id === variables.id
+				(record) => record.id === params.updatedCalculation.id
 			);
 
 			queryClient.setQueryData<TCalculation[]>([queryKey], (old) => {
 				if (!old) return;
 
-				const index = old.findIndex((record) => record.id === variables.id);
+				const index = old.findIndex((record) => record.id === params.updatedCalculation.id);
 
-				old.splice(index, 1, variables);
+				old.splice(index, 1, params.updatedCalculation);
 
 				return old;
 			});
 
-			setActiveCalculation(variables);
+			setActiveCalculation(params.updatedCalculation);
 
 			return { uneditedCalculation };
 		},

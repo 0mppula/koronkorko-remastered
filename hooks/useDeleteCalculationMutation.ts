@@ -1,26 +1,27 @@
-import { HasId } from '@/types/calculations';
+import { IDeleteCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { IHasId } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
-const useDeleteCalculationMutation = <TReportProps, TCalculation extends HasId, TVariables = void>(
+const useDeleteCalculationMutation = <TReportProps, TCalculation extends IHasId>(
 	queryKey: string,
 	activeCalculation: TCalculation | null,
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
 	setReport: Dispatch<SetStateAction<TReportProps | null>>,
-	mutationFn: MutationFunction<TCalculation, TVariables>
+	mutationFn: MutationFunction<TCalculation, IDeleteCalculationParam>
 ) => {
 	const queryClient = useQueryClient();
 
-	const mutation = useMutation<TCalculation, unknown, TVariables>({
+	const mutation = useMutation<TCalculation, unknown, IDeleteCalculationParam>({
 		mutationFn,
-		onMutate: (id) => {
+		onMutate: (params) => {
 			const prevCalculations: TCalculation[] | undefined = queryClient.getQueryData([
 				queryKey,
 			]);
 
 			queryClient.setQueryData<TCalculation[]>([queryKey], (old) => {
-				return old?.filter((record) => record.id !== id);
+				return old?.filter((record) => record.id !== params.id);
 			});
 
 			return { prevCalculations };

@@ -21,7 +21,7 @@ import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
 import useUpdateCalculationMutation from '@/hooks/useUpdateCalculationMutation';
 import {
-	ISaveCalculationParam,
+	MARKUP_CALCULATIONS_API_URL,
 	deleteCalculation,
 	getCalculations,
 	renameCalculation,
@@ -78,20 +78,19 @@ const Calculator = () => {
 		isFetching,
 	} = useQuery<MarkupCalculation[] | null>({
 		queryKey: [MARKUP_CALCULATIONS_QUERY_KEY],
-		queryFn: getCalculations,
+		queryFn: () => getCalculations(MARKUP_CALCULATIONS_API_URL),
 		staleTime: 1_000 * 60 * 10, // 10 minutes
 		enabled: sessionStatus === 'authenticated',
 	});
 
 	const { mutate: saveMutation } = useSaveCalculationMutation<
 		MarkupCalculation,
-		ISaveCalculationParam
+		z.infer<typeof markupCalculatorSchema>
 	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, saveCalculation, setSaveModalOpen);
 
 	const { mutate: deleteMutation } = useDeleteCalculationMutation<
 		MarkupReportProps,
-		MarkupCalculation,
-		string
+		MarkupCalculation
 	>(
 		MARKUP_CALCULATIONS_QUERY_KEY,
 		activeCalculation,
@@ -107,11 +106,10 @@ const Calculator = () => {
 		renameCalculation
 	);
 
-	const { mutate: updateMutation } = useUpdateCalculationMutation<MarkupCalculation>(
-		MARKUP_CALCULATIONS_QUERY_KEY,
-		setActiveCalculation,
-		updateCalculation
-	);
+	const { mutate: updateMutation } = useUpdateCalculationMutation<
+		z.infer<typeof markupCalculatorSchema>,
+		MarkupCalculation
+	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, updateCalculation);
 
 	const onCalculate = (values: z.infer<typeof markupCalculatorSchema>) => {
 		setReport(calculateMarkup(values));
@@ -128,7 +126,10 @@ const Calculator = () => {
 		if (activeCalculation) {
 			// Only update if the form data has changed
 			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
-				updateMutation({ ...activeCalculation, formData: form.getValues() });
+				updateMutation({
+					apiUrl: MARKUP_CALCULATIONS_API_URL,
+					updatedCalculation: { ...activeCalculation, formData: form.getValues() },
+				});
 			} else {
 				toast.success('Calculation updated');
 			}
@@ -142,7 +143,11 @@ const Calculator = () => {
 	};
 
 	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
-		saveMutation({ name: data.name, formData: form.getValues() });
+		saveMutation({
+			apiUrl: MARKUP_CALCULATIONS_API_URL,
+			name: data.name,
+			formData: form.getValues(),
+		});
 	};
 
 	const handleRename = (data: z.infer<typeof calculationNameSchema>) => {
@@ -151,12 +156,15 @@ const Calculator = () => {
 		if (activeCalculation.name === data.name) {
 			setRenameModalOpen(false);
 		} else {
-			renameMutation({ ...activeCalculation, name: data.name });
+			renameMutation({
+				apiUrl: MARKUP_CALCULATIONS_API_URL,
+				updatedCalculation: { ...activeCalculation, name: data.name },
+			});
 		}
 	};
 
 	const handleDelete = (id: string) => {
-		deleteMutation(id);
+		deleteMutation({ apiUrl: MARKUP_CALCULATIONS_API_URL, id });
 	};
 
 	const handleClose = () => {
