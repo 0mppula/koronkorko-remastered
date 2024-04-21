@@ -1,10 +1,7 @@
+import { HasId } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
-
-interface HasId {
-	id: string;
-}
 
 const useDeleteCalculationMutation = <TReportProps, TCalculation extends HasId, TVariables = void>(
 	queryKey: string,

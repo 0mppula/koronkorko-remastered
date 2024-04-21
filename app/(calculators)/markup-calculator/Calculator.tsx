@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
 import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
+import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
 import {
 	ISaveCalculationParam,
@@ -99,49 +100,12 @@ const Calculator = () => {
 		deleteCalculation
 	);
 
-	const { mutate: renameMutation } = useMutation({
-		mutationFn: renameCalculation,
-		onMutate(variables) {
-			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
-				MARKUP_CALCULATIONS_QUERY_KEY,
-			]);
-
-			const uneditedCalculation = prevCalculations?.find(
-				(record) => record.id === variables.id
-			);
-
-			queryClient.setQueryData<MarkupCalculation[]>(
-				[MARKUP_CALCULATIONS_QUERY_KEY],
-				(old) => {
-					if (!old) return;
-
-					const index = old.findIndex((record) => record.id === variables.id);
-
-					old.splice(index, 1, variables);
-
-					return old;
-				}
-			);
-
-			setActiveCalculation(variables);
-			setRenameModalOpen(false);
-
-			return { uneditedCalculation };
-		},
-		onSuccess: () => {
-			toast.success('Calculation renamed');
-		},
-		onError: (err, _, context) => {
-			toast.error(
-				'Something went wrong while renaming your calculation. Please try again later.'
-			);
-
-			setActiveCalculation(context?.uneditedCalculation || null);
-			setRenameModalOpen(true);
-
-			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
-		},
-	});
+	const { mutate: renameMutation } = useRenameCalculationMutation<MarkupCalculation>(
+		MARKUP_CALCULATIONS_QUERY_KEY,
+		setActiveCalculation,
+		setRenameModalOpen,
+		renameCalculation
+	);
 
 	const { mutate: updateMutation } = useMutation({
 		mutationFn: updateCalculation,

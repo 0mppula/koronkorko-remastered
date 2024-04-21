@@ -54,7 +54,7 @@ export const featuredApps = [
 		description:
 			'An all-in-one personal finance tracker. Users can track their money, income, net worth, debts, and everything in between.',
 	},
-];
+] as const;
 
 export const footerLinks = [
 	{
@@ -108,7 +108,7 @@ export const footerLinks = [
 			{ url: 'https://www.investopedia.com/', text: 'Investopedia' },
 		],
 	},
-];
+] as const;
 
 export const footerSocialMedia = [
 	{
@@ -131,7 +131,7 @@ export const footerSocialMedia = [
 		url: 'https://github.com/0mppula/money-mapper',
 		Icon: FaCode,
 	},
-];
+] as const;
 
 export const currencies = [
 	{ name: 'United States dollar', value: 'usd', symbol: '$', locale: 'en-US' },
@@ -141,5 +141,5 @@ export const currencies = [
 	{ name: 'Indian Rupee', value: 'inr', symbol: '₹', locale: 'en-US' },
 ] as const;
 
-export const USER_QUERY_KEY = 'user';
-export const MARKUP_CALCULATIONS_QUERY_KEY = 'markup-calculations';
+export const USER_QUERY_KEY = 'user' as const;
+export const MARKUP_CALCULATIONS_QUERY_KEY = 'markup-calculations' as const;
