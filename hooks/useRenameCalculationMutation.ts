@@ -1,11 +1,12 @@
-import { IRenameCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { QUERY_KEYS } from '@/constants/api';
+import { IRenameCalculationParam } from '@/lib/queryFns/calculations';
 import { IHasId } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
 const useRenameCalculationMutation = <TCalculation extends IHasId>(
-	queryKey: string,
+	queryKey: (typeof QUERY_KEYS)[number],
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
 	setRenameModalOpen: (value: SetStateAction<boolean>) => void,
 	mutationFn: MutationFunction<TCalculation, IRenameCalculationParam<TCalculation>>

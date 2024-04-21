@@ -3,7 +3,7 @@ import Nav from '@/components/Nav';
 import ToTop from '@/components/ToTop';
 import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
-import { appName } from '@/constants';
+import { appName } from '@/constants/data';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';

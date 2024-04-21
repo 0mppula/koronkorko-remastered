@@ -1,11 +1,12 @@
-import { IUpdateCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { QUERY_KEYS } from '@/constants/api';
+import { IUpdateCalculationParam } from '@/lib/queryFns/calculations';
 import { IHasFormData } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
 const useUpdateCalculationMutation = <TFormData, TCalculation extends IHasFormData<TFormData>>(
-	queryKey: string,
+	queryKey: (typeof QUERY_KEYS)[number],
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
 	mutationFn: MutationFunction<TCalculation, IUpdateCalculationParam<TFormData, TCalculation>>
 ) => {

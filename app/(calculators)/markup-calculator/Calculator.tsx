@@ -15,19 +15,18 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
-import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
+import { MARKUP_CALCULATIONS_API_URL, MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants/api';
 import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
 import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
 import useUpdateCalculationMutation from '@/hooks/useUpdateCalculationMutation';
 import {
-	MARKUP_CALCULATIONS_API_URL,
 	deleteCalculation,
 	getCalculations,
 	renameCalculation,
 	saveCalculation,
 	updateCalculation,
-} from '@/lib/queryFns/markup-calculations';
+} from '@/lib/queryFns/calculations';
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';

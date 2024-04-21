@@ -1,11 +1,12 @@
-import { IDeleteCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { QUERY_KEYS } from '@/constants/api';
+import { IDeleteCalculationParam } from '@/lib/queryFns/calculations';
 import { IHasId } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
 const useDeleteCalculationMutation = <TReportProps, TCalculation extends IHasId>(
-	queryKey: string,
+	queryKey: (typeof QUERY_KEYS)[number],
 	activeCalculation: TCalculation | null,
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
 	setReport: Dispatch<SetStateAction<TReportProps | null>>,

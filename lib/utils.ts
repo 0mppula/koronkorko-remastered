@@ -1,4 +1,4 @@
-import { calculators, currencies } from '@/constants';
+import { calculators, currencies } from '@/constants/data';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

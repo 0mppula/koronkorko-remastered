@@ -1,4 +1,4 @@
-import { currencies } from '@/constants';
+import { currencies } from '@/constants/data';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 

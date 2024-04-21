@@ -1,11 +1,12 @@
-import { ISaveCalculationParam } from '@/lib/queryFns/markup-calculations';
+import { QUERY_KEYS } from '@/constants/api';
+import { ISaveCalculationParam } from '@/lib/queryFns/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 import useLoadingStore from './useLoadingStore';
 
 const useSaveCalculationMutation = <TCalculation, TFormData>(
-	queryKey: string,
+	queryKey: (typeof QUERY_KEYS)[number],
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
 	mutationFn: MutationFunction<TCalculation, ISaveCalculationParam<TFormData>>,
 	setSaveModalOpen: (value: SetStateAction<boolean>) => void

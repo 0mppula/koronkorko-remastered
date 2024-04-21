@@ -1,6 +1,7 @@
 'use client';
 
-import { USER_QUERY_KEY, currencies } from '@/constants';
+import { USER_QUERY_KEY } from '@/constants/api';
+import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import { getUser, updateUserPreferences } from '@/lib/queryFns/auth';

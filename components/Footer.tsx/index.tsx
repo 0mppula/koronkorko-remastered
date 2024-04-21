@@ -1,4 +1,4 @@
-import { footerLinks, footerSocialMedia } from '@/constants';
+import { footerLinks, footerSocialMedia } from '@/constants/data';
 import TypographyH2 from '../TypographyH2';
 import { Separator } from '../ui/separator';
 import Link from './Link';

@@ -2,7 +2,7 @@ import TypographyH1 from '@/components/TypographyH1';
 import TypographyH2 from '@/components/TypographyH2';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { calculators, featuredApps } from '@/constants';
+import { calculators, featuredApps } from '@/constants/data';
 import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 

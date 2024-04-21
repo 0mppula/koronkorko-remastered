@@ -1,4 +1,4 @@
-import { currencies } from '@/constants';
+import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { cn } from '@/lib/utils';
 import { DollarSign, Euro, IndianRupee, JapaneseYen, Percent, PoundSterling } from 'lucide-react';
