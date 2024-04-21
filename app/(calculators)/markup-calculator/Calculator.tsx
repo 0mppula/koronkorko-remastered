@@ -16,7 +16,7 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
-import useLoadingStore from '@/hooks/useLoadingStore';
+import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
 import {
 	ISaveCalculationParam,
 	deleteCalculation,
@@ -63,7 +63,6 @@ const Calculator = () => {
 	const [report, setReport] = useState<MarkupReportProps | null>(null);
 
 	const queryClient = useQueryClient();
-	const { setIsGlobalLoading } = useLoadingStore();
 	const { status: sessionStatus } = useSession();
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
@@ -82,28 +81,10 @@ const Calculator = () => {
 		enabled: sessionStatus === 'authenticated',
 	});
 
-	const { mutate: saveMutation } = useMutation<MarkupCalculation, unknown, ISaveCalculationParam>(
-		{
-			mutationFn: saveCalculation,
-			onMutate: () => {
-				setIsGlobalLoading(true);
-			},
-			onSuccess: (calculation) => {
-				toast.success('Calculation created');
-				setActiveCalculation(calculation);
-				setSaveModalOpen(false);
-			},
-			onError: () => {
-				toast.error(
-					'Something went wrong while saving your calculation. Please try again later.'
-				);
-			},
-			onSettled: () => {
-				setIsGlobalLoading(false);
-				queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
-			},
-		}
-	);
+	const { mutate: saveMutation } = useSaveCalculationMutation<
+		MarkupCalculation,
+		ISaveCalculationParam
+	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, saveCalculation, setSaveModalOpen);
 
 	const { mutate: deleteMutation } = useMutation<MarkupCalculation, unknown, string>({
 		mutationFn: deleteCalculation,
