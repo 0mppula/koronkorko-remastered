@@ -12,7 +12,7 @@ const useDeleteCalculationMutation = <TReportProps, TCalculation extends HasId, 
 ) => {
 	const queryClient = useQueryClient();
 
-	const deleteMutation = useMutation<TCalculation, unknown, TVariables>({
+	const mutation = useMutation<TCalculation, unknown, TVariables>({
 		mutationFn,
 		onMutate: (id) => {
 			const prevCalculations: TCalculation[] | undefined = queryClient.getQueryData([
@@ -42,7 +42,7 @@ const useDeleteCalculationMutation = <TReportProps, TCalculation extends HasId, 
 		},
 	});
 
-	return deleteMutation;
+	return mutation;
 };
 
 export default useDeleteCalculationMutation;

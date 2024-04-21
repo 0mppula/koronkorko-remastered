@@ -12,7 +12,7 @@ const useSaveCalculationMutation = <TCalculation, TVariables = void>(
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
 
-	const saveMutation = useMutation<TCalculation, unknown, TVariables>({
+	const mutation = useMutation<TCalculation, unknown, TVariables>({
 		mutationFn,
 		onMutate: () => {
 			setIsGlobalLoading(true);
@@ -33,7 +33,7 @@ const useSaveCalculationMutation = <TCalculation, TVariables = void>(
 		},
 	});
 
-	return saveMutation;
+	return mutation;
 };
 
 export default useSaveCalculationMutation;

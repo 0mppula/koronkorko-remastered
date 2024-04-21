@@ -14,10 +14,10 @@ import { Form } from '../ui/form';
 interface SaveCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
-	save: (data: z.infer<typeof calculationNameSchema>) => void;
+	handleSave: (data: z.infer<typeof calculationNameSchema>) => void;
 }
 
-const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModalProps) => {
+const SaveCalculationModal = ({ isOpen, handleClose, handleSave }: SaveCalculationModalProps) => {
 	const form = useForm<z.infer<typeof calculationNameSchema>>({
 		resolver: zodResolver(calculationNameSchema),
 		defaultValues: {
@@ -39,7 +39,7 @@ const SaveCalculationModal = ({ isOpen, handleClose, save }: SaveCalculationModa
 				</DialogHeader>
 
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(save)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
 						<FormField
 							control={form.control}
 							name="name"

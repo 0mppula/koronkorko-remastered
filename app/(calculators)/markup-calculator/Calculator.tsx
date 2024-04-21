@@ -19,6 +19,7 @@ import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
 import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
 import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
+import useUpdateCalculationMutation from '@/hooks/useUpdateCalculationMutation';
 import {
 	ISaveCalculationParam,
 	deleteCalculation,
@@ -30,7 +31,7 @@ import {
 import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -64,7 +65,6 @@ const Calculator = () => {
 	const [activeCalculation, setActiveCalculation] = useState<MarkupCalculation | null>(null);
 	const [report, setReport] = useState<MarkupReportProps | null>(null);
 
-	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 
 	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
@@ -107,50 +107,13 @@ const Calculator = () => {
 		renameCalculation
 	);
 
-	const { mutate: updateMutation } = useMutation({
-		mutationFn: updateCalculation,
-		onMutate(variables) {
-			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
-				MARKUP_CALCULATIONS_QUERY_KEY,
-			]);
+	const { mutate: updateMutation } = useUpdateCalculationMutation<MarkupCalculation>(
+		MARKUP_CALCULATIONS_QUERY_KEY,
+		setActiveCalculation,
+		updateCalculation
+	);
 
-			const uneditedCalculation = prevCalculations?.find(
-				(record) => record.id === variables.id
-			);
-
-			queryClient.setQueryData<MarkupCalculation[]>(
-				[MARKUP_CALCULATIONS_QUERY_KEY],
-				(old) => {
-					if (!old) return;
-
-					const index = old.findIndex((record) => record.id === variables.id);
-
-					old.splice(index, 1, variables);
-
-					return old;
-				}
-			);
-
-			setActiveCalculation(variables);
-			setRenameModalOpen(false);
-
-			return { uneditedCalculation };
-		},
-		onSuccess: () => {
-			toast.success('Calculation updated');
-		},
-		onError: (err, _, context) => {
-			toast.error(
-				'Something went wrong while saving your calculation. Please try again later.'
-			);
-
-			setActiveCalculation(context?.uneditedCalculation || null);
-
-			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
-		},
-	});
-
-	const onSubmit = (values: z.infer<typeof markupCalculatorSchema>) => {
+	const onCalculate = (values: z.infer<typeof markupCalculatorSchema>) => {
 		setReport(calculateMarkup(values));
 	};
 
@@ -196,7 +159,7 @@ const Calculator = () => {
 		deleteMutation(id);
 	};
 
-	const handleCloseCalculation = () => {
+	const handleClose = () => {
 		setActiveCalculation(null);
 		setReport(null);
 		form.reset(defaultValues);
@@ -219,7 +182,7 @@ const Calculator = () => {
 			<SaveCalculationModal
 				isOpen={saveModalOpen}
 				handleClose={closeSaveModal}
-				save={handleSave}
+				handleSave={handleSave}
 			/>
 
 			<ImportCalculationModal
@@ -234,7 +197,7 @@ const Calculator = () => {
 			<RenameCalculationModal
 				isOpen={renameModalOpen}
 				handleClose={() => setRenameModalOpen(false)}
-				rename={handleRename}
+				handleRename={handleRename}
 				activeCalculation={activeCalculation}
 			/>
 
@@ -243,13 +206,13 @@ const Calculator = () => {
 					reset={resetForm}
 					saveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
-					handleCloseCalculation={handleCloseCalculation}
-					importCalculationStart={() => setImportModalOpen(true)}
-					rename={() => setRenameModalOpen(true)}
+					closeCalculation={handleClose}
+					importStart={() => setImportModalOpen(true)}
+					renameStart={() => setRenameModalOpen(true)}
 				/>
 
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(onCalculate)} className="space-y-4">
 						<div className="flex flex-col xs:flex-row gap-4">
 							<FormField
 								control={form.control}

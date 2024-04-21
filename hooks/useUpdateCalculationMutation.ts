@@ -3,10 +3,9 @@ import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-q
 import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 
-const useRenameCalculationMutation = <TCalculation extends HasId>(
+const useUpdateCalculationMutation = <TCalculation extends HasId>(
 	queryKey: string,
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
-	setRenameModalOpen: (value: SetStateAction<boolean>) => void,
 	mutationFn: MutationFunction<TCalculation, TCalculation>
 ) => {
 	const queryClient = useQueryClient();
@@ -33,20 +32,18 @@ const useRenameCalculationMutation = <TCalculation extends HasId>(
 			});
 
 			setActiveCalculation(variables);
-			setRenameModalOpen(false);
 
 			return { uneditedCalculation };
 		},
 		onSuccess: () => {
-			toast.success('Calculation renamed');
+			toast.success('Calculation updated');
 		},
 		onError: (err, _, context) => {
 			toast.error(
-				'Something went wrong while renaming your calculation. Please try again later.'
+				'Something went wrong while saving your calculation. Please try again later.'
 			);
 
 			setActiveCalculation(context?.uneditedCalculation || null);
-			setRenameModalOpen(true);
 
 			queryClient.invalidateQueries({ queryKey: [queryKey] });
 		},
@@ -55,4 +52,4 @@ const useRenameCalculationMutation = <TCalculation extends HasId>(
 	return mutation;
 };
 
-export default useRenameCalculationMutation;
+export default useUpdateCalculationMutation;

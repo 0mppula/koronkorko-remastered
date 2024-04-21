@@ -11,18 +11,18 @@ interface FormControlsTopProps {
 	reset: () => void;
 	saveUpdateStart: () => void;
 	activeCalculation: MarkupCalculation | null;
-	rename: () => void;
-	importCalculationStart: () => void;
-	handleCloseCalculation: () => void;
+	renameStart: () => void;
+	importStart: () => void;
+	closeCalculation: () => void;
 }
 
 const FormControlsTop = ({
 	reset,
 	saveUpdateStart,
 	activeCalculation,
-	rename,
-	importCalculationStart,
-	handleCloseCalculation,
+	renameStart,
+	importStart,
+	closeCalculation,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
 
@@ -31,7 +31,7 @@ const FormControlsTop = ({
 
 	const handleImport = () => {
 		if (isAuthenticated) {
-			importCalculationStart();
+			importStart();
 		} else {
 			toast.error('Please login to import a calculation');
 		}
@@ -59,7 +59,7 @@ const FormControlsTop = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											onClick={rename}
+											onClick={renameStart}
 											variant="ghost"
 											size="icon"
 											className="h-8 w-8"
@@ -78,7 +78,7 @@ const FormControlsTop = ({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
-											onClick={handleCloseCalculation}
+											onClick={closeCalculation}
 											variant="ghost"
 											size="icon"
 											className="h-8 w-8 hover:text-destructive"
