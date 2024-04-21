@@ -16,6 +16,7 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants';
+import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
 import {
 	ISaveCalculationParam,
@@ -86,38 +87,17 @@ const Calculator = () => {
 		ISaveCalculationParam
 	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, saveCalculation, setSaveModalOpen);
 
-	const { mutate: deleteMutation } = useMutation<MarkupCalculation, unknown, string>({
-		mutationFn: deleteCalculation,
-		onMutate: (id) => {
-			const prevCalculations: MarkupCalculation[] | undefined = queryClient.getQueryData([
-				MARKUP_CALCULATIONS_QUERY_KEY,
-			]);
-
-			queryClient.setQueryData<MarkupCalculation[]>(
-				[MARKUP_CALCULATIONS_QUERY_KEY],
-				(old) => {
-					return old?.filter((record) => record.id !== id);
-				}
-			);
-
-			return { prevCalculations };
-		},
-		onSuccess: (variables) => {
-			toast.success('Calculation deleted');
-
-			if (activeCalculation?.id === variables.id) {
-				setActiveCalculation(null);
-				setReport(null);
-			}
-		},
-		onError: () => {
-			toast.error(
-				'Something went wrong while deleting your calculation. Please try again later.'
-			);
-
-			queryClient.invalidateQueries({ queryKey: [MARKUP_CALCULATIONS_QUERY_KEY] });
-		},
-	});
+	const { mutate: deleteMutation } = useDeleteCalculationMutation<
+		MarkupReportProps,
+		MarkupCalculation,
+		string
+	>(
+		MARKUP_CALCULATIONS_QUERY_KEY,
+		activeCalculation,
+		setActiveCalculation,
+		setReport,
+		deleteCalculation
+	);
 
 	const { mutate: renameMutation } = useMutation({
 		mutationFn: renameCalculation,

@@ -3,16 +3,16 @@ import { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
 import useLoadingStore from './useLoadingStore';
 
-const useSaveCalculationMutation = <TActiveCalculation, TVariables = void>(
+const useSaveCalculationMutation = <TCalculation, TVariables = void>(
 	queryKey: string,
-	setActiveCalculation: Dispatch<SetStateAction<TActiveCalculation | null>>,
-	mutationFn: MutationFunction<TActiveCalculation, TVariables>,
+	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
+	mutationFn: MutationFunction<TCalculation, TVariables>,
 	setSaveModalOpen: (value: SetStateAction<boolean>) => void
 ) => {
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
 
-	const saveMutation = useMutation<TActiveCalculation, unknown, TVariables>({
+	const saveMutation = useMutation<TCalculation, unknown, TVariables>({
 		mutationFn,
 		onMutate: () => {
 			setIsGlobalLoading(true);
