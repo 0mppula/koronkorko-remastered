@@ -16,13 +16,17 @@ interface ReportProps {
 const Report = ({ report, isLoading = false }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
-	const { markup, profit } = report;
+	const { cost, salesPrice, markup, profit } = report;
 	return (
 		<ReportSummaryContainer>
 			{isLoading ? (
 				<ReportSpinner />
 			) : (
 				<ReportGroupContainer>
+					<ReportGroup header="Cost" value={formatCurrency(cost)} />
+
+					<ReportGroup header="Sales Price" value={formatCurrency(salesPrice)} />
+
 					<ReportGroup
 						header="Markup"
 						value={isFinite(markup) ? formatPercentage(markup) : 'N/A'}

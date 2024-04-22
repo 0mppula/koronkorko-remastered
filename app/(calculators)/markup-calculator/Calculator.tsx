@@ -30,6 +30,8 @@ import { useForm } from 'react-hook-form';
 import Report from './Report';
 
 export interface MarkupReportProps {
+	cost: number;
+	salesPrice: number;
 	profit: number;
 	markup: number;
 }

@@ -33,6 +33,9 @@ import { useForm } from 'react-hook-form';
 import Report from './Report';
 
 export interface BreakEvenPointReportProps {
+	fixedCosts: number;
+	variableCostPerUnit: number;
+	pricePerUnit: number;
 	breakEvenPointUnits: number;
 	breakEvenPointMoney: number;
 	contributionMarginMoney: number;

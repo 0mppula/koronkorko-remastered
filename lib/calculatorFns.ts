@@ -11,7 +11,7 @@ export const calculateMarkup = (formData: InferredMarkupCalculatorSchema): Marku
 	const profit = salesPrice - cost;
 	const markup = (profit / cost) * 100;
 
-	return { profit, markup };
+	return { cost, salesPrice, profit, markup };
 };
 
 export const calcualteBreakEvenPoint = (
@@ -29,6 +29,9 @@ export const calcualteBreakEvenPoint = (
 	const CMP = (CM / pricePerUnit) * 100;
 
 	return {
+		fixedCosts,
+		variableCostPerUnit,
+		pricePerUnit,
 		breakEvenPointUnits: BEP,
 		breakEvenPointMoney: BEPM,
 		contributionMarginMoney: CM,

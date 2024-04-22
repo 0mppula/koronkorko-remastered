@@ -18,6 +18,9 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
 	const {
+		fixedCosts,
+		pricePerUnit,
+		variableCostPerUnit,
 		breakEvenPointMoney,
 		breakEvenPointUnits,
 		contributionMarginMoney,
@@ -30,6 +33,22 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 				<ReportSpinner />
 			) : (
 				<ReportGroupContainer>
+					<ReportGroup
+						header="Fixed Costs"
+						value={formatCurrency(fixedCosts, currency)}
+					/>
+
+					<ReportGroup
+						header="Variable Cost Per Unit"
+						value={formatCurrency(pricePerUnit, currency)}
+					/>
+
+					<ReportGroup
+						fullWidth
+						header="Price Per Unit"
+						value={formatCurrency(variableCostPerUnit, currency)}
+					/>
+
 					<ReportGroup
 						header="Break Even Point (Unit)"
 						value={
