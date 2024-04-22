@@ -5,9 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { calculationNameSchema } from '@/schemas';
-import { InferredCalculationNameSchema } from '@/types/calculations';
+import { CalculationType, InferredCalculationNameSchema } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MarkupCalculation } from '@prisma/client';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Form } from '../ui/form';
@@ -16,7 +15,7 @@ interface RenameCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
 	handleRename: (data: InferredCalculationNameSchema) => void;
-	activeCalculation: MarkupCalculation | null;
+	activeCalculation: CalculationType | null;
 }
 
 const RenameCalculationModal = ({
