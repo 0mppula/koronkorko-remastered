@@ -14,6 +14,10 @@ export interface IHasFormData<TFormData> extends IHasId {
 	formData: TFormData;
 }
 
+export interface IHasFormDataAndName<TFormData> extends IHasFormData<TFormData> {
+	name: string;
+}
+
 export type InferredCalculationNameStringSchema = z.infer<typeof calculationNameStringSchema>;
 
 export type InferredCalculationNameSchema = z.infer<typeof calculationNameSchema>;

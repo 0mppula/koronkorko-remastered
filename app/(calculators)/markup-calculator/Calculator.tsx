@@ -16,6 +16,7 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_API_URL, MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants/api';
+import useCalculatorFns from '@/hooks/useCalculatorFns';
 import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
 import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
@@ -27,15 +28,14 @@ import {
 	saveCalculation,
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
-import { calculationNameSchema, markupCalculatorSchema } from '@/schemas';
+import { markupCalculatorSchema } from '@/schemas';
+import { InferredMarkupCalculatorSchema } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
 import CalculationReport from './CalculatationReport';
 
 export interface MarkupReportProps {
@@ -43,12 +43,12 @@ export interface MarkupReportProps {
 	markup: number;
 }
 
-const defaultValues: z.infer<typeof markupCalculatorSchema> = {
+const defaultValues: InferredMarkupCalculatorSchema = {
 	cost: 0,
 	salesPrice: 0,
 };
 
-const calculateMarkup = (formData: z.infer<typeof markupCalculatorSchema>) => {
+const calculateMarkup = (formData: InferredMarkupCalculatorSchema) => {
 	const { cost, salesPrice } = formData;
 
 	const profit = salesPrice - cost;
@@ -64,12 +64,12 @@ const Calculator = () => {
 	const [activeCalculation, setActiveCalculation] = useState<MarkupCalculation | null>(null);
 	const [report, setReport] = useState<MarkupReportProps | null>(null);
 
-	const { status: sessionStatus } = useSession();
-
-	const form = useForm<z.infer<typeof markupCalculatorSchema>>({
+	const form = useForm<InferredMarkupCalculatorSchema>({
 		resolver: zodResolver(markupCalculatorSchema),
 		defaultValues,
 	});
+
+	const { status: sessionStatus } = useSession();
 
 	const {
 		data: calculations,
@@ -84,7 +84,7 @@ const Calculator = () => {
 
 	const { mutate: saveMutation } = useSaveCalculationMutation<
 		MarkupCalculation,
-		z.infer<typeof markupCalculatorSchema>
+		InferredMarkupCalculatorSchema
 	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, saveCalculation, setSaveModalOpen);
 
 	const { mutate: deleteMutation } = useDeleteCalculationMutation<
@@ -106,83 +106,36 @@ const Calculator = () => {
 	);
 
 	const { mutate: updateMutation } = useUpdateCalculationMutation<
-		z.infer<typeof markupCalculatorSchema>,
+		InferredMarkupCalculatorSchema,
 		MarkupCalculation
 	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, updateCalculation);
 
-	const onCalculate = (values: z.infer<typeof markupCalculatorSchema>) => {
-		setReport(calculateMarkup(values));
-	};
-
-	const resetForm = () => {
-		setReport(null);
-		toast.success('Form cleared');
-
-		form.reset(defaultValues);
-	};
-
-	const handleSaveUpdateStart = () => {
-		if (activeCalculation) {
-			// Only update if the form data has changed
-			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
-				updateMutation({
-					apiUrl: MARKUP_CALCULATIONS_API_URL,
-					updatedCalculation: { ...activeCalculation, formData: form.getValues() },
-				});
-			} else {
-				toast.success('Calculation updated');
-			}
-		} else {
-			setSaveModalOpen(true);
-		}
-	};
-
-	const closeSaveModal = () => {
-		setSaveModalOpen(false);
-	};
-
-	const handleSave = (data: z.infer<typeof calculationNameSchema>) => {
-		saveMutation({
-			apiUrl: MARKUP_CALCULATIONS_API_URL,
-			name: data.name,
-			formData: form.getValues(),
-		});
-	};
-
-	const handleRename = (data: z.infer<typeof calculationNameSchema>) => {
-		if (!activeCalculation) return;
-		// Only update if the name has changed
-		if (activeCalculation.name === data.name) {
-			setRenameModalOpen(false);
-		} else {
-			renameMutation({
-				apiUrl: MARKUP_CALCULATIONS_API_URL,
-				updatedCalculation: { ...activeCalculation, name: data.name },
-			});
-		}
-	};
-
-	const handleDelete = (id: string) => {
-		deleteMutation({ apiUrl: MARKUP_CALCULATIONS_API_URL, id });
-	};
-
-	const handleClose = () => {
-		setActiveCalculation(null);
-		setReport(null);
-		form.reset(defaultValues);
-		toast.success('Calculation closed');
-	};
-
-	const handleImport = (calculation: MarkupCalculation) => {
-		const { formData, name } = calculation;
-
-		setActiveCalculation(calculation);
-		toast.success(`${name} imported`);
-		setImportModalOpen(false);
-		setReport(calculateMarkup(formData));
-
-		form.reset(formData);
-	};
+	const {
+		onCalculate,
+		resetForm,
+		handleSaveUpdateStart,
+		closeSaveModal,
+		handleSave,
+		handleRename,
+		handleClose,
+		handleDelete,
+		handleImport,
+	} = useCalculatorFns<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>(
+		setReport,
+		calculateMarkup,
+		defaultValues,
+		form,
+		activeCalculation,
+		MARKUP_CALCULATIONS_API_URL,
+		setSaveModalOpen,
+		updateMutation,
+		saveMutation,
+		setRenameModalOpen,
+		renameMutation,
+		setActiveCalculation,
+		deleteMutation,
+		setImportModalOpen
+	);
 
 	return (
 		<>
