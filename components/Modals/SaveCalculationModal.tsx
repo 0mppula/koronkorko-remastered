@@ -5,20 +5,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { calculationNameSchema } from '@/schemas';
+import { InferredCalculationNameSchema } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Form } from '../ui/form';
 
 interface SaveCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
-	handleSave: (data: z.infer<typeof calculationNameSchema>) => void;
+	handleSave: (data: InferredCalculationNameSchema) => void;
 }
 
 const SaveCalculationModal = ({ isOpen, handleClose, handleSave }: SaveCalculationModalProps) => {
-	const form = useForm<z.infer<typeof calculationNameSchema>>({
+	const form = useForm<InferredCalculationNameSchema>({
 		resolver: zodResolver(calculationNameSchema),
 		defaultValues: {
 			name: '',

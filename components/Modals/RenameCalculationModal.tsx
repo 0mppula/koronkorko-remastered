@@ -5,17 +5,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { calculationNameSchema } from '@/schemas';
+import { InferredCalculationNameSchema } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Form } from '../ui/form';
 
 interface RenameCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
-	handleRename: (data: z.infer<typeof calculationNameSchema>) => void;
+	handleRename: (data: InferredCalculationNameSchema) => void;
 	activeCalculation: MarkupCalculation | null;
 }
 
@@ -25,7 +25,7 @@ const RenameCalculationModal = ({
 	handleRename,
 	activeCalculation,
 }: RenameCalculationModalProps) => {
-	const form = useForm<z.infer<typeof calculationNameSchema>>({
+	const form = useForm<InferredCalculationNameSchema>({
 		resolver: zodResolver(calculationNameSchema),
 		defaultValues: {
 			name: '',
