@@ -19,13 +19,17 @@ export const formatPercentage = (value: number) => {
 	return formatted;
 };
 
-const getCurrencyLocale = (value: string): string => {
+const getCurrencyLocale = (value: (typeof currencies)[number]['value']): string => {
 	return currencies.find((currency) => currency.value === value)?.locale || 'en-US';
+};
+
+export const getCurrencySymbol = (value: (typeof currencies)[number]['value']): string => {
+	return currencies.find((currency) => currency.value === value)?.symbol || '$';
 };
 
 export const formatCurrency = (
 	value: number,
-	currency = 'usd',
+	currency: (typeof currencies)[number]['value'] = 'usd',
 	maximumFractionDigits = 2,
 	formatZero = true
 ) => {

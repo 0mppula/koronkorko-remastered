@@ -1,6 +1,5 @@
-import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { cn } from '@/lib/utils';
+import { cn, getCurrencySymbol } from '@/lib/utils';
 import { DollarSign, Euro, IndianRupee, JapaneseYen, Percent, PoundSterling } from 'lucide-react';
 import React from 'react';
 import { InputProps } from '../ui/input';
@@ -22,11 +21,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 					</>
 				);
 
-			const SRCurrencyName = (
-				<span className="sr-only">
-					{currencies.find((c) => c.value === currency)?.name}
-				</span>
-			);
+			const SRCurrencyName = <span className="sr-only">{getCurrencySymbol(currency)}</span>;
 
 			switch (currency) {
 				case 'eur':

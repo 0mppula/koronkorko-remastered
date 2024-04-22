@@ -4,9 +4,8 @@ import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportGroupContainer from '@/components/Report/ReportGroupContainer';
 import ReportSpinner from '@/components/Spinners/ReportSpinner';
-import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { formatCurrency, formatPercentage, getCurrencySymbol } from '@/lib/utils';
 import { BreakEvenPointReportProps } from './Calculator';
 
 interface ReportProps {
@@ -71,9 +70,7 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 					/>
 
 					<ReportGroup
-						header={`Contribution Margin ${
-							currencies.find((c) => c.value === currency)?.symbol
-						}`}
+						header={`Contribution Margin ${getCurrencySymbol(currency)}`}
 						value={formatCurrency(contributionMarginMoney, currency)}
 					/>
 				</ReportGroupContainer>

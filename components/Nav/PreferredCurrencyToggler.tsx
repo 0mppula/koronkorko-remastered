@@ -12,6 +12,7 @@ import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
+import { getCurrencySymbol } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
@@ -56,9 +57,7 @@ const PreferredCurrencyToggler = () => {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="icon" suppressHydrationWarning>
-					<span className="text-[1.375rem]">
-						{currencies.find((c) => c.value === currency)?.symbol}
-					</span>
+					<span className="text-[1.375rem]">{getCurrencySymbol(currency)}</span>
 
 					<span className="sr-only">Set preferred currency</span>
 				</Button>
