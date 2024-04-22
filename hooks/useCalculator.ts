@@ -1,17 +1,20 @@
-import { API_URLS } from '@/constants/api';
+import { API_URLS, QUERY_KEYS } from '@/constants/api';
 import {
-	IDeleteCalculationParam,
-	IRenameCalculationParam,
-	ISaveCalculationParam,
-	IUpdateCalculationParam,
+	deleteCalculation,
+	renameCalculation,
+	saveCalculation,
+	updateCalculation,
 } from '@/lib/queryFns/calculations';
 import { IHasFormDataAndName, InferredCalculationNameSchema } from '@/types/calculations';
-import { UseMutateFunction } from '@tanstack/react-query';
 import { Dispatch, SetStateAction, useCallback } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
+import useDeleteCalculationMutation from './useDeleteCalculationMutation';
+import useRenameCalculationMutation from './useRenameCalculationMutation';
+import useSaveCalculationMutation from './useSaveCalculationMutation';
+import useUpdateCalculationMutation from './useUpdateCalculationMutation';
 
-const useCalculatorFns = <
+const useCalculator = <
 	TFormData extends FieldValues,
 	TReportProps,
 	TCalculation extends IHasFormDataAndName<TFormData>
@@ -23,18 +26,39 @@ const useCalculatorFns = <
 	activeCalculation: TCalculation | null,
 	apiUrl: (typeof API_URLS)[number],
 	setSaveModalOpen: Dispatch<SetStateAction<boolean>>,
-	updateMutation: UseMutateFunction<
-		TCalculation,
-		Error,
-		IUpdateCalculationParam<TFormData, TCalculation>
-	>,
-	saveMutation: UseMutateFunction<TCalculation, unknown, ISaveCalculationParam<TFormData>>,
 	setRenameModalOpen: Dispatch<SetStateAction<boolean>>,
-	renameMutation: UseMutateFunction<TCalculation, Error, IRenameCalculationParam<TCalculation>>,
 	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
-	deleteMutation: UseMutateFunction<TCalculation, unknown, IDeleteCalculationParam>,
-	setImportModalOpen: Dispatch<SetStateAction<boolean>>
+	setImportModalOpen: Dispatch<SetStateAction<boolean>>,
+	queryKey: (typeof QUERY_KEYS)[number]
 ) => {
+	const { mutate: saveMutation } = useSaveCalculationMutation<TCalculation, TFormData>(
+		queryKey,
+		setActiveCalculation,
+		saveCalculation,
+		setSaveModalOpen
+	);
+
+	const { mutate: deleteMutation } = useDeleteCalculationMutation<TReportProps, TCalculation>(
+		queryKey,
+		activeCalculation,
+		setActiveCalculation,
+		setReport,
+		deleteCalculation
+	);
+
+	const { mutate: renameMutation } = useRenameCalculationMutation<TCalculation>(
+		queryKey,
+		setActiveCalculation,
+		setRenameModalOpen,
+		renameCalculation
+	);
+
+	const { mutate: updateMutation } = useUpdateCalculationMutation<TFormData, TCalculation>(
+		queryKey,
+		setActiveCalculation,
+		updateCalculation
+	);
+
 	const onCalculate = useCallback(
 		(formData: TFormData) => {
 			setReport(calcFn(formData));
@@ -137,4 +161,4 @@ const useCalculatorFns = <
 	};
 };
 
-export default useCalculatorFns;
+export default useCalculator;

@@ -16,18 +16,8 @@ import {
 	FormMessage,
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_API_URL, MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants/api';
-import useCalculatorFns from '@/hooks/useCalculatorFns';
-import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
-import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
-import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
-import useUpdateCalculationMutation from '@/hooks/useUpdateCalculationMutation';
-import {
-	deleteCalculation,
-	getCalculations,
-	renameCalculation,
-	saveCalculation,
-	updateCalculation,
-} from '@/lib/queryFns/calculations';
+import useCalculator from '@/hooks/useCalculator';
+import { getCalculations } from '@/lib/queryFns/calculations';
 import { markupCalculatorSchema } from '@/schemas';
 import { InferredMarkupCalculatorSchema } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -82,34 +72,6 @@ const Calculator = () => {
 		enabled: sessionStatus === 'authenticated',
 	});
 
-	const { mutate: saveMutation } = useSaveCalculationMutation<
-		MarkupCalculation,
-		InferredMarkupCalculatorSchema
-	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, saveCalculation, setSaveModalOpen);
-
-	const { mutate: deleteMutation } = useDeleteCalculationMutation<
-		MarkupReportProps,
-		MarkupCalculation
-	>(
-		MARKUP_CALCULATIONS_QUERY_KEY,
-		activeCalculation,
-		setActiveCalculation,
-		setReport,
-		deleteCalculation
-	);
-
-	const { mutate: renameMutation } = useRenameCalculationMutation<MarkupCalculation>(
-		MARKUP_CALCULATIONS_QUERY_KEY,
-		setActiveCalculation,
-		setRenameModalOpen,
-		renameCalculation
-	);
-
-	const { mutate: updateMutation } = useUpdateCalculationMutation<
-		InferredMarkupCalculatorSchema,
-		MarkupCalculation
-	>(MARKUP_CALCULATIONS_QUERY_KEY, setActiveCalculation, updateCalculation);
-
 	const {
 		onCalculate,
 		resetForm,
@@ -120,7 +82,7 @@ const Calculator = () => {
 		handleClose,
 		handleDelete,
 		handleImport,
-	} = useCalculatorFns<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>(
+	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>(
 		setReport,
 		calculateMarkup,
 		defaultValues,
@@ -128,13 +90,10 @@ const Calculator = () => {
 		activeCalculation,
 		MARKUP_CALCULATIONS_API_URL,
 		setSaveModalOpen,
-		updateMutation,
-		saveMutation,
 		setRenameModalOpen,
-		renameMutation,
 		setActiveCalculation,
-		deleteMutation,
-		setImportModalOpen
+		setImportModalOpen,
+		MARKUP_CALCULATIONS_QUERY_KEY
 	);
 
 	return (

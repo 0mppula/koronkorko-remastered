@@ -4,7 +4,7 @@ import {
 	BREAK_EVEN_POINT_CALCULATIONS_API_URL,
 	BREAK_EVEN_POINT_CALCULATIONS_QUERY_KEY,
 } from '@/constants/api';
-import useCalculatorFns from '@/hooks/useCalculatorFns';
+import useCalculator from '@/hooks/useCalculator';
 import useDeleteCalculationMutation from '@/hooks/useDeleteCalculationMutation';
 import useRenameCalculationMutation from '@/hooks/useRenameCalculationMutation';
 import useSaveCalculationMutation from '@/hooks/useSaveCalculationMutation';
@@ -72,7 +72,7 @@ const Calculator = () => {
 		defaultValues,
 	});
 
-	/* const { onCalculate, resetForm } = useCalculatorFns<
+	/* const { onCalculate, resetForm } = useCalculator<
 		InferredBreakEvenPointCalculatorSchema,
 		BreakEvenPointReportProps
 	>(setReport, calcualteBreakEvenPoint, defaultValues, form); */
