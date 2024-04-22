@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 const page = () => {
 	return (
 		<>
-			<TypographyH1 className="text-center mb-6">{calculator.name}</TypographyH1>
+			<TypographyH1>{calculator.name}</TypographyH1>
 
 			<CalculatorContainer>
 				<BackButton />
