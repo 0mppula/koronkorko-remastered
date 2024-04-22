@@ -82,19 +82,19 @@ const Calculator = () => {
 		handleClose,
 		handleDelete,
 		handleImport,
-	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>(
+	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>({
+		apiUrl: MARKUP_CALCULATIONS_API_URL,
+		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
+		calcFn: calculateMarkup,
 		setReport,
-		calculateMarkup,
 		defaultValues,
 		form,
 		activeCalculation,
-		MARKUP_CALCULATIONS_API_URL,
 		setSaveModalOpen,
 		setRenameModalOpen,
 		setActiveCalculation,
 		setImportModalOpen,
-		MARKUP_CALCULATIONS_QUERY_KEY
-	);
+	});
 
 	return (
 		<>

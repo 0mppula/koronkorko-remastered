@@ -14,23 +14,41 @@ import useRenameCalculationMutation from './useRenameCalculationMutation';
 import useSaveCalculationMutation from './useSaveCalculationMutation';
 import useUpdateCalculationMutation from './useUpdateCalculationMutation';
 
+interface IUseCalculator<
+	TFormData extends FieldValues,
+	TReportProps,
+	TCalculation extends IHasFormDataAndName<TFormData>
+> {
+	setReport: Dispatch<SetStateAction<TReportProps | null>>;
+	calcFn: (formData: TFormData) => TReportProps;
+	defaultValues: TFormData;
+	form: UseFormReturn<TFormData, any, undefined>;
+	activeCalculation: TCalculation | null;
+	apiUrl: (typeof API_URLS)[number];
+	setSaveModalOpen: Dispatch<SetStateAction<boolean>>;
+	setRenameModalOpen: Dispatch<SetStateAction<boolean>>;
+	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>;
+	setImportModalOpen: Dispatch<SetStateAction<boolean>>;
+	queryKey: (typeof QUERY_KEYS)[number];
+}
+
 const useCalculator = <
 	TFormData extends FieldValues,
 	TReportProps,
 	TCalculation extends IHasFormDataAndName<TFormData>
->(
-	setReport: Dispatch<SetStateAction<TReportProps | null>>,
-	calcFn: (formData: TFormData) => TReportProps,
-	defaultValues: TFormData,
-	form: UseFormReturn<TFormData, any, undefined>,
-	activeCalculation: TCalculation | null,
-	apiUrl: (typeof API_URLS)[number],
-	setSaveModalOpen: Dispatch<SetStateAction<boolean>>,
-	setRenameModalOpen: Dispatch<SetStateAction<boolean>>,
-	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>,
-	setImportModalOpen: Dispatch<SetStateAction<boolean>>,
-	queryKey: (typeof QUERY_KEYS)[number]
-) => {
+>({
+	setReport,
+	calcFn,
+	defaultValues,
+	form,
+	activeCalculation,
+	apiUrl,
+	setSaveModalOpen,
+	setRenameModalOpen,
+	setActiveCalculation,
+	setImportModalOpen,
+	queryKey,
+}: IUseCalculator<TFormData, TReportProps, TCalculation>) => {
 	const { mutate: saveMutation } = useSaveCalculationMutation<TCalculation, TFormData>(
 		queryKey,
 		setActiveCalculation,
