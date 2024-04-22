@@ -90,7 +90,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal
+			<ImportCalculationModal<InferredMarkupCalculatorSchema, MarkupCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

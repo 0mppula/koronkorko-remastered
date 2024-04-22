@@ -87,7 +87,10 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal
+			<ImportCalculationModal<
+				InferredBreakEvenPointCalculatorSchema,
+				BreakEvenPointCalculation
+			>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}
