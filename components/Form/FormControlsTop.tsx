@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { MarkupCalculation } from '@prisma/client';
+import { CalculationType } from '@/types/calculations';
 import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { ImSpinner8 } from 'react-icons/im';
@@ -10,7 +10,7 @@ import { Separator } from '../ui/separator';
 interface FormControlsTopProps {
 	reset: () => void;
 	saveUpdateStart: () => void;
-	activeCalculation: MarkupCalculation | null;
+	activeCalculation: CalculationType | null;
 	renameStart: () => void;
 	importStart: () => void;
 	closeCalculation: () => void;

@@ -6,11 +6,11 @@ import React from 'react';
 import { InputProps } from '../ui/input';
 
 interface NumberInputWithIconProps extends InputProps {
-	iconType: 'currency' | 'percentage';
+	iconType?: 'currency' | 'percentage';
 }
 
 const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIconProps>(
-	({ className, type, iconType, ...props }, ref) => {
+	({ className, type, iconType = 'currency', ...props }, ref) => {
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {

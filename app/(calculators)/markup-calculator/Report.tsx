@@ -5,15 +5,15 @@ import ReportGroupContainer from '@/components/Report/ReportGroupContainer';
 import ReportSpinner from '@/components/Spinners/ReportSpinner';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
+import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 import { MarkupReportProps } from './Calculator';
-import ReportSummaryContainer from './ReportSummaryContainer';
 
-interface CalculationReportProps {
+interface ReportProps {
 	report: MarkupReportProps;
 	isLoading?: boolean;
 }
 
-const CalculationReport = ({ report, isLoading = false }: CalculationReportProps) => {
+const Report = ({ report, isLoading = false }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
 	const { markup, profit } = report;
@@ -35,4 +35,4 @@ const CalculationReport = ({ report, isLoading = false }: CalculationReportProps
 	);
 };
 
-export default CalculationReport;
+export default Report;

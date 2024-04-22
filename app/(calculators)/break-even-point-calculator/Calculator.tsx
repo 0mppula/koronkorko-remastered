@@ -1,8 +1,21 @@
 'use client';
 
+import FormContainer from '@/components/Form/FormContainer';
+import FormControlsTop from '@/components/Form/FormControlsTop';
+import FormGroup from '@/components/Form/FormGroup';
+import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
 import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
 import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
+import { Button } from '@/components/ui/button';
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from '@/components/ui/form';
 import {
 	BREAK_EVEN_POINT_CALCULATIONS_API_URL,
 	BREAK_EVEN_POINT_CALCULATIONS_QUERY_KEY,
@@ -17,6 +30,7 @@ import { BreakEvenPointCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
+import Report from './Report';
 
 export interface BreakEvenPointReportProps {
 	breakEvenPointUnits: number;
@@ -27,7 +41,7 @@ export interface BreakEvenPointReportProps {
 
 const defaultValues: InferredBreakEvenPointCalculatorSchema = {
 	fixedCosts: 0,
-	variableCostsPerUnit: 0,
+	variableCostPerUnit: 0,
 	pricePerUnit: 0,
 };
 
@@ -105,6 +119,100 @@ const Calculator = () => {
 				handleRename={handleRename}
 				activeCalculation={activeCalculation}
 			/>
+
+			<FormContainer>
+				<FormControlsTop
+					reset={resetForm}
+					saveUpdateStart={handleSaveUpdateStart}
+					activeCalculation={activeCalculation}
+					closeCalculation={handleClose}
+					importStart={() => setImportModalOpen(true)}
+					renameStart={() => setRenameModalOpen(true)}
+				/>
+
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onCalculate)} className="space-y-4">
+						<FormGroup>
+							<FormField
+								control={form.control}
+								name="fixedCosts"
+								render={({ field }) => (
+									<FormItem className="w-full">
+										<FormLabel>Fixed Costs</FormLabel>
+
+										<FormControl>
+											<NumberInputWithIcon
+												{...field}
+												name="fixedCosts"
+												onBlur={(e) => {
+													if (e.target.value === '') {
+														form.setValue('fixedCosts', 0);
+													}
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="variableCostPerUnit"
+								render={({ field }) => (
+									<FormItem className="w-full">
+										<FormLabel>Variable Cost Per Unit</FormLabel>
+
+										<FormControl>
+											<NumberInputWithIcon
+												{...field}
+												name="variableCostPerUnit"
+												onBlur={(e) => {
+													if (e.target.value === '') {
+														form.setValue('variableCostPerUnit', 0);
+													}
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</FormGroup>
+
+						<FormGroup>
+							<FormField
+								control={form.control}
+								name="pricePerUnit"
+								render={({ field }) => (
+									<FormItem className="w-full">
+										<FormLabel>Price Per Unit</FormLabel>
+
+										<FormControl>
+											<NumberInputWithIcon
+												{...field}
+												name="pricePerUnit"
+												onBlur={(e) => {
+													if (e.target.value === '') {
+														form.setValue('pricePerUnit', 0);
+													}
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</FormGroup>
+
+						<Button type="submit" className="w-full">
+							Calculate
+						</Button>
+					</form>
+				</Form>
+			</FormContainer>
+
+			{report && <Report report={report} />}
 		</>
 	);
 };

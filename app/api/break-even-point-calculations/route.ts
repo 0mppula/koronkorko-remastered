@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		const { fixedCosts, variableCostsPerUnit, pricePerUnit } =
+		const { fixedCosts, variableCostPerUnit, pricePerUnit } =
 			breakEvenPointCalculatorSchema.parse(body.formData);
 		const name = calculationNameStringSchema.parse(body.name);
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 				name,
 				formData: {
 					fixedCosts,
-					variableCostsPerUnit,
+					variableCostPerUnit,
 					pricePerUnit,
 				},
 				userId: session?.user.id,

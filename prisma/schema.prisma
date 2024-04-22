@@ -72,7 +72,7 @@ type MarkupCalculationFormData {
 }
 
 type BreakEvenPointCalculationFormData {
-  fixedCosts           Float
-  variableCostsPerUnit Float
-  pricePerUnit         Float
+  fixedCosts          Float
+  variableCostPerUnit Float
+  pricePerUnit        Float
 }

@@ -2,6 +2,7 @@
 
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
+import FormGroup from '@/components/Form/FormGroup';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
 import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
@@ -26,7 +27,7 @@ import { MarkupCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
-import CalculationReport from './CalculatationReport';
+import Report from './Report';
 
 export interface MarkupReportProps {
 	profit: number;
@@ -118,7 +119,7 @@ const Calculator = () => {
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onCalculate)} className="space-y-4">
-						<div className="flex flex-col xs:flex-row gap-4">
+						<FormGroup>
 							<FormField
 								control={form.control}
 								name="cost"
@@ -129,7 +130,6 @@ const Calculator = () => {
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
-												iconType="currency"
 												name="cost"
 												onBlur={(e) => {
 													if (e.target.value === '') {
@@ -153,21 +153,19 @@ const Calculator = () => {
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
-												iconType="currency"
-												type="number"
+												name="salesPrice"
 												onBlur={(e) => {
 													if (e.target.value === '') {
 														form.setValue('salesPrice', 0);
 													}
 												}}
-												name="salesPrice"
 											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
 								)}
 							/>
-						</div>
+						</FormGroup>
 
 						<Button type="submit" className="w-full">
 							Calculate
@@ -176,7 +174,7 @@ const Calculator = () => {
 				</Form>
 			</FormContainer>
 
-			{report && <CalculationReport report={report} />}
+			{report && <Report report={report} />}
 		</>
 	);
 };

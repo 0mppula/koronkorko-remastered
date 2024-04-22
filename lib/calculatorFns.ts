@@ -17,15 +17,15 @@ export const calculateMarkup = (formData: InferredMarkupCalculatorSchema): Marku
 export const calcualteBreakEvenPoint = (
 	formData: InferredBreakEvenPointCalculatorSchema
 ): BreakEvenPointReportProps => {
-	const { fixedCosts, variableCostsPerUnit, pricePerUnit } = formData;
+	const { fixedCosts, variableCostPerUnit, pricePerUnit } = formData;
 
 	// BEP = Fixed costs / (Sales price per unit – Variable cost per unit)
-	const BEP = fixedCosts / (pricePerUnit - variableCostsPerUnit);
+	const BEP = fixedCosts / (pricePerUnit - variableCostPerUnit);
 	// Break even point in currency
 	const BEPM = BEP * pricePerUnit;
 
 	// Contribution margin
-	const CM = pricePerUnit - variableCostsPerUnit;
+	const CM = pricePerUnit - variableCostPerUnit;
 	const CMP = (CM / pricePerUnit) * 100;
 
 	return {

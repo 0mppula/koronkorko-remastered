@@ -33,6 +33,6 @@ export const markupCalculatorSchema = z.object({
 
 export const breakEvenPointCalculatorSchema = z.object({
 	fixedCosts: positiveNumberFieldSchema,
-	variableCostsPerUnit: positiveNumberFieldSchema,
+	variableCostPerUnit: positiveNumberFieldSchema,
 	pricePerUnit: positiveNumberFieldSchema,
 });
