@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { MARKUP_CALCULATIONS_API_URL, MARKUP_CALCULATIONS_QUERY_KEY } from '@/constants/api';
 import useCalculator from '@/hooks/useCalculator';
+import { calculateMarkup } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { markupCalculatorSchema } from '@/schemas';
 import { InferredMarkupCalculatorSchema } from '@/types/calculations';
@@ -35,15 +36,6 @@ export interface MarkupReportProps {
 const defaultValues: InferredMarkupCalculatorSchema = {
 	cost: 0,
 	salesPrice: 0,
-};
-
-const calculateMarkup = (formData: InferredMarkupCalculatorSchema) => {
-	const { cost, salesPrice } = formData;
-
-	const profit = salesPrice - cost;
-	const markup = (profit / cost) * 100;
-
-	return { profit, markup };
 };
 
 const Calculator = () => {
@@ -72,9 +64,9 @@ const Calculator = () => {
 	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>({
 		apiUrl: MARKUP_CALCULATIONS_API_URL,
 		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
-		calcFn: calculateMarkup,
 		defaultValues,
 		form,
+		calcFn: calculateMarkup,
 	});
 
 	const { status: sessionStatus } = useSession();
