@@ -3,13 +3,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CalculationType, IHasFormDataAndName, IHasId, IHasName } from '@/types/calculations';
+import { IHasFormDataAndName } from '@/types/calculations';
 import { FileDown, Trash } from 'lucide-react';
 import { Dispatch, Fragment, SetStateAction } from 'react';
+import { FieldValues } from 'react-hook-form';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
-import { FieldValues } from 'react-hook-form';
 
 interface ImportCalculationModalProps<TCalculation> {
 	isOpen: boolean;
