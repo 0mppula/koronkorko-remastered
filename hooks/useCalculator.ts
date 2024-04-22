@@ -6,7 +6,7 @@ import {
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
 import { IHasFormDataAndName, InferredCalculationNameSchema } from '@/types/calculations';
-import { Dispatch, SetStateAction, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import useDeleteCalculationMutation from './useDeleteCalculationMutation';
@@ -14,21 +14,11 @@ import useRenameCalculationMutation from './useRenameCalculationMutation';
 import useSaveCalculationMutation from './useSaveCalculationMutation';
 import useUpdateCalculationMutation from './useUpdateCalculationMutation';
 
-interface IUseCalculator<
-	TFormData extends FieldValues,
-	TReportProps,
-	TCalculation extends IHasFormDataAndName<TFormData>
-> {
-	setReport: Dispatch<SetStateAction<TReportProps | null>>;
+interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 	calcFn: (formData: TFormData) => TReportProps;
 	defaultValues: TFormData;
 	form: UseFormReturn<TFormData, any, undefined>;
-	activeCalculation: TCalculation | null;
 	apiUrl: (typeof API_URLS)[number];
-	setSaveModalOpen: Dispatch<SetStateAction<boolean>>;
-	setRenameModalOpen: Dispatch<SetStateAction<boolean>>;
-	setActiveCalculation: Dispatch<SetStateAction<TCalculation | null>>;
-	setImportModalOpen: Dispatch<SetStateAction<boolean>>;
 	queryKey: (typeof QUERY_KEYS)[number];
 }
 
@@ -37,18 +27,18 @@ const useCalculator = <
 	TReportProps,
 	TCalculation extends IHasFormDataAndName<TFormData>
 >({
-	setReport,
 	calcFn,
 	defaultValues,
 	form,
-	activeCalculation,
 	apiUrl,
-	setSaveModalOpen,
-	setRenameModalOpen,
-	setActiveCalculation,
-	setImportModalOpen,
 	queryKey,
-}: IUseCalculator<TFormData, TReportProps, TCalculation>) => {
+}: IUseCalculator<TFormData, TReportProps>) => {
+	const [activeCalculation, setActiveCalculation] = useState<TCalculation | null>(null);
+	const [report, setReport] = useState<TReportProps | null>(null);
+	const [saveModalOpen, setSaveModalOpen] = useState(false);
+	const [importModalOpen, setImportModalOpen] = useState(false);
+	const [renameModalOpen, setRenameModalOpen] = useState(false);
+
 	const { mutate: saveMutation } = useSaveCalculationMutation<TCalculation, TFormData>(
 		queryKey,
 		setActiveCalculation,
@@ -176,6 +166,16 @@ const useCalculator = <
 		handleClose,
 		handleDelete,
 		handleImport,
+		report,
+		setReport,
+		saveModalOpen,
+		setSaveModalOpen,
+		importModalOpen,
+		setImportModalOpen,
+		renameModalOpen,
+		setRenameModalOpen,
+		activeCalculation,
+		setActiveCalculation,
 	};
 };
 

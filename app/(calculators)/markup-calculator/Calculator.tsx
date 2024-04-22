@@ -24,7 +24,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import CalculationReport from './CalculatationReport';
 
@@ -48,15 +47,34 @@ const calculateMarkup = (formData: InferredMarkupCalculatorSchema) => {
 };
 
 const Calculator = () => {
-	const [saveModalOpen, setSaveModalOpen] = useState(false);
-	const [importModalOpen, setImportModalOpen] = useState(false);
-	const [renameModalOpen, setRenameModalOpen] = useState(false);
-	const [activeCalculation, setActiveCalculation] = useState<MarkupCalculation | null>(null);
-	const [report, setReport] = useState<MarkupReportProps | null>(null);
-
 	const form = useForm<InferredMarkupCalculatorSchema>({
 		resolver: zodResolver(markupCalculatorSchema),
 		defaultValues,
+	});
+
+	const {
+		onCalculate,
+		resetForm,
+		handleSaveUpdateStart,
+		closeSaveModal,
+		handleSave,
+		handleRename,
+		handleClose,
+		handleDelete,
+		handleImport,
+		report,
+		saveModalOpen,
+		importModalOpen,
+		setImportModalOpen,
+		renameModalOpen,
+		setRenameModalOpen,
+		activeCalculation,
+	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>({
+		apiUrl: MARKUP_CALCULATIONS_API_URL,
+		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
+		calcFn: calculateMarkup,
+		defaultValues,
+		form,
 	});
 
 	const { status: sessionStatus } = useSession();
@@ -70,30 +88,6 @@ const Calculator = () => {
 		queryFn: () => getCalculations(MARKUP_CALCULATIONS_API_URL),
 		staleTime: 1_000 * 60 * 10, // 10 minutes
 		enabled: sessionStatus === 'authenticated',
-	});
-
-	const {
-		onCalculate,
-		resetForm,
-		handleSaveUpdateStart,
-		closeSaveModal,
-		handleSave,
-		handleRename,
-		handleClose,
-		handleDelete,
-		handleImport,
-	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>({
-		apiUrl: MARKUP_CALCULATIONS_API_URL,
-		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
-		calcFn: calculateMarkup,
-		setReport,
-		defaultValues,
-		form,
-		activeCalculation,
-		setSaveModalOpen,
-		setRenameModalOpen,
-		setActiveCalculation,
-		setImportModalOpen,
 	});
 
 	return (
