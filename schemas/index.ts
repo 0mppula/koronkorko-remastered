@@ -17,21 +17,22 @@ export const calculationNameSchema = z.object({
 	name: calculationNameStringSchema,
 });
 
+const positiveNumberFieldSchema = z.coerce
+	.number({
+		required_error: 'This field is required',
+		invalid_type_error: 'This field is required',
+	})
+	.min(0, {
+		message: 'Number cannot be negative',
+	});
+
 export const markupCalculatorSchema = z.object({
-	cost: z.coerce
-		.number({
-			required_error: 'This field is required',
-			invalid_type_error: 'This field is required',
-		})
-		.min(0, {
-			message: 'Number cannot be negative',
-		}),
-	salesPrice: z.coerce
-		.number({
-			required_error: 'This field is required',
-			invalid_type_error: 'This field is required',
-		})
-		.min(0, {
-			message: 'Number cannot be negative',
-		}),
+	cost: positiveNumberFieldSchema,
+	salesPrice: positiveNumberFieldSchema,
+});
+
+export const breakEvenPointCalculatorSchema = z.object({
+	fixedCosts: positiveNumberFieldSchema,
+	variableCostsPerUnit: positiveNumberFieldSchema,
+	pricePerUnit: positiveNumberFieldSchema,
 });
