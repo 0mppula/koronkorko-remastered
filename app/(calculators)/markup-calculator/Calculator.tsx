@@ -4,10 +4,10 @@ import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import FormGroup from '@/components/Form/FormGroup';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
+import SubmitButton from '@/components/Form/SubmitButton';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
 import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
 import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
-import { Button } from '@/components/ui/button';
 import {
 	Form,
 	FormControl,
@@ -160,9 +160,7 @@ const Calculator = () => {
 							/>
 						</FormGroup>
 
-						<Button type="submit" className="w-full">
-							Calculate
-						</Button>
+						<SubmitButton />
 					</form>
 				</Form>
 			</FormContainer>
