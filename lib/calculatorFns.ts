@@ -1,7 +1,9 @@
 import {
 	BreakEvenPointReportProps,
 	InferredBreakEvenPointCalculatorSchema,
+	InferredInvestmentTimeCalculatorSchema,
 	InferredMarkupCalculatorSchema,
+	InvestmentTimeReportProps,
 	MarkupReportProps,
 } from '@/types/calculations';
 
@@ -36,5 +38,23 @@ export const calcualteBreakEvenPoint = (
 		breakEvenPointMoney: BEPM,
 		contributionMarginMoney: CM,
 		contributionMarginPercent: CMP,
+	};
+};
+
+export const calculateInvestmentTime = (
+	formData: InferredInvestmentTimeCalculatorSchema
+): InvestmentTimeReportProps => {
+	const { startingBalance, endingBalance, annualInterestRate } = formData;
+
+	const r = annualInterestRate / 100;
+	const T = Math.log(endingBalance / startingBalance) / Math.log(1 + r);
+
+	return {
+		startingBalance,
+		endingBalance,
+		annualInterestRate,
+		yearsRequired: T,
+		monthsRequired: T * 12,
+		daysRequired: T * 365,
 	};
 };

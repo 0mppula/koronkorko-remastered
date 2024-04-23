@@ -8,11 +8,12 @@ import {
 import { IHasFormDataAndName } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dispatch, SetStateAction } from 'react';
+import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import useLoadingStore from './useLoadingStore';
 
 interface IUseCalculationMutations<
-	TFormData,
+	TFormData extends FieldValues,
 	TReportProps,
 	TCalculation extends IHasFormDataAndName<TFormData>
 > {
@@ -29,10 +30,12 @@ interface IUseCalculationMutations<
 		TCalculation,
 		IUpdateCalculationParam<TFormData, TCalculation>
 	>;
+	form: UseFormReturn<TFormData, any, undefined>;
+	defaultValues: TFormData;
 }
 
 const useCalculationMutations = <
-	TFormData,
+	TFormData extends FieldValues,
 	TReportProps,
 	TCalculation extends IHasFormDataAndName<TFormData>
 >({
@@ -46,6 +49,8 @@ const useCalculationMutations = <
 	renameMutationFn,
 	saveMutationFn,
 	updateMutationFn,
+	form,
+	defaultValues,
 }: IUseCalculationMutations<TFormData, TReportProps, TCalculation>) => {
 	const queryClient = useQueryClient();
 	const { setIsGlobalLoading } = useLoadingStore();
@@ -90,6 +95,7 @@ const useCalculationMutations = <
 			if (activeCalculation?.id === variables.id) {
 				setActiveCalculation(null);
 				setReport(null);
+				form.reset(defaultValues);
 			}
 		},
 		onError: () => {

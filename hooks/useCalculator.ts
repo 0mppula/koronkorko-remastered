@@ -52,6 +52,8 @@ const useCalculator = <
 		renameMutationFn: renameCalculation,
 		saveMutationFn: saveCalculation,
 		updateMutationFn: updateCalculation,
+		defaultValues,
+		form,
 	});
 
 	const onCalculate = useCallback(
