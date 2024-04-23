@@ -42,7 +42,7 @@ const ImportCalculationModal = <
 					<DialogTitle>Import Calculation</DialogTitle>
 				</DialogHeader>
 
-				<ScrollArea className="min-h-[272px] max-h-[min(50svh,512px)] p-6 pt-0">
+				<ScrollArea className="min-h-[min(calc(90svh-100px),272px)] max-h-[min(50svh,512px)] p-6 pt-0 rounded-md">
 					{isLoading ? (
 						<div className="flex flex-col gap-4">
 							{Array.from({ length: 5 }).map((_, i) => (
