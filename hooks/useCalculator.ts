@@ -70,20 +70,27 @@ const useCalculator = <
 		form.reset(defaultValues);
 	}, [setReport, defaultValues, form]);
 
-	const handleSaveUpdateStart = useCallback(() => {
-		if (activeCalculation) {
-			// Only update if the form data has changed
-			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
-				updateMutate({
-					apiUrl,
-					updatedCalculation: { ...activeCalculation, formData: form.getValues() },
-				});
+	const handleSaveUpdateStart = useCallback(async () => {
+		const startIfFormIsValid = (_: TFormData) => {
+			if (activeCalculation) {
+				// Only update if the form data has changed
+				if (
+					JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())
+				) {
+					updateMutate({
+						apiUrl,
+						updatedCalculation: { ...activeCalculation, formData: form.getValues() },
+					});
+				} else {
+					toast.success('Calculation updated');
+				}
 			} else {
-				toast.success('Calculation updated');
+				setSaveModalOpen(true);
 			}
-		} else {
-			setSaveModalOpen(true);
-		}
+		};
+
+		// Runs the body of the function only if the form is valid, else it will show errors.
+		form.handleSubmit(startIfFormIsValid, () => toast.error('Invalid field values'))();
 	}, [activeCalculation, updateMutate, apiUrl, form, setSaveModalOpen]);
 
 	const closeSaveModal = useCallback(() => {
