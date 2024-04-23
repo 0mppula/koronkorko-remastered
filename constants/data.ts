@@ -7,19 +7,19 @@ export const calculators = [
 		name: 'Compound Interest Calculator',
 		url: 'compound-interest-calculator',
 		description:
-			'Calculate the compound interest of your investment or for how long can your invested money last with this calculator. Additionally, logged in users can save their calculations.',
+			'Calculate the compound interest of an investment or determine how long your invested money can last. Additionally, logged in users can save their calculations.',
 	},
 	{
 		name: 'Annualized Return Calculator',
 		url: 'annualized-return-calculator',
 		description:
-			'Calculate the annualized return (CAGR) and or the the total percent return of your investment with this calculator. Additionally, logged in users can save their calculations.',
+			'Calculate the annualized return (CAGR), total percent return, and total profit of an investment. Additionally, logged in users can save their calculations.',
 	},
 	{
 		name: 'Present Value Calculator',
 		url: 'present-value-calculator',
 		description:
-			'Calculate the present value of your future investment with a specified discount rate with this calculator. Additionally, logged in users can save their calculations.',
+			'Calculate the present value of an investment with a specified discount rate. Additionally, logged in users can save their calculations.',
 	},
 	{
 		name: 'Investment Time Calculator',
@@ -31,7 +31,7 @@ export const calculators = [
 		name: 'Break Even Point Calculator',
 		url: 'break-even-point-calculator',
 		description:
-			'Calculate the point at which total cost and total revenue are equal, meaning there is no loss or gain for your business. Additionally, logged in users can save their calculations.',
+			'Calculate the point at which total cost equals total revenue, indicating neither profit nor loss for your business. Additionally, logged in users can save their calculations.',
 	},
 	{
 		name: 'Markup Calculator',
