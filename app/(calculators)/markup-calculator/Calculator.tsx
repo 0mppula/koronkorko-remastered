@@ -64,6 +64,7 @@ const Calculator = () => {
 		renameModalOpen,
 		setRenameModalOpen,
 		activeCalculation,
+		ifFieldIsEmpty,
 	} = useCalculator<InferredMarkupCalculatorSchema, MarkupReportProps, MarkupCalculation>({
 		apiUrl: MARKUP_CALCULATIONS_API_URL,
 		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
@@ -134,9 +135,7 @@ const Calculator = () => {
 												{...field}
 												name="cost"
 												onBlur={(e) => {
-													if (e.target.value === '') {
-														form.setValue('cost', 0);
-													}
+													ifFieldIsEmpty(e) && form.setValue('cost', 0);
 												}}
 											/>
 										</FormControl>
@@ -157,9 +156,8 @@ const Calculator = () => {
 												{...field}
 												name="salesPrice"
 												onBlur={(e) => {
-													if (e.target.value === '') {
+													ifFieldIsEmpty(e) &&
 														form.setValue('salesPrice', 0);
-													}
 												}}
 											/>
 										</FormControl>

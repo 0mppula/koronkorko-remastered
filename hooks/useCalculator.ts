@@ -143,6 +143,10 @@ const useCalculator = <
 		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form]
 	);
 
+	const ifFieldIsEmpty = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+		return e.target.value === '';
+	}, []);
+
 	return {
 		onCalculate,
 		resetForm,
@@ -163,6 +167,7 @@ const useCalculator = <
 		setRenameModalOpen,
 		activeCalculation,
 		setActiveCalculation,
+		ifFieldIsEmpty,
 	};
 };
 

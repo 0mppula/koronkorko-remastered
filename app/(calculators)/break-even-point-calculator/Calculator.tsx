@@ -71,6 +71,7 @@ const Calculator = () => {
 		renameModalOpen,
 		setRenameModalOpen,
 		activeCalculation,
+		ifFieldIsEmpty,
 	} = useCalculator<
 		InferredBreakEvenPointCalculatorSchema,
 		BreakEvenPointReportProps,
@@ -148,9 +149,8 @@ const Calculator = () => {
 												{...field}
 												name="fixedCosts"
 												onBlur={(e) => {
-													if (e.target.value === '') {
+													ifFieldIsEmpty(e) &&
 														form.setValue('fixedCosts', 0);
-													}
 												}}
 											/>
 										</FormControl>
@@ -171,9 +171,8 @@ const Calculator = () => {
 												{...field}
 												name="variableCostPerUnit"
 												onBlur={(e) => {
-													if (e.target.value === '') {
+													ifFieldIsEmpty(e) &&
 														form.setValue('variableCostPerUnit', 0);
-													}
 												}}
 											/>
 										</FormControl>
@@ -196,9 +195,8 @@ const Calculator = () => {
 												{...field}
 												name="pricePerUnit"
 												onBlur={(e) => {
-													if (e.target.value === '') {
+													ifFieldIsEmpty(e) &&
 														form.setValue('pricePerUnit', 0);
-													}
 												}}
 											/>
 										</FormControl>
