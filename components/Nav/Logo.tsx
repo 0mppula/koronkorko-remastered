@@ -27,10 +27,10 @@ const Logo = () => {
 					<Image
 						src={src}
 						alt="KoronKorko Logo"
-						className="h-[30px] w-[30px] cursor-pointer select-none min-h-[30px] min-w-[30px]"
+						className="h-[34px] w-[34px] cursor-pointer select-none min-h-[34px] min-w-[34px]"
 					/>
 				) : (
-					<Skeleton className="h-[30px] w-[30px] rounded-full" />
+					<Skeleton className="h-[34px] w-[34px] rounded-full" />
 				)}
 
 				<p aria-hidden className="font-bold text-2xl hidden xs:block">
