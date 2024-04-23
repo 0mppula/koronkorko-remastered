@@ -25,8 +25,27 @@ export type InferredCalculationNameStringSchema = z.infer<typeof calculationName
 
 export type InferredCalculationNameSchema = z.infer<typeof calculationNameSchema>;
 
+// Break Even Point Calculator
 export type InferredBreakEvenPointCalculatorSchema = z.infer<typeof breakEvenPointCalculatorSchema>;
 
+export interface BreakEvenPointReportProps {
+	fixedCosts: number;
+	variableCostPerUnit: number;
+	pricePerUnit: number;
+	breakEvenPointUnits: number;
+	breakEvenPointMoney: number;
+	contributionMarginMoney: number;
+	contributionMarginPercent: number;
+}
+
+// Markup Calculator
 export type InferredMarkupCalculatorSchema = z.infer<typeof markupCalculatorSchema>;
+
+export interface MarkupReportProps {
+	cost: number;
+	salesPrice: number;
+	profit: number;
+	markup: number;
+}
 
 export type CalculationType = BreakEvenPointCalculation | MarkupCalculation;

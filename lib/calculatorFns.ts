@@ -1,8 +1,8 @@
-import { BreakEvenPointReportProps } from '@/app/(calculators)/break-even-point-calculator/Calculator';
-import { MarkupReportProps } from '@/app/(calculators)/markup-calculator/Calculator';
 import {
+	BreakEvenPointReportProps,
 	InferredBreakEvenPointCalculatorSchema,
 	InferredMarkupCalculatorSchema,
+	MarkupReportProps,
 } from '@/types/calculations';
 
 export const calculateMarkup = (formData: InferredMarkupCalculatorSchema): MarkupReportProps => {

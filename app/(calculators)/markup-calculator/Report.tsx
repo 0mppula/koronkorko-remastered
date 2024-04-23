@@ -6,7 +6,7 @@ import ReportSpinner from '@/components/Spinners/ReportSpinner';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
-import { MarkupReportProps } from './Calculator';
+import { MarkupReportProps } from '@/types/calculations';
 
 interface ReportProps {
 	report: MarkupReportProps;

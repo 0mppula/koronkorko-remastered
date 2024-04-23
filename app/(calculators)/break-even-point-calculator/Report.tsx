@@ -6,7 +6,7 @@ import ReportGroupContainer from '@/components/Report/ReportGroupContainer';
 import ReportSpinner from '@/components/Spinners/ReportSpinner';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getCurrencySymbol } from '@/lib/utils';
-import { BreakEvenPointReportProps } from './Calculator';
+import { BreakEvenPointReportProps } from '@/types/calculations';
 
 interface ReportProps {
 	report: BreakEvenPointReportProps;

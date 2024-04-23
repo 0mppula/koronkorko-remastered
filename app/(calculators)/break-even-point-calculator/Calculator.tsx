@@ -24,23 +24,16 @@ import useCalculator from '@/hooks/useCalculator';
 import { calcualteBreakEvenPoint } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { breakEvenPointCalculatorSchema } from '@/schemas';
-import { InferredBreakEvenPointCalculatorSchema } from '@/types/calculations';
+import {
+	BreakEvenPointReportProps,
+	InferredBreakEvenPointCalculatorSchema,
+} from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BreakEvenPointCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
-
-export interface BreakEvenPointReportProps {
-	fixedCosts: number;
-	variableCostPerUnit: number;
-	pricePerUnit: number;
-	breakEvenPointUnits: number;
-	breakEvenPointMoney: number;
-	contributionMarginMoney: number;
-	contributionMarginPercent: number;
-}
 
 const defaultValues: InferredBreakEvenPointCalculatorSchema = {
 	fixedCosts: 0,
