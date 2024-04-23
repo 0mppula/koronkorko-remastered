@@ -9,10 +9,7 @@ import { IHasFormDataAndName, InferredCalculationNameSchema } from '@/types/calc
 import { useCallback, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
-import useDeleteCalculationMutation from './useDeleteCalculationMutation';
-import useRenameCalculationMutation from './useRenameCalculationMutation';
-import useSaveCalculationMutation from './useSaveCalculationMutation';
-import useUpdateCalculationMutation from './useUpdateCalculationMutation';
+import useCalculationMutations from './useCalculationMutations';
 
 interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 	calcFn: (formData: TFormData) => TReportProps;
@@ -39,33 +36,23 @@ const useCalculator = <
 	const [importModalOpen, setImportModalOpen] = useState(false);
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
 
-	const { mutate: saveMutation } = useSaveCalculationMutation<TCalculation, TFormData>(
-		queryKey,
-		setActiveCalculation,
-		saveCalculation,
-		setSaveModalOpen
-	);
-
-	const { mutate: deleteMutation } = useDeleteCalculationMutation<TReportProps, TCalculation>(
+	const {
+		deleteMutation: { mutate: deleteMutate },
+		renameMutation: { mutate: renameMutate },
+		saveMutation: { mutate: saveMutate },
+		updateMutation: { mutate: updateMutate },
+	} = useCalculationMutations<TFormData, TReportProps, TCalculation>({
 		queryKey,
 		activeCalculation,
 		setActiveCalculation,
 		setReport,
-		deleteCalculation
-	);
-
-	const { mutate: renameMutation } = useRenameCalculationMutation<TCalculation>(
-		queryKey,
-		setActiveCalculation,
+		setSaveModalOpen,
 		setRenameModalOpen,
-		renameCalculation
-	);
-
-	const { mutate: updateMutation } = useUpdateCalculationMutation<TFormData, TCalculation>(
-		queryKey,
-		setActiveCalculation,
-		updateCalculation
-	);
+		deleteMutationFn: deleteCalculation,
+		renameMutationFn: renameCalculation,
+		saveMutationFn: saveCalculation,
+		updateMutationFn: updateCalculation,
+	});
 
 	const onCalculate = useCallback(
 		(formData: TFormData) => {
@@ -85,7 +72,7 @@ const useCalculator = <
 		if (activeCalculation) {
 			// Only update if the form data has changed
 			if (JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())) {
-				updateMutation({
+				updateMutate({
 					apiUrl,
 					updatedCalculation: { ...activeCalculation, formData: form.getValues() },
 				});
@@ -95,7 +82,7 @@ const useCalculator = <
 		} else {
 			setSaveModalOpen(true);
 		}
-	}, [activeCalculation, updateMutation, apiUrl, form, setSaveModalOpen]);
+	}, [activeCalculation, updateMutate, apiUrl, form, setSaveModalOpen]);
 
 	const closeSaveModal = useCallback(() => {
 		setSaveModalOpen(false);
@@ -103,13 +90,13 @@ const useCalculator = <
 
 	const handleSave = useCallback(
 		(data: InferredCalculationNameSchema) => {
-			saveMutation({
+			saveMutate({
 				apiUrl,
 				name: data.name,
 				formData: form.getValues(),
 			});
 		},
-		[saveMutation, apiUrl, form]
+		[saveMutate, apiUrl, form]
 	);
 
 	const handleRename = useCallback(
@@ -119,13 +106,13 @@ const useCalculator = <
 			if (activeCalculation.name === data.name) {
 				setRenameModalOpen(false);
 			} else {
-				renameMutation({
+				renameMutate({
 					apiUrl,
 					updatedCalculation: { ...activeCalculation, name: data.name },
 				});
 			}
 		},
-		[activeCalculation, renameMutation, apiUrl, setRenameModalOpen]
+		[activeCalculation, renameMutate, apiUrl, setRenameModalOpen]
 	);
 
 	const handleClose = useCallback(() => {
@@ -137,9 +124,9 @@ const useCalculator = <
 
 	const handleDelete = useCallback(
 		(id: string) => {
-			deleteMutation({ apiUrl, id });
+			deleteMutate({ apiUrl, id });
 		},
-		[deleteMutation, apiUrl]
+		[deleteMutate, apiUrl]
 	);
 
 	const handleImport = useCallback(
