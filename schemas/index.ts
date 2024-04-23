@@ -36,3 +36,9 @@ export const breakEvenPointCalculatorSchema = z.object({
 	variableCostPerUnit: positiveNumberFieldSchema,
 	pricePerUnit: positiveNumberFieldSchema,
 });
+
+export const investmentTimeCalculatorSchema = z.object({
+	startingBalance: positiveNumberFieldSchema,
+	endingBalance: positiveNumberFieldSchema,
+	annualInterestRate: positiveNumberFieldSchema,
+});

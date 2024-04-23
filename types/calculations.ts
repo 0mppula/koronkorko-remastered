@@ -2,9 +2,14 @@ import {
 	breakEvenPointCalculatorSchema,
 	calculationNameSchema,
 	calculationNameStringSchema,
+	investmentTimeCalculatorSchema,
 	markupCalculatorSchema,
 } from '@/schemas';
-import { BreakEvenPointCalculation, MarkupCalculation } from '@prisma/client';
+import {
+	BreakEvenPointCalculation,
+	InvestmentTimeCalculation,
+	MarkupCalculation,
+} from '@prisma/client';
 import { z } from 'zod';
 
 export interface IHasId {
@@ -48,4 +53,16 @@ export interface MarkupReportProps {
 	markup: number;
 }
 
-export type CalculationType = BreakEvenPointCalculation | MarkupCalculation;
+// Investment Time Calculation
+export type InferredInvestmentTimeCalculatorSchema = z.infer<typeof investmentTimeCalculatorSchema>;
+
+export interface InvestmentTimeReportProps {
+	yearsRequired: number;
+	monthsRequired: number;
+	daysRequired: number;
+}
+
+export type CalculationType =
+	| BreakEvenPointCalculation
+	| MarkupCalculation
+	| InvestmentTimeCalculation;
