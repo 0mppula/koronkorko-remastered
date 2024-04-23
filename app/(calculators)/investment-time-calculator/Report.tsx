@@ -1,8 +1,6 @@
 'use client';
 
 import ReportGroup from '@/components/Report/ReportGroup';
-import ReportGroupContainer from '@/components/Report/ReportGroupContainer';
-import ReportSpinner from '@/components/Spinners/ReportSpinner';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { InvestmentTimeReportProps } from '@/types/calculations';
@@ -27,42 +25,33 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 
 	return (
 		<ReportSummaryContainer>
-			{isLoading ? (
-				<ReportSpinner />
-			) : (
-				<ReportGroupContainer>
-					<ReportGroup
-						header="Starting Value"
-						value={formatCurrency(startingBalance, currency)}
-					/>
+			<ReportGroup
+				header="Starting Value"
+				value={formatCurrency(startingBalance, currency)}
+			/>
 
-					<ReportGroup
-						header="Future Value"
-						value={formatCurrency(endingBalance, currency)}
-					/>
+			<ReportGroup header="Future Value" value={formatCurrency(endingBalance, currency)} />
 
-					<ReportGroup
-						fullWidth
-						header="Annual interest rate"
-						value={formatPercentage(annualInterestRate)}
-					/>
+			<ReportGroup
+				fullWidth
+				header="Annual interest rate"
+				value={formatPercentage(annualInterestRate)}
+			/>
 
-					<ReportGroup
-						header="Years required"
-						value={isFinite(yearsRequired) ? yearsRequired.toFixed(2) : 'N/A'}
-					/>
+			<ReportGroup
+				header="Years required"
+				value={isFinite(yearsRequired) ? yearsRequired.toFixed(2) : 'N/A'}
+			/>
 
-					<ReportGroup
-						header="Months required"
-						value={isFinite(yearsRequired) ? monthsRequired.toFixed(2) : 'N/A'}
-					/>
+			<ReportGroup
+				header="Months required"
+				value={isFinite(yearsRequired) ? monthsRequired.toFixed(2) : 'N/A'}
+			/>
 
-					<ReportGroup
-						header="Days required"
-						value={isFinite(yearsRequired) ? daysRequired.toFixed(2) : 'N/A'}
-					/>
-				</ReportGroupContainer>
-			)}
+			<ReportGroup
+				header="Days required"
+				value={isFinite(yearsRequired) ? daysRequired.toFixed(2) : 'N/A'}
+			/>
 		</ReportSummaryContainer>
 	);
 };
