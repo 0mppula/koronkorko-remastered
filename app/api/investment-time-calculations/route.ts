@@ -1,6 +1,6 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { investmentTimeCalculatorSchema, calculationNameStringSchema } from '@/schemas';
+import { investmentTimeFormDataSchema, calculationNameStringSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 		}
 
 		const { startingBalance, endingBalance, annualInterestRate } =
-			investmentTimeCalculatorSchema.parse(body.formData);
+			investmentTimeFormDataSchema.parse(body.formData);
 		const name = calculationNameStringSchema.parse(body.name);
 
 		const calculation = await db.investmentTimeCalculation.create({

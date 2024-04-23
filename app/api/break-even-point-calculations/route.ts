@@ -1,6 +1,6 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { breakEvenPointCalculatorSchema, calculationNameStringSchema } from '@/schemas';
+import { breakEvenPointFormDataSchema, calculationNameStringSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 		}
 
 		const { fixedCosts, variableCostPerUnit, pricePerUnit } =
-			breakEvenPointCalculatorSchema.parse(body.formData);
+			breakEvenPointFormDataSchema.parse(body.formData);
 		const name = calculationNameStringSchema.parse(body.name);
 
 		const calculation = await db.breakEvenPointCalculation.create({

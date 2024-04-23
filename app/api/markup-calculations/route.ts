@@ -1,6 +1,6 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { calculationNameStringSchema, markupCalculatorSchema } from '@/schemas';
+import { calculationNameStringSchema, markupFormDataSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		const { cost, salesPrice } = markupCalculatorSchema.parse(body.formData);
+		const { cost, salesPrice } = markupFormDataSchema.parse(body.formData);
 		const name = calculationNameStringSchema.parse(body.name);
 
 		const calculation = await db.markupCalculation.create({

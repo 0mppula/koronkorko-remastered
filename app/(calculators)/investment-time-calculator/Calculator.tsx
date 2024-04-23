@@ -23,9 +23,9 @@ import {
 import useCalculator from '@/hooks/useCalculator';
 import { calculateInvestmentTime } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
-import { investmentTimeCalculatorSchema } from '@/schemas';
+import { investmentTimeFormDataSchema } from '@/schemas';
 import {
-	InferredInvestmentTimeCalculatorSchema,
+	InferredInvestmentTimeFormDataSchema,
 	InvestmentTimeReportProps,
 } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,15 +35,15 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: InferredInvestmentTimeCalculatorSchema = {
+const defaultValues: InferredInvestmentTimeFormDataSchema = {
 	startingBalance: 0,
 	endingBalance: 0,
 	annualInterestRate: 0,
 };
 
 const Calculator = () => {
-	const form = useForm<InferredInvestmentTimeCalculatorSchema>({
-		resolver: zodResolver(investmentTimeCalculatorSchema),
+	const form = useForm<InferredInvestmentTimeFormDataSchema>({
+		resolver: zodResolver(investmentTimeFormDataSchema),
 		defaultValues,
 	});
 
@@ -66,7 +66,7 @@ const Calculator = () => {
 		activeCalculation,
 		ifFieldIsEmpty,
 	} = useCalculator<
-		InferredInvestmentTimeCalculatorSchema,
+		InferredInvestmentTimeFormDataSchema,
 		InvestmentTimeReportProps,
 		InvestmentTimeCalculation
 	>({
@@ -98,10 +98,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal<
-				InferredInvestmentTimeCalculatorSchema,
-				InvestmentTimeCalculation
-			>
+			<ImportCalculationModal<InferredInvestmentTimeFormDataSchema, InvestmentTimeCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

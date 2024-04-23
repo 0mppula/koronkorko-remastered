@@ -1,9 +1,9 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { calculationNameStringSchema, investmentTimeCalculatorSchema } from '@/schemas';
+import { calculationNameStringSchema, investmentTimeFormDataSchema } from '@/schemas';
 import {
 	InferredCalculationNameStringSchema,
-	InferredInvestmentTimeCalculatorSchema,
+	InferredInvestmentTimeFormDataSchema,
 } from '@/types/calculations';
 import { NextResponse } from 'next/server';
 
@@ -17,11 +17,11 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		let formData: InferredInvestmentTimeCalculatorSchema | undefined;
+		let formData: InferredInvestmentTimeFormDataSchema | undefined;
 		let name: InferredCalculationNameStringSchema | undefined;
 
 		if (body.formData) {
-			formData = investmentTimeCalculatorSchema.parse(body.formData);
+			formData = investmentTimeFormDataSchema.parse(body.formData);
 		}
 
 		if (body.name) {

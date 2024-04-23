@@ -1,8 +1,8 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
-import { breakEvenPointCalculatorSchema, calculationNameStringSchema } from '@/schemas';
+import { breakEvenPointFormDataSchema, calculationNameStringSchema } from '@/schemas';
 import {
-	InferredBreakEvenPointCalculatorSchema,
+	InferredBreakEvenPointFormDataSchema,
 	InferredCalculationNameStringSchema,
 } from '@/types/calculations';
 import { NextResponse } from 'next/server';
@@ -17,11 +17,11 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		let formData: InferredBreakEvenPointCalculatorSchema | undefined;
+		let formData: InferredBreakEvenPointFormDataSchema | undefined;
 		let name: InferredCalculationNameStringSchema | undefined;
 
 		if (body.formData) {
-			formData = breakEvenPointCalculatorSchema.parse(body.formData);
+			formData = breakEvenPointFormDataSchema.parse(body.formData);
 		}
 
 		if (body.name) {

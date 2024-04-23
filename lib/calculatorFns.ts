@@ -1,13 +1,13 @@
 import {
 	BreakEvenPointReportProps,
-	InferredBreakEvenPointCalculatorSchema,
-	InferredInvestmentTimeCalculatorSchema,
-	InferredMarkupCalculatorSchema,
+	InferredBreakEvenPointFormDataSchema,
+	InferredInvestmentTimeFormDataSchema,
+	InferredMarkupFormDataSchema,
 	InvestmentTimeReportProps,
 	MarkupReportProps,
 } from '@/types/calculations';
 
-export const calculateMarkup = (formData: InferredMarkupCalculatorSchema): MarkupReportProps => {
+export const calculateMarkup = (formData: InferredMarkupFormDataSchema): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
 
 	const profit = salesPrice - cost;
@@ -17,7 +17,7 @@ export const calculateMarkup = (formData: InferredMarkupCalculatorSchema): Marku
 };
 
 export const calcualteBreakEvenPoint = (
-	formData: InferredBreakEvenPointCalculatorSchema
+	formData: InferredBreakEvenPointFormDataSchema
 ): BreakEvenPointReportProps => {
 	const { fixedCosts, variableCostPerUnit, pricePerUnit } = formData;
 
@@ -42,7 +42,7 @@ export const calcualteBreakEvenPoint = (
 };
 
 export const calculateInvestmentTime = (
-	formData: InferredInvestmentTimeCalculatorSchema
+	formData: InferredInvestmentTimeFormDataSchema
 ): InvestmentTimeReportProps => {
 	const { startingBalance, endingBalance, annualInterestRate } = formData;
 

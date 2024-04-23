@@ -28,18 +28,18 @@ const positiveNumberFieldSchema = (fieldName = 'Number') => {
 		});
 };
 
-export const markupCalculatorSchema = z.object({
+export const markupFormDataSchema = z.object({
 	cost: positiveNumberFieldSchema('Cost'),
 	salesPrice: positiveNumberFieldSchema('Sales price'),
 });
 
-export const breakEvenPointCalculatorSchema = z.object({
+export const breakEvenPointFormDataSchema = z.object({
 	fixedCosts: positiveNumberFieldSchema('Fixed costs'),
 	variableCostPerUnit: positiveNumberFieldSchema('Variable cost per unit'),
 	pricePerUnit: positiveNumberFieldSchema('Price per unit'),
 });
 
-export const investmentTimeCalculatorSchema = z.object({
+export const investmentTimeFormDataSchema = z.object({
 	startingBalance: positiveNumberFieldSchema('Starting value'),
 	endingBalance: positiveNumberFieldSchema('Future value'),
 	annualInterestRate: positiveNumberFieldSchema('Annual interest rate'),

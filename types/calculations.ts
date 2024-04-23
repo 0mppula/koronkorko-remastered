@@ -1,9 +1,9 @@
 import {
-	breakEvenPointCalculatorSchema,
+	markupFormDataSchema,
 	calculationNameSchema,
 	calculationNameStringSchema,
-	investmentTimeCalculatorSchema,
-	markupCalculatorSchema,
+	breakEvenPointFormDataSchema,
+	investmentTimeFormDataSchema,
 } from '@/schemas';
 import {
 	BreakEvenPointCalculation,
@@ -31,9 +31,9 @@ export type InferredCalculationNameStringSchema = z.infer<typeof calculationName
 export type InferredCalculationNameSchema = z.infer<typeof calculationNameSchema>;
 
 // Break Even Point Calculator
-export type InferredBreakEvenPointCalculatorSchema = z.infer<typeof breakEvenPointCalculatorSchema>;
+export type InferredBreakEvenPointFormDataSchema = z.infer<typeof breakEvenPointFormDataSchema>;
 
-export interface BreakEvenPointReportProps extends InferredBreakEvenPointCalculatorSchema {
+export interface BreakEvenPointReportProps extends InferredBreakEvenPointFormDataSchema {
 	breakEvenPointUnits: number;
 	breakEvenPointMoney: number;
 	contributionMarginMoney: number;
@@ -41,17 +41,17 @@ export interface BreakEvenPointReportProps extends InferredBreakEvenPointCalcula
 }
 
 // Markup Calculator
-export type InferredMarkupCalculatorSchema = z.infer<typeof markupCalculatorSchema>;
+export type InferredMarkupFormDataSchema = z.infer<typeof markupFormDataSchema>;
 
-export interface MarkupReportProps extends InferredMarkupCalculatorSchema {
+export interface MarkupReportProps extends InferredMarkupFormDataSchema {
 	profit: number;
 	markup: number;
 }
 
 // Investment Time Calculation
-export type InferredInvestmentTimeCalculatorSchema = z.infer<typeof investmentTimeCalculatorSchema>;
+export type InferredInvestmentTimeFormDataSchema = z.infer<typeof investmentTimeFormDataSchema>;
 
-export interface InvestmentTimeReportProps extends InferredInvestmentTimeCalculatorSchema {
+export interface InvestmentTimeReportProps extends InferredInvestmentTimeFormDataSchema {
 	yearsRequired: number;
 	monthsRequired: number;
 	daysRequired: number;
