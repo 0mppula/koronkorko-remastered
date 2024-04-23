@@ -9,7 +9,7 @@ const year = new Date(Date.now()).getFullYear();
 const Footer = () => {
 	return (
 		<footer className="bg-card pt-11 pb-6 border-t-2 overflow-hidden">
-			<div className="max-w-6xl mx-auto px-8">
+			<div className="max-w-6xl mx-auto px-6 md:px-8">
 				{/* Top */}
 				<div className="grid xl:grid-cols-12 gap-y-8 gap-x-4 pb-8">
 					<div className="flex flex-col col-span-12 xl:col-span-4">
