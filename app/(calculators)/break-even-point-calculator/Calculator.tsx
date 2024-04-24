@@ -6,7 +6,6 @@ import FormGroup from '@/components/Form/FormGroup';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import SubmitButton from '@/components/Form/SubmitButton';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
-import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
 import {
 	Form,
 	FormControl,
@@ -61,6 +60,7 @@ const Calculator = () => {
 		setRenameModalOpen,
 		activeCalculation,
 		ifFieldIsEmpty,
+		closeRenameModal,
 	} = useCalculator<
 		IBreakEvenPointFormData,
 		BreakEvenPointReportProps,
@@ -97,13 +97,6 @@ const Calculator = () => {
 				handleImport={handleImport}
 			/>
 
-			<RenameCalculationModal
-				isOpen={renameModalOpen}
-				handleClose={() => setRenameModalOpen(false)}
-				handleRename={handleRename}
-				activeCalculation={activeCalculation}
-			/>
-
 			<FormContainer>
 				<FormControlsTop
 					reset={resetForm}
@@ -115,6 +108,9 @@ const Calculator = () => {
 					isSaveModalOpen={saveModalOpen}
 					handleCloseSaveModal={closeSaveModal}
 					handleSave={handleSave}
+					isRenameModalOpen={renameModalOpen}
+					handleCloseRenameModal={closeRenameModal}
+					handleRename={handleRename}
 				/>
 
 				<Form {...form}>

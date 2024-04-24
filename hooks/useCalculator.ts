@@ -5,7 +5,7 @@ import {
 	saveCalculation,
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
-import { IHasFormDataAndName, ICalculationNameFormData } from '@/types/calculations';
+import { ICalculationNameFormData, IHasFormDataAndName } from '@/types/calculations';
 import { useCallback, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -97,6 +97,10 @@ const useCalculator = <
 		setSaveModalOpen(false);
 	}, [setSaveModalOpen]);
 
+	const closeRenameModal = useCallback(() => {
+		setRenameModalOpen(false);
+	}, [setRenameModalOpen]);
+
 	const handleSave = useCallback(
 		(data: ICalculationNameFormData) => {
 			saveMutate({
@@ -177,6 +181,7 @@ const useCalculator = <
 		activeCalculation,
 		setActiveCalculation,
 		ifFieldIsEmpty,
+		closeRenameModal,
 	};
 };
 

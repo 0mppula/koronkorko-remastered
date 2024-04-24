@@ -57,6 +57,7 @@ const Calculator = () => {
 		setRenameModalOpen,
 		activeCalculation,
 		ifFieldIsEmpty,
+		closeRenameModal,
 	} = useCalculator<IMarkupFormData, MarkupReportProps, MarkupCalculation>({
 		apiUrl: MARKUP_CALCULATIONS_API_URL,
 		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
@@ -89,13 +90,6 @@ const Calculator = () => {
 				handleImport={handleImport}
 			/>
 
-			<RenameCalculationModal
-				isOpen={renameModalOpen}
-				handleClose={() => setRenameModalOpen(false)}
-				handleRename={handleRename}
-				activeCalculation={activeCalculation}
-			/>
-
 			<FormContainer>
 				<FormControlsTop
 					reset={resetForm}
@@ -107,6 +101,9 @@ const Calculator = () => {
 					isSaveModalOpen={saveModalOpen}
 					handleCloseSaveModal={closeSaveModal}
 					handleSave={handleSave}
+					isRenameModalOpen={renameModalOpen}
+					handleCloseRenameModal={closeRenameModal}
+					handleRename={handleRename}
 				/>
 
 				<Form {...form}>

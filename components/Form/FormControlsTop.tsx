@@ -1,8 +1,9 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CalculationType, ICalculationNameFormData } from '@/types/calculations';
-import { FileDown, RotateCw, SquarePen, X } from 'lucide-react';
+import { FileDown, RotateCw, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import RenameCalculationModal from '../Modals/RenameCalculationModal';
 import SaveCalculationModal from '../Modals/SaveCalculationModal';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -17,6 +18,9 @@ interface FormControlsTopProps {
 	isSaveModalOpen: boolean;
 	handleCloseSaveModal: () => void;
 	handleSave: (data: ICalculationNameFormData) => void;
+	isRenameModalOpen: boolean;
+	handleCloseRenameModal: () => void;
+	handleRename: (data: ICalculationNameFormData) => void;
 }
 
 const FormControlsTop = ({
@@ -29,6 +33,9 @@ const FormControlsTop = ({
 	isSaveModalOpen,
 	handleCloseSaveModal,
 	handleSave,
+	handleCloseRenameModal,
+	handleRename,
+	isRenameModalOpen,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
 
@@ -62,24 +69,13 @@ const FormControlsTop = ({
 							</p>
 
 							<div className="flex gap-1">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											onClick={renameStart}
-											variant="ghost"
-											size="icon"
-											className="h-8 w-8"
-										>
-											<SquarePen className="h-4 w-4" aria-hidden />
-
-											<span className="sr-only">Rename calculation</span>
-										</Button>
-									</TooltipTrigger>
-
-									<TooltipContent>
-										<p>Rename calculation</p>
-									</TooltipContent>
-								</Tooltip>
+								<RenameCalculationModal
+									isOpen={isRenameModalOpen}
+									handleClose={handleCloseRenameModal}
+									handleRename={handleRename}
+									activeCalculation={activeCalculation}
+									renameStart={renameStart}
+								/>
 
 								<Tooltip>
 									<TooltipTrigger asChild>

@@ -10,7 +10,6 @@ import { ICalculationNameFormData } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import { Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { ImSpinner8 } from 'react-icons/im';
 import { Form } from '../ui/form';
@@ -37,14 +36,17 @@ const SaveCalculationModal = ({
 		},
 	});
 
-	useEffect(() => {
-		if (isOpen) {
-			form.reset();
-		}
-	}, [isOpen]);
-
 	return (
-		<Dialog open={isOpen} onOpenChange={handleClose}>
+		<Dialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (open) {
+					form.reset();
+				} else {
+					handleClose();
+				}
+			}}
+		>
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<DialogTrigger asChild>
