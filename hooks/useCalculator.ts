@@ -6,6 +6,7 @@ import {
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
 import { ICalculationNameFormData, IHasFormDataAndName } from '@/types/calculations';
+import { useSession } from 'next-auth/react';
 import { useCallback, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -35,6 +36,10 @@ const useCalculator = <
 	const [saveModalOpen, setSaveModalOpen] = useState(false);
 	const [importModalOpen, setImportModalOpen] = useState(false);
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
+
+	const { status: sessionStatus } = useSession();
+
+	const isAuthenticated = sessionStatus === 'authenticated';
 
 	const {
 		deleteMutation: { mutate: deleteMutate },
@@ -89,9 +94,13 @@ const useCalculator = <
 			}
 		};
 
-		// Runs the body of the function only if the form is valid, else it will show errors.
-		form.handleSubmit(startIfFormIsValid, () => toast.error('Invalid field values'))();
-	}, [activeCalculation, updateMutate, apiUrl, form, setSaveModalOpen]);
+		if (isAuthenticated) {
+			// Runs the body of the function only if the form is valid, else it will show errors.
+			form.handleSubmit(startIfFormIsValid, () => toast.error('Invalid field values'))();
+		} else {
+			toast.error('Please login to save calculation');
+		}
+	}, [activeCalculation, updateMutate, apiUrl, form, setSaveModalOpen, isAuthenticated]);
 
 	const closeSaveModal = useCallback(() => {
 		setSaveModalOpen(false);
@@ -100,6 +109,10 @@ const useCalculator = <
 	const closeRenameModal = useCallback(() => {
 		setRenameModalOpen(false);
 	}, [setRenameModalOpen]);
+
+	const closeImportModal = useCallback(() => {
+		setImportModalOpen(false);
+	}, [setImportModalOpen]);
 
 	const handleSave = useCallback(
 		(data: ICalculationNameFormData) => {
@@ -156,6 +169,14 @@ const useCalculator = <
 		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form]
 	);
 
+	const handleImportStart = useCallback(() => {
+		if (isAuthenticated) {
+			setImportModalOpen(true);
+		} else {
+			toast.error('Please login to import a calculation');
+		}
+	}, [isAuthenticated, setImportModalOpen]);
+
 	const ifFieldIsEmpty = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
 		return e.target.value === '';
 	}, []);
@@ -182,6 +203,8 @@ const useCalculator = <
 		setActiveCalculation,
 		ifFieldIsEmpty,
 		closeRenameModal,
+		handleImportStart,
+		closeImportModal,
 	};
 };
 

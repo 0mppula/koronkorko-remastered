@@ -1,11 +1,17 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IHasFormDataAndName } from '@/types/calculations';
 import { FileDown, Trash } from 'lucide-react';
-import { Dispatch, Fragment, SetStateAction } from 'react';
+import { Fragment } from 'react';
 import { FieldValues } from 'react-hook-form';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
@@ -13,11 +19,12 @@ import { Skeleton } from '../ui/skeleton';
 
 interface ImportCalculationModalProps<TCalculation> {
 	isOpen: boolean;
-	setImportModalOpen: Dispatch<SetStateAction<boolean>>;
 	calculations?: TCalculation[] | null;
 	isLoading: boolean;
 	handleDelete: (id: string) => void;
 	handleImport: (calculation: TCalculation) => void;
+	handleImportStart: () => void;
+	closeImportModal: () => void;
 }
 
 const ImportCalculationModal = <
@@ -25,18 +32,47 @@ const ImportCalculationModal = <
 	TCalculation extends IHasFormDataAndName<TFormData>
 >({
 	isOpen,
-	setImportModalOpen,
 	calculations,
 	isLoading,
 	handleDelete,
 	handleImport,
+	handleImportStart,
+	closeImportModal,
 }: ImportCalculationModalProps<TCalculation>) => {
 	const handleDeleteCalculation = (id: string) => {
 		handleDelete(id);
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={(open) => setImportModalOpen(open)}>
+		<Dialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (!open) {
+					closeImportModal();
+				}
+			}}
+		>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<DialogTrigger asChild>
+						<Button
+							onClick={handleImportStart}
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+						>
+							<FileDown className="h-4 w-4" aria-hidden />
+
+							<span className="sr-only">Import calculation</span>
+						</Button>
+					</DialogTrigger>
+				</TooltipTrigger>
+
+				<TooltipContent>
+					<p>Import calculation</p>
+				</TooltipContent>
+			</Tooltip>
+
 			<DialogContent className="p-0">
 				<DialogHeader className="p-6 pb-0">
 					<DialogTitle>Import Calculation</DialogTitle>

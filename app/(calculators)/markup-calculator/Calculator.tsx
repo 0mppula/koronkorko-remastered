@@ -5,8 +5,6 @@ import FormControlsTop from '@/components/Form/FormControlsTop';
 import FormGroup from '@/components/Form/FormGroup';
 import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import SubmitButton from '@/components/Form/SubmitButton';
-import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
-import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
 import {
 	Form,
 	FormControl,
@@ -52,12 +50,13 @@ const Calculator = () => {
 		report,
 		saveModalOpen,
 		importModalOpen,
-		setImportModalOpen,
 		renameModalOpen,
 		setRenameModalOpen,
 		activeCalculation,
 		ifFieldIsEmpty,
 		closeRenameModal,
+		handleImportStart,
+		closeImportModal,
 	} = useCalculator<IMarkupFormData, MarkupReportProps, MarkupCalculation>({
 		apiUrl: MARKUP_CALCULATIONS_API_URL,
 		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
@@ -81,22 +80,12 @@ const Calculator = () => {
 
 	return (
 		<>
-			<ImportCalculationModal<IMarkupFormData, MarkupCalculation>
-				isOpen={importModalOpen}
-				setImportModalOpen={setImportModalOpen}
-				handleDelete={handleDelete}
-				calculations={calculations}
-				isLoading={isCalculationsLoading || isFetching}
-				handleImport={handleImport}
-			/>
-
 			<FormContainer>
-				<FormControlsTop
+				<FormControlsTop<IMarkupFormData, MarkupCalculation>
 					reset={resetForm}
-					saveUpdateStart={handleSaveUpdateStart}
+					handleSaveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
 					closeCalculation={handleClose}
-					importStart={() => setImportModalOpen(true)}
 					renameStart={() => setRenameModalOpen(true)}
 					isSaveModalOpen={saveModalOpen}
 					handleCloseSaveModal={closeSaveModal}
@@ -104,6 +93,13 @@ const Calculator = () => {
 					isRenameModalOpen={renameModalOpen}
 					handleCloseRenameModal={closeRenameModal}
 					handleRename={handleRename}
+					isImportModalOpen={importModalOpen}
+					handleImportStart={handleImportStart}
+					handleDelete={handleDelete}
+					calculations={calculations}
+					isLoading={isCalculationsLoading || isFetching}
+					handleImport={handleImport}
+					closeImportModal={closeImportModal}
 				/>
 
 				<Form {...form}>

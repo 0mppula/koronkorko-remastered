@@ -1,19 +1,22 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CalculationType, ICalculationNameFormData } from '@/types/calculations';
-import { FileDown, RotateCw, X } from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import { toast } from 'sonner';
+import {
+	CalculationType,
+	ICalculationNameFormData,
+	IHasFormDataAndName,
+} from '@/types/calculations';
+import { RotateCw, X } from 'lucide-react';
+import { FieldValues } from 'react-hook-form';
+import ImportCalculationModal from '../Modals/ImportCalculationModal';
 import RenameCalculationModal from '../Modals/RenameCalculationModal';
 import SaveCalculationModal from '../Modals/SaveCalculationModal';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 
-interface FormControlsTopProps {
+interface FormControlsTopProps<TCalculation> {
 	reset: () => void;
-	saveUpdateStart: () => void;
+	handleSaveUpdateStart: () => void;
 	activeCalculation: CalculationType | null;
 	renameStart: () => void;
-	importStart: () => void;
 	closeCalculation: () => void;
 	isSaveModalOpen: boolean;
 	handleCloseSaveModal: () => void;
@@ -21,14 +24,23 @@ interface FormControlsTopProps {
 	isRenameModalOpen: boolean;
 	handleCloseRenameModal: () => void;
 	handleRename: (data: ICalculationNameFormData) => void;
+	isImportModalOpen: boolean;
+	calculations?: TCalculation[] | null;
+	isLoading: boolean;
+	handleDelete: (id: string) => void;
+	handleImport: (calculation: TCalculation) => void;
+	handleImportStart: () => void;
+	closeImportModal: () => void;
 }
 
-const FormControlsTop = ({
+const FormControlsTop = <
+	TFormData extends FieldValues,
+	TCalculation extends IHasFormDataAndName<TFormData>
+>({
 	reset,
-	saveUpdateStart,
+	handleSaveUpdateStart,
 	activeCalculation,
 	renameStart,
-	importStart,
 	closeCalculation,
 	isSaveModalOpen,
 	handleCloseSaveModal,
@@ -36,27 +48,15 @@ const FormControlsTop = ({
 	handleCloseRenameModal,
 	handleRename,
 	isRenameModalOpen,
-}: FormControlsTopProps) => {
-	const { status: sessionStatus } = useSession();
-
-	const isAuthenticated = sessionStatus === 'authenticated';
+	handleDelete,
+	isImportModalOpen,
+	calculations,
+	isLoading,
+	handleImport,
+	handleImportStart,
+	closeImportModal,
+}: FormControlsTopProps<TCalculation>) => {
 	const saveLoading = false;
-
-	const handleImport = () => {
-		if (isAuthenticated) {
-			importStart();
-		} else {
-			toast.error('Please login to import a calculation');
-		}
-	};
-
-	const handleSaveUpdateStart = () => {
-		if (isAuthenticated) {
-			saveUpdateStart();
-		} else {
-			toast.error('Please login to save calculation');
-		}
-	};
 
 	return (
 		<>
@@ -101,24 +101,15 @@ const FormControlsTop = ({
 				</div>
 
 				<div className="flex flex-wrap gap-1 justify-end xs:justify-normal w-full xs:w-auto">
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={handleImport}
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8"
-							>
-								<FileDown className="h-4 w-4" aria-hidden />
-
-								<span className="sr-only">Import calculation</span>
-							</Button>
-						</TooltipTrigger>
-
-						<TooltipContent>
-							<p>Import calculation</p>
-						</TooltipContent>
-					</Tooltip>
+					<ImportCalculationModal
+						isOpen={isImportModalOpen}
+						handleDelete={handleDelete}
+						calculations={calculations}
+						isLoading={isLoading}
+						handleImport={handleImport}
+						handleImportStart={handleImportStart}
+						closeImportModal={closeImportModal}
+					/>
 
 					<SaveCalculationModal
 						isOpen={isSaveModalOpen}
