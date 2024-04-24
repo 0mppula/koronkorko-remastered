@@ -30,13 +30,13 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 
 			<ReportGroup
 				header="Variable Cost Per Unit"
-				value={formatCurrency(pricePerUnit, currency)}
+				value={formatCurrency(variableCostPerUnit, currency)}
 			/>
 
 			<ReportGroup
 				fullWidth
 				header="Price Per Unit"
-				value={formatCurrency(variableCostPerUnit, currency)}
+				value={formatCurrency(pricePerUnit, currency)}
 			/>
 
 			<ReportGroup

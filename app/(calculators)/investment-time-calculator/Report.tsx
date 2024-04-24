@@ -33,9 +33,13 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 			<ReportGroup header="Future Value" value={formatCurrency(endingBalance, currency)} />
 
 			<ReportGroup
-				fullWidth
 				header="Annual interest rate"
 				value={formatPercentage(annualInterestRate)}
+			/>
+
+			<ReportGroup
+				header="Total Interest"
+				value={formatCurrency(endingBalance - startingBalance, currency)}
 			/>
 
 			<ReportGroup

@@ -39,11 +39,30 @@ export const breakEvenPointFormDataSchema = z.object({
 	pricePerUnit: positiveNumberFieldSchema('Price per unit'),
 });
 
-export const investmentTimeFormDataSchema = z.object({
-	startingBalance: positiveNumberFieldSchema('Starting value'),
-	endingBalance: positiveNumberFieldSchema('Future value'),
-	annualInterestRate: positiveNumberFieldSchema('Annual interest rate'),
-});
+export const investmentTimeFormDataSchema = z
+	.object({
+		startingBalance: positiveNumberFieldSchema('Starting value'),
+		endingBalance: positiveNumberFieldSchema('Future value'),
+		annualInterestRate: positiveNumberFieldSchema('Annual interest rate'),
+	})
+	.superRefine((data, ctx) => {
+		if (
+			data.startingBalance >= data.endingBalance &&
+			data.endingBalance > 0 &&
+			data.startingBalance > 0
+		) {
+			ctx.addIssue({
+				message: 'Future value must be greater than starting value',
+				code: z.ZodIssueCode.custom,
+				path: ['endingBalance'],
+			});
+			ctx.addIssue({
+				message: 'Starting value must be less than future value',
+				code: z.ZodIssueCode.custom,
+				path: ['startingBalance'],
+			});
+		}
+	});
 
 export const presentValueFormDataSchema = z.object({
 	startingBalance: positiveNumberFieldSchema('Future value'),

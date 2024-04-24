@@ -29,6 +29,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { InvestmentTimeCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
+import { ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
@@ -87,6 +88,22 @@ const Calculator = () => {
 		enabled: sessionStatus === 'authenticated',
 	});
 
+	const handleOnChangeText = (
+		e: ChangeEvent<HTMLInputElement>,
+		onChange: (...event: string[]) => void
+	) => {
+		onChange(e.target.value);
+
+		if (
+			form.getValues('startingBalance') > 0 &&
+			form.getValues('endingBalance') > 0 &&
+			form.getValues('startingBalance') < form.getValues('endingBalance') &&
+			form.formState.isSubmitted
+		) {
+			form.trigger(['startingBalance', 'endingBalance']);
+		}
+	};
+
 	return (
 		<>
 			<SaveCalculationModal
@@ -134,6 +151,9 @@ const Calculator = () => {
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
+												onChange={(e: ChangeEvent<HTMLInputElement>) =>
+													handleOnChangeText(e, field.onChange)
+												}
 												name="startingBalance"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
@@ -155,6 +175,9 @@ const Calculator = () => {
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
+												onChange={(e: ChangeEvent<HTMLInputElement>) =>
+													handleOnChangeText(e, field.onChange)
+												}
 												name="endingBalance"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
