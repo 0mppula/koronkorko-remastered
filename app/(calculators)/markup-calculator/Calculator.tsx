@@ -7,7 +7,6 @@ import NumberInputWithIcon from '@/components/Form/NumberInputWithIcon';
 import SubmitButton from '@/components/Form/SubmitButton';
 import ImportCalculationModal from '@/components/Modals/ImportCalculationModal';
 import RenameCalculationModal from '@/components/Modals/RenameCalculationModal';
-import SaveCalculationModal from '@/components/Modals/SaveCalculationModal';
 import {
 	Form,
 	FormControl,
@@ -81,12 +80,6 @@ const Calculator = () => {
 
 	return (
 		<>
-			<SaveCalculationModal
-				isOpen={saveModalOpen}
-				handleClose={closeSaveModal}
-				handleSave={handleSave}
-			/>
-
 			<ImportCalculationModal<IMarkupFormData, MarkupCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
@@ -111,6 +104,9 @@ const Calculator = () => {
 					closeCalculation={handleClose}
 					importStart={() => setImportModalOpen(true)}
 					renameStart={() => setRenameModalOpen(true)}
+					isSaveModalOpen={saveModalOpen}
+					handleCloseSaveModal={closeSaveModal}
+					handleSave={handleSave}
 				/>
 
 				<Form {...form}>

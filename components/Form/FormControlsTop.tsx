@@ -1,9 +1,9 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { CalculationType } from '@/types/calculations';
-import { FileDown, RotateCw, Save, SquarePen, X } from 'lucide-react';
+import { CalculationType, ICalculationNameFormData } from '@/types/calculations';
+import { FileDown, RotateCw, SquarePen, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { ImSpinner8 } from 'react-icons/im';
 import { toast } from 'sonner';
+import SaveCalculationModal from '../Modals/SaveCalculationModal';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
 
@@ -14,6 +14,9 @@ interface FormControlsTopProps {
 	renameStart: () => void;
 	importStart: () => void;
 	closeCalculation: () => void;
+	isSaveModalOpen: boolean;
+	handleCloseSaveModal: () => void;
+	handleSave: (data: ICalculationNameFormData) => void;
 }
 
 const FormControlsTop = ({
@@ -23,6 +26,9 @@ const FormControlsTop = ({
 	renameStart,
 	importStart,
 	closeCalculation,
+	isSaveModalOpen,
+	handleCloseSaveModal,
+	handleSave,
 }: FormControlsTopProps) => {
 	const { status: sessionStatus } = useSession();
 
@@ -118,28 +124,13 @@ const FormControlsTop = ({
 						</TooltipContent>
 					</Tooltip>
 
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								onClick={handleSaveUpdateStart}
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8"
-							>
-								{saveLoading ? (
-									<ImSpinner8 className="h-4 w-4 animate-spin" />
-								) : (
-									<Save className="h-4 w-4" aria-hidden />
-								)}
-
-								<span className="sr-only">Save calculation</span>
-							</Button>
-						</TooltipTrigger>
-
-						<TooltipContent>
-							<p>Save calculation</p>
-						</TooltipContent>
-					</Tooltip>
+					<SaveCalculationModal
+						isOpen={isSaveModalOpen}
+						handleClose={handleCloseSaveModal}
+						handleSave={handleSave}
+						handleSaveUpdateStart={handleSaveUpdateStart}
+						saveLoading={saveLoading}
+					/>
 
 					<Tooltip>
 						<TooltipTrigger asChild>
