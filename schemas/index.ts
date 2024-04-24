@@ -20,8 +20,8 @@ export const calculationNameSchema = z.object({
 const positiveNumberFieldSchema = (fieldName = 'Number') => {
 	return z.coerce
 		.number({
-			required_error: 'This field is required',
-			invalid_type_error: 'This field is required',
+			required_error: `${fieldName} is required`,
+			invalid_type_error: `${fieldName} has to be a number`,
 		})
 		.min(0, {
 			message: `${fieldName} cannot be negative`,

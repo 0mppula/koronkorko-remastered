@@ -1,3 +1,4 @@
+import { durationMultipliers } from '@/constants/data';
 import {
 	breakEvenPointFormDataSchema,
 	calculationNameSchema,

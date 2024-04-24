@@ -140,3 +140,22 @@ export const currencies = [
 	{ name: 'Japanese Yen', value: 'jpy', symbol: '¥', locale: 'en-US' },
 	{ name: 'Indian Rupee', value: 'inr', symbol: '₹', locale: 'en-US' },
 ] as const;
+
+export const durationMultipliers = [
+	// The value represents the amount of months in given option
+	{ value: 12, label: 'Years' },
+	{ value: 3, label: 'Quarters' },
+	{ value: 1, label: 'Months' },
+] as const;
+
+export const contributionFrequencies = [
+	// The value represents the contribution frequency per year in given option
+	{ value: 1, label: 'Annualy' },
+	{ value: 12, label: 'Monthly' },
+] as const;
+
+export const compoundFrequencies = [
+	// The value represents the compound frequency per year in given option
+	{ value: 1, label: 'Annualy' },
+	{ value: 12, label: 'Monthly' },
+] as const;

@@ -1,4 +1,4 @@
-import { calculators, currencies } from '@/constants/data';
+import { calculators, currencies, durationMultipliers } from '@/constants/data';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -25,6 +25,10 @@ const getCurrencyLocale = (value: (typeof currencies)[number]['value']): string 
 
 export const getCurrencySymbol = (value: (typeof currencies)[number]['value']): string => {
 	return currencies.find((currency) => currency.value === value)?.symbol || '$';
+};
+
+export const getDurationLabel = (value: number) => {
+	return durationMultipliers.find((duration) => duration.value === value)?.label || 'Years';
 };
 
 export const formatCurrency = (

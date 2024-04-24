@@ -3,6 +3,7 @@ import {
 	InferredBreakEvenPointFormDataSchema,
 	InferredInvestmentTimeFormDataSchema,
 	InferredMarkupFormDataSchema,
+	InferredPresentValueFormDataSchema,
 	InvestmentTimeReportProps,
 	MarkupReportProps,
 } from '@/types/calculations';
@@ -57,4 +58,16 @@ export const calculateInvestmentTime = (
 		monthsRequired: T * 12,
 		daysRequired: T * 365,
 	};
+};
+
+export const calculatePresentValue = (formData: InferredPresentValueFormDataSchema) => {
+	const { startingBalance, discountRate, duration, durationMultiplier } = formData;
+
+	// PV = FV * (1 / (1 + r) ^ n)
+	const FV = startingBalance;
+	const r = discountRate / 100;
+	const n = (duration * durationMultiplier) / 12;
+	const PV = FV * (1 / (1 + r) ** n);
+
+	return { startingBalance, discountRate, duration, durationMultiplier, presentValue: PV };
 };

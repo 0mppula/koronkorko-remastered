@@ -17,9 +17,9 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 	const { cost, salesPrice, markup, profit } = report;
 	return (
 		<ReportSummaryContainer>
-			<ReportGroup header="Cost" value={formatCurrency(cost)} />
+			<ReportGroup header="Cost" value={formatCurrency(cost, currency)} />
 
-			<ReportGroup header="Sales Price" value={formatCurrency(salesPrice)} />
+			<ReportGroup header="Sales Price" value={formatCurrency(salesPrice, currency)} />
 
 			<ReportGroup
 				header="Markup"
