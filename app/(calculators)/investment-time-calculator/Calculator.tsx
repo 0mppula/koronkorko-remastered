@@ -24,10 +24,7 @@ import useCalculator from '@/hooks/useCalculator';
 import { calculateInvestmentTime } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { investmentTimeFormDataSchema } from '@/schemas';
-import {
-	InferredInvestmentTimeFormDataSchema,
-	InvestmentTimeReportProps,
-} from '@/types/calculations';
+import { IInvestmentTimeFormData, InvestmentTimeReportProps } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { InvestmentTimeCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
@@ -35,14 +32,14 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: InferredInvestmentTimeFormDataSchema = {
+const defaultValues: IInvestmentTimeFormData = {
 	startingBalance: 0,
 	endingBalance: 0,
 	annualInterestRate: 0,
 };
 
 const Calculator = () => {
-	const form = useForm<InferredInvestmentTimeFormDataSchema>({
+	const form = useForm<IInvestmentTimeFormData>({
 		resolver: zodResolver(investmentTimeFormDataSchema),
 		defaultValues,
 	});
@@ -66,7 +63,7 @@ const Calculator = () => {
 		activeCalculation,
 		ifFieldIsEmpty,
 	} = useCalculator<
-		InferredInvestmentTimeFormDataSchema,
+		IInvestmentTimeFormData,
 		InvestmentTimeReportProps,
 		InvestmentTimeCalculation
 	>({
@@ -98,7 +95,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal<InferredInvestmentTimeFormDataSchema, InvestmentTimeCalculation>
+			<ImportCalculationModal<IInvestmentTimeFormData, InvestmentTimeCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

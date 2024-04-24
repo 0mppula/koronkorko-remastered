@@ -1,14 +1,14 @@
 import {
 	BreakEvenPointReportProps,
-	InferredBreakEvenPointFormDataSchema,
-	InferredInvestmentTimeFormDataSchema,
-	InferredMarkupFormDataSchema,
-	InferredPresentValueFormDataSchema,
+	IBreakEvenPointFormData,
+	IInvestmentTimeFormData,
+	IMarkupFormData,
+	IPresentValueFormData,
 	InvestmentTimeReportProps,
 	MarkupReportProps,
 } from '@/types/calculations';
 
-export const calculateMarkup = (formData: InferredMarkupFormDataSchema): MarkupReportProps => {
+export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
 
 	const profit = salesPrice - cost;
@@ -18,7 +18,7 @@ export const calculateMarkup = (formData: InferredMarkupFormDataSchema): MarkupR
 };
 
 export const calcualteBreakEvenPoint = (
-	formData: InferredBreakEvenPointFormDataSchema
+	formData: IBreakEvenPointFormData
 ): BreakEvenPointReportProps => {
 	const { fixedCosts, variableCostPerUnit, pricePerUnit } = formData;
 
@@ -43,7 +43,7 @@ export const calcualteBreakEvenPoint = (
 };
 
 export const calculateInvestmentTime = (
-	formData: InferredInvestmentTimeFormDataSchema
+	formData: IInvestmentTimeFormData
 ): InvestmentTimeReportProps => {
 	const { startingBalance, endingBalance, annualInterestRate } = formData;
 
@@ -60,7 +60,7 @@ export const calculateInvestmentTime = (
 	};
 };
 
-export const calculatePresentValue = (formData: InferredPresentValueFormDataSchema) => {
+export const calculatePresentValue = (formData: IPresentValueFormData) => {
 	const { startingBalance, discountRate, duration, durationMultiplier } = formData;
 
 	// PV = FV * (1 / (1 + r) ^ n)

@@ -1,10 +1,7 @@
 import { getAuthSession } from '@/app/actions/auth';
 import db from '@/lib/db';
 import { calculationNameStringSchema, presentValueFormDataSchema } from '@/schemas';
-import {
-	InferredCalculationNameStringSchema,
-	InferredPresentValueFormDataSchema,
-} from '@/types/calculations';
+import { ICalculationNameString, IPresentValueFormData } from '@/types/calculations';
 import { NextResponse } from 'next/server';
 
 export const PUT = async (req: Request, { params }: { params: { id: string } }) => {
@@ -17,8 +14,8 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		let formData: InferredPresentValueFormDataSchema | undefined;
-		let name: InferredCalculationNameStringSchema | undefined;
+		let formData: IPresentValueFormData | undefined;
+		let name: ICalculationNameString | undefined;
 
 		if (body.formData) {
 			formData = presentValueFormDataSchema.parse(body.formData);

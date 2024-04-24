@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { calculationNameSchema } from '@/schemas';
-import { InferredCalculationNameSchema } from '@/types/calculations';
+import { calculationNameFormDataSchema } from '@/schemas';
+import { ICalculationNameFormData } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -14,12 +14,12 @@ import { Form } from '../ui/form';
 interface SaveCalculationModalProps {
 	isOpen: boolean;
 	handleClose: () => void;
-	handleSave: (data: InferredCalculationNameSchema) => void;
+	handleSave: (data: ICalculationNameFormData) => void;
 }
 
 const SaveCalculationModal = ({ isOpen, handleClose, handleSave }: SaveCalculationModalProps) => {
-	const form = useForm<InferredCalculationNameSchema>({
-		resolver: zodResolver(calculationNameSchema),
+	const form = useForm<ICalculationNameFormData>({
+		resolver: zodResolver(calculationNameFormDataSchema),
 		defaultValues: {
 			name: '',
 		},

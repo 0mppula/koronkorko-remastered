@@ -5,7 +5,7 @@ import {
 	saveCalculation,
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
-import { IHasFormDataAndName, InferredCalculationNameSchema } from '@/types/calculations';
+import { IHasFormDataAndName, ICalculationNameFormData } from '@/types/calculations';
 import { useCallback, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -98,7 +98,7 @@ const useCalculator = <
 	}, [setSaveModalOpen]);
 
 	const handleSave = useCallback(
-		(data: InferredCalculationNameSchema) => {
+		(data: ICalculationNameFormData) => {
 			saveMutate({
 				apiUrl,
 				name: data.name,
@@ -109,7 +109,7 @@ const useCalculator = <
 	);
 
 	const handleRename = useCallback(
-		(data: InferredCalculationNameSchema) => {
+		(data: ICalculationNameFormData) => {
 			if (!activeCalculation) return;
 			// Only update if the name has changed
 			if (activeCalculation.name === data.name) {

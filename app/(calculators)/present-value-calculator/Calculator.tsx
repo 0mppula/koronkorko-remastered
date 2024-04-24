@@ -33,7 +33,7 @@ import useCalculator from '@/hooks/useCalculator';
 import { calculatePresentValue } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { presentValueFormDataSchema } from '@/schemas';
-import { InferredPresentValueFormDataSchema, PresentValueReportProps } from '@/types/calculations';
+import { IPresentValueFormData, PresentValueReportProps } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PresentValueCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
@@ -41,7 +41,7 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: InferredPresentValueFormDataSchema = {
+const defaultValues: IPresentValueFormData = {
 	startingBalance: 0,
 	discountRate: 0,
 	duration: 0,
@@ -49,7 +49,7 @@ const defaultValues: InferredPresentValueFormDataSchema = {
 };
 
 const Calculator = () => {
-	const form = useForm<InferredPresentValueFormDataSchema>({
+	const form = useForm<IPresentValueFormData>({
 		resolver: zodResolver(presentValueFormDataSchema),
 		defaultValues,
 	});
@@ -72,11 +72,7 @@ const Calculator = () => {
 		setRenameModalOpen,
 		activeCalculation,
 		ifFieldIsEmpty,
-	} = useCalculator<
-		InferredPresentValueFormDataSchema,
-		PresentValueReportProps,
-		PresentValueCalculation
-	>({
+	} = useCalculator<IPresentValueFormData, PresentValueReportProps, PresentValueCalculation>({
 		apiUrl: PRESENT_VALUE_CALCULATIONS_API_URL,
 		queryKey: PRESENT_VALUE_CALCULATIONS_QUERY_KEY,
 		defaultValues,
@@ -105,7 +101,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal<InferredPresentValueFormDataSchema, PresentValueCalculation>
+			<ImportCalculationModal<IPresentValueFormData, PresentValueCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

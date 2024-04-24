@@ -21,7 +21,7 @@ import useCalculator from '@/hooks/useCalculator';
 import { calculateMarkup } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { markupFormDataSchema } from '@/schemas';
-import { InferredMarkupFormDataSchema, MarkupReportProps } from '@/types/calculations';
+import { IMarkupFormData, MarkupReportProps } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MarkupCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
@@ -29,13 +29,13 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: InferredMarkupFormDataSchema = {
+const defaultValues: IMarkupFormData = {
 	cost: 0,
 	salesPrice: 0,
 };
 
 const Calculator = () => {
-	const form = useForm<InferredMarkupFormDataSchema>({
+	const form = useForm<IMarkupFormData>({
 		resolver: zodResolver(markupFormDataSchema),
 		defaultValues,
 	});
@@ -58,7 +58,7 @@ const Calculator = () => {
 		setRenameModalOpen,
 		activeCalculation,
 		ifFieldIsEmpty,
-	} = useCalculator<InferredMarkupFormDataSchema, MarkupReportProps, MarkupCalculation>({
+	} = useCalculator<IMarkupFormData, MarkupReportProps, MarkupCalculation>({
 		apiUrl: MARKUP_CALCULATIONS_API_URL,
 		queryKey: MARKUP_CALCULATIONS_QUERY_KEY,
 		defaultValues,
@@ -87,7 +87,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal<InferredMarkupFormDataSchema, MarkupCalculation>
+			<ImportCalculationModal<IMarkupFormData, MarkupCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

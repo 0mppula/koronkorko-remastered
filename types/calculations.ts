@@ -1,7 +1,6 @@
-import { durationMultipliers } from '@/constants/data';
 import {
 	breakEvenPointFormDataSchema,
-	calculationNameSchema,
+	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
@@ -29,14 +28,14 @@ export interface IHasFormData<TFormData> extends IHasId {
 
 export interface IHasFormDataAndName<TFormData> extends IHasFormData<TFormData>, IHasName {}
 
-export type InferredCalculationNameStringSchema = z.infer<typeof calculationNameStringSchema>;
+export type ICalculationNameString = z.infer<typeof calculationNameStringSchema>;
 
-export type InferredCalculationNameSchema = z.infer<typeof calculationNameSchema>;
+export type ICalculationNameFormData = z.infer<typeof calculationNameFormDataSchema>;
 
 // Break Even Point Calculator
-export type InferredBreakEvenPointFormDataSchema = z.infer<typeof breakEvenPointFormDataSchema>;
+export type IBreakEvenPointFormData = z.infer<typeof breakEvenPointFormDataSchema>;
 
-export interface BreakEvenPointReportProps extends InferredBreakEvenPointFormDataSchema {
+export interface BreakEvenPointReportProps extends IBreakEvenPointFormData {
 	breakEvenPointUnits: number;
 	breakEvenPointMoney: number;
 	contributionMarginMoney: number;
@@ -44,26 +43,26 @@ export interface BreakEvenPointReportProps extends InferredBreakEvenPointFormDat
 }
 
 // Markup Calculator
-export type InferredMarkupFormDataSchema = z.infer<typeof markupFormDataSchema>;
+export type IMarkupFormData = z.infer<typeof markupFormDataSchema>;
 
-export interface MarkupReportProps extends InferredMarkupFormDataSchema {
+export interface MarkupReportProps extends IMarkupFormData {
 	profit: number;
 	markup: number;
 }
 
 // Investment Time Calculation
-export type InferredInvestmentTimeFormDataSchema = z.infer<typeof investmentTimeFormDataSchema>;
+export type IInvestmentTimeFormData = z.infer<typeof investmentTimeFormDataSchema>;
 
-export interface InvestmentTimeReportProps extends InferredInvestmentTimeFormDataSchema {
+export interface InvestmentTimeReportProps extends IInvestmentTimeFormData {
 	yearsRequired: number;
 	monthsRequired: number;
 	daysRequired: number;
 }
 
 // Present Value Calculation
-export type InferredPresentValueFormDataSchema = z.infer<typeof presentValueFormDataSchema>;
+export type IPresentValueFormData = z.infer<typeof presentValueFormDataSchema>;
 
-export interface PresentValueReportProps extends InferredPresentValueFormDataSchema {
+export interface PresentValueReportProps extends IPresentValueFormData {
 	presentValue: number;
 }
 

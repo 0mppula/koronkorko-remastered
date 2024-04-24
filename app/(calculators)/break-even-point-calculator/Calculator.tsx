@@ -24,10 +24,7 @@ import useCalculator from '@/hooks/useCalculator';
 import { calcualteBreakEvenPoint } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
 import { breakEvenPointFormDataSchema } from '@/schemas';
-import {
-	BreakEvenPointReportProps,
-	InferredBreakEvenPointFormDataSchema,
-} from '@/types/calculations';
+import { BreakEvenPointReportProps, IBreakEvenPointFormData } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BreakEvenPointCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
@@ -35,14 +32,14 @@ import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: InferredBreakEvenPointFormDataSchema = {
+const defaultValues: IBreakEvenPointFormData = {
 	fixedCosts: 0,
 	variableCostPerUnit: 0,
 	pricePerUnit: 0,
 };
 
 const Calculator = () => {
-	const form = useForm<InferredBreakEvenPointFormDataSchema>({
+	const form = useForm<IBreakEvenPointFormData>({
 		resolver: zodResolver(breakEvenPointFormDataSchema),
 		defaultValues,
 	});
@@ -66,7 +63,7 @@ const Calculator = () => {
 		activeCalculation,
 		ifFieldIsEmpty,
 	} = useCalculator<
-		InferredBreakEvenPointFormDataSchema,
+		IBreakEvenPointFormData,
 		BreakEvenPointReportProps,
 		BreakEvenPointCalculation
 	>({
@@ -98,7 +95,7 @@ const Calculator = () => {
 				handleSave={handleSave}
 			/>
 
-			<ImportCalculationModal<InferredBreakEvenPointFormDataSchema, BreakEvenPointCalculation>
+			<ImportCalculationModal<IBreakEvenPointFormData, BreakEvenPointCalculation>
 				isOpen={importModalOpen}
 				setImportModalOpen={setImportModalOpen}
 				handleDelete={handleDelete}

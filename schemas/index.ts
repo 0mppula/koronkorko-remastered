@@ -13,7 +13,7 @@ export const calculationNameStringSchema = z
 		message: 'Name cannot be longer than 30 characters',
 	});
 
-export const calculationNameSchema = z.object({
+export const calculationNameFormDataSchema = z.object({
 	name: calculationNameStringSchema,
 });
 
