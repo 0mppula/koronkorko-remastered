@@ -29,6 +29,11 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 			/>
 
 			<ReportGroup header="Present Value" value={formatCurrency(presentValue, currency)} />
+
+			<ReportGroup
+				header="Total Interest"
+				value={formatCurrency(startingBalance - presentValue, currency)}
+			/>
 		</ReportSummaryContainer>
 	);
 };
