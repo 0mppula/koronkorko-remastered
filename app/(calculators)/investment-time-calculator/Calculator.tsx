@@ -88,6 +88,7 @@ const Calculator = () => {
 		enabled: sessionStatus === 'authenticated',
 	});
 
+	// Reset starting and ending balance errors when they have been corrected.
 	const handleOnChangeText = (
 		e: ChangeEvent<HTMLInputElement>,
 		onChange: (...event: string[]) => void
@@ -95,8 +96,6 @@ const Calculator = () => {
 		onChange(e.target.value);
 
 		if (
-			form.getValues('startingBalance') > 0 &&
-			form.getValues('endingBalance') > 0 &&
 			form.getValues('startingBalance') < form.getValues('endingBalance') &&
 			form.formState.isSubmitted
 		) {
