@@ -1,14 +1,16 @@
 import {
-	markupFormDataSchema,
+	breakEvenPointFormDataSchema,
 	calculationNameSchema,
 	calculationNameStringSchema,
-	breakEvenPointFormDataSchema,
 	investmentTimeFormDataSchema,
+	markupFormDataSchema,
+	presentValueFormDataSchema,
 } from '@/schemas';
 import {
 	BreakEvenPointCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
+	PresentValueCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
 
@@ -57,7 +59,15 @@ export interface InvestmentTimeReportProps extends InferredInvestmentTimeFormDat
 	daysRequired: number;
 }
 
+// Present Value Calculation
+export type InferredPresentValueFormDataSchema = z.infer<typeof presentValueFormDataSchema>;
+
+export interface PresentValueReportProps extends InferredPresentValueFormDataSchema {
+	presentValue: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
-	| InvestmentTimeCalculation;
+	| InvestmentTimeCalculation
+	| PresentValueCalculation;

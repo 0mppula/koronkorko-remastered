@@ -44,3 +44,10 @@ export const investmentTimeFormDataSchema = z.object({
 	endingBalance: positiveNumberFieldSchema('Future value'),
 	annualInterestRate: positiveNumberFieldSchema('Annual interest rate'),
 });
+
+export const presentValueFormDataSchema = z.object({
+	startingBalance: positiveNumberFieldSchema('Future value'),
+	duration: positiveNumberFieldSchema('Duration'),
+	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+	discountRate: positiveNumberFieldSchema('Discount rate'),
+});
