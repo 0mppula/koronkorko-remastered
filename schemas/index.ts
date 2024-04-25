@@ -77,3 +77,33 @@ export const annualizedReturnFormDataSchema = z.object({
 	duration: positiveNumberFieldSchema('Duration'),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });
+
+export const compoundInterestFormDataSchema = z.object({
+	startingBalance: positiveNumberFieldSchema('Initial value'),
+	contribution: positiveNumberFieldSchema('Contributions'),
+	contributionMultiplier: z.coerce
+		.number({
+			required_error: 'Contribution multiplier is required',
+			invalid_type_error: 'Contribution multiplier has to be a number',
+		})
+		.min(-1, {
+			message: `Contribution multiplier must be either -1 or 1`,
+		})
+		.max(1, {
+			message: `Contribution multiplier must be either -1 or 1`,
+		})
+		.superRefine((value, ctx) => {
+			if (value === 0) {
+				ctx.addIssue({
+					message: 'Contribution multiplier must be either -1 or 1',
+					code: z.ZodIssueCode.custom,
+					path: ['contributionMultiplier'],
+				});
+			}
+		}),
+	contributionFrequency: positiveNumberFieldSchema('Contribution frequency'),
+	interestRate: positiveNumberFieldSchema('Interest rate'),
+	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
+	duration: positiveNumberFieldSchema('Duration'),
+	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+});

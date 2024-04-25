@@ -45,6 +45,7 @@ model User {
   InvestmentTimeCalculations   InvestmentTimeCalculation[]
   PresentValueCalculations     PresentValueCalculation[]
   AnnualizedReturnCalculations AnnualizedReturnCalculation[]
+  CompoundInterestCalculations CompoundInterestCalculation[]
 }
 
 type BreakEvenPointCalculationFormData {
@@ -127,6 +128,28 @@ model AnnualizedReturnCalculation {
   userId    String                              @db.ObjectId
   name      String
   formData  AnnualizedReturnCalculationFormData
+  createdAt DateTime                            @default(now())
+  updatedAt DateTime                            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type CompoundInterestCalculationFormData {
+  startingBalance        Float
+  contribution           Float
+  contributionMultiplier Float
+  contributionFrequency  Float
+  interestRate           Float
+  compoundFrequency      Float
+  duration               Float
+  durationMultiplier     Float
+}
+
+model CompoundInterestCalculation {
+  id        String                              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                              @db.ObjectId
+  name      String
+  formData  CompoundInterestCalculationFormData
   createdAt DateTime                            @default(now())
   updatedAt DateTime                            @updatedAt
 

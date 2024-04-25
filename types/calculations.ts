@@ -3,6 +3,7 @@ import {
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
+	compoundInterestFormDataSchema,
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
@@ -10,6 +11,7 @@ import {
 import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
+	CompoundInterestCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
 	PresentValueCalculation,
@@ -76,9 +78,22 @@ export interface AnnualizedReturnReportProps extends IAnnualizedReturnFormData {
 	percentReturn: number;
 }
 
+export type ICompoundInterestFormData = z.infer<typeof compoundInterestFormDataSchema>;
+
+export interface CompoundInterestReportProps extends ICompoundInterestFormData {
+	totalContribution: number;
+	futureValue: number;
+	totalProfit: number;
+	totalReturn: number;
+	principal: number;
+	additionalContributions: number;
+	depositting: boolean;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
 	| InvestmentTimeCalculation
 	| PresentValueCalculation
-	| AnnualizedReturnCalculation;
+	| AnnualizedReturnCalculation
+	| CompoundInterestCalculation;
