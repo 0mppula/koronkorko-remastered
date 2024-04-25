@@ -151,7 +151,8 @@ export const calcualteCoumpoundInterest = (
 	const noRateT = additionalContributions + P;
 
 	const totalReturnPercent =
-		(totalProfit / (Math.abs(totalContribution) + startingBalance)) * 100;
+		(totalProfit / (Math.abs(depositting ? additionalContributions : 0) + startingBalance)) *
+		100;
 
 	return {
 		startingBalance,
