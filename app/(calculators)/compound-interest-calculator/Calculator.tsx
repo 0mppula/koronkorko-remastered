@@ -1,5 +1,6 @@
 'use client';
 
+import ContributionToggleInput from '@/components/Form/ContributionToggleInput';
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import FormGroup from '@/components/Form/FormGroup';
@@ -100,6 +101,12 @@ const Calculator = () => {
 		enabled: sessionStatus === 'authenticated',
 	});
 
+	const computedContributionMultiplier = form.watch('contributionMultiplier');
+
+	const setContributionMultiplier = (value: 1 | -1) => {
+		form.setValue('contributionMultiplier', value * -1);
+	};
+
 	return (
 		<>
 			<FormContainer>
@@ -159,12 +166,15 @@ const Calculator = () => {
 										<FormLabel>Contributions (optional)</FormLabel>
 
 										<FormControl>
-											<Input
+											<ContributionToggleInput
 												{...field}
+												setContributionMultiplier={
+													setContributionMultiplier
+												}
+												contributionMultiplier={
+													computedContributionMultiplier as 1 | -1
+												}
 												name="contribution"
-												placeholder="10"
-												step="0.00"
-												type="number"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
 														form.setValue('contribution', 0);
