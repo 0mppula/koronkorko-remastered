@@ -45,16 +45,9 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 				)}/${getContributionFrequencyShortLabel(contributionFrequency)}`}
 			/>
 
-			<ReportGroup header="Annual interest rate" value={formatPercentage(interestRate)} />
-
-			<ReportGroup
-				header="Duration"
-				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
-			/>
-
 			<ReportGroup
 				header={depositting ? 'Total Contributions' : 'Total Withdrawals'}
-				value={formatCurrency(additionalContributions, currency)}
+				value={formatCurrency(Math.abs(additionalContributions), currency)}
 			/>
 
 			<ReportGroup
@@ -62,11 +55,18 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 				value={formatCurrency(totalContribution, currency)}
 			/>
 
+			<ReportGroup header="Annual interest rate" value={formatPercentage(interestRate)} />
+
+			<ReportGroup
+				header="Duration"
+				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
+			/>
+
 			<ReportGroup header="Total Interest" value={formatCurrency(totalProfit, currency)} />
 
-			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
-
 			<ReportGroup header="Ending Value" value={formatCurrency(futureValue, currency)} />
+
+			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
 			<ReportGroup header="Total Return (APY)" value={formatPercentage(totalReturn)} />
 		</ReportSummaryContainer>
