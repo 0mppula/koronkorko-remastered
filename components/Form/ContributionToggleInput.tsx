@@ -58,7 +58,7 @@ const ContributionToggleInput = React.forwardRef<HTMLInputElement, ContributionT
 							onClick={() => setContributionMultiplier(contributionMultiplier)}
 							variant="ghost"
 							size="icon"
-							className="z-50 h-[35px] w-[35px] my-0.5 mr-[2px] !py-0 absolute top-[0px] right-[0px] flex items-center justify-center p-2 transition-all text-neutral-700 dark:text-neutral-300"
+							className="z-10 h-[35px] w-[35px] my-0.5 mr-[2px] !py-0 absolute top-[0px] right-[0px] flex items-center justify-center p-2 transition-all text-neutral-700 dark:text-neutral-300"
 						>
 							{getIcon()}
 						</Button>
