@@ -55,6 +55,7 @@ const ContributionToggleInput = React.forwardRef<HTMLInputElement, ContributionT
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
+							type="button"
 							onClick={() => setContributionMultiplier(contributionMultiplier)}
 							variant="ghost"
 							size="icon"
