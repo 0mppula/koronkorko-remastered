@@ -30,6 +30,7 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 		totalReturn,
 		additionalContributions,
 		depositting,
+		contributionMultiplier,
 		totalReturnPercent,
 	} = report;
 
@@ -40,13 +41,13 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 			<ReportGroup
 				header="Contributions"
 				value={`${formatCurrency(
-					contribution,
+					contributionMultiplier * contribution,
 					currency
 				)}/${getContributionFrequencyShortLabel(contributionFrequency)}`}
 			/>
 
 			<ReportGroup
-				header={depositting ? 'Total Contributions' : 'Total Withdrawals'}
+				header={depositting ? 'Total Deposits' : 'Total Withdrawals'}
 				value={formatCurrency(Math.abs(additionalContributions), currency)}
 			/>
 
@@ -62,13 +63,13 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
 
-			<ReportGroup header="Total Interest" value={formatCurrency(totalProfit, currency)} />
-
-			<ReportGroup header="Ending Value" value={formatCurrency(futureValue, currency)} />
-
 			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
 			<ReportGroup header="Total Return (APY)" value={formatPercentage(totalReturn)} />
+
+			<ReportGroup header="Total Interest" value={formatCurrency(totalProfit, currency)} />
+
+			<ReportGroup header="Ending Value" value={formatCurrency(futureValue, currency)} />
 		</ReportSummaryContainer>
 	);
 };
