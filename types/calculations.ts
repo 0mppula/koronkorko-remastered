@@ -88,6 +88,7 @@ export interface CompoundInterestReportProps extends ICompoundInterestFormData {
 	principal: number;
 	additionalContributions: number;
 	depositting: boolean;
+	totalReturnPercent: number;
 }
 
 export type CalculationType =
