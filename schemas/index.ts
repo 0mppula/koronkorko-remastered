@@ -70,3 +70,10 @@ export const presentValueFormDataSchema = z.object({
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 	discountRate: positiveNumberFieldSchema('Discount rate'),
 });
+
+export const annualizedReturnFormDataSchema = z.object({
+	startingBalance: positiveNumberFieldSchema('Starting value'),
+	endingBalance: positiveNumberFieldSchema('Ending value'),
+	duration: positiveNumberFieldSchema('Duration'),
+	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+});

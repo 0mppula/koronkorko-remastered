@@ -1,4 +1,5 @@
 import {
+	annualizedReturnFormDataSchema,
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
@@ -7,6 +8,7 @@ import {
 	presentValueFormDataSchema,
 } from '@/schemas';
 import {
+	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
@@ -66,8 +68,17 @@ export interface PresentValueReportProps extends IPresentValueFormData {
 	presentValue: number;
 }
 
+// Annualized Return Calculation
+export type IAnnualizedReturnFormData = z.infer<typeof annualizedReturnFormDataSchema>;
+
+export interface AnnualizedReturnReportProps extends IAnnualizedReturnFormData {
+	annualizedReturn: number;
+	percentReturn: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
 	| InvestmentTimeCalculation
-	| PresentValueCalculation;
+	| PresentValueCalculation
+	| AnnualizedReturnCalculation;
