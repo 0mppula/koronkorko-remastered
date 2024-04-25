@@ -8,10 +8,9 @@ import ReportSummaryContainer from '../../../components/Form/ReportSummaryContai
 
 interface ReportProps {
 	report: PresentValueReportProps;
-	isLoading?: boolean;
 }
 
-const Report = ({ report, isLoading = false }: ReportProps) => {
+const Report = ({ report }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
 	const { startingBalance, discountRate, duration, durationMultiplier, presentValue } = report;

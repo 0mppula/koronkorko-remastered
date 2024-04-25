@@ -1,10 +1,10 @@
 import BackButton from '@/components/Form/BackButton';
 import CalculatorContainer from '@/components/Form/CalculatorContainer';
-import FormContainer from '@/components/Form/FormContainer';
 import TypographyH1 from '@/components/TypographyH1';
 import { appName } from '@/constants/data';
 import { getCalculatorWithPathname } from '@/lib/utils';
 import { Metadata } from 'next';
+import Calculator from './Calculator';
 
 const calculator = getCalculatorWithPathname('annualized-return-calculator');
 
@@ -21,7 +21,7 @@ const page = () => {
 			<CalculatorContainer>
 				<BackButton />
 
-				<FormContainer></FormContainer>
+				<Calculator />
 			</CalculatorContainer>
 		</>
 	);

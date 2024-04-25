@@ -1,11 +1,14 @@
 import {
+	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
+	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	IInvestmentTimeFormData,
 	IMarkupFormData,
 	IPresentValueFormData,
 	InvestmentTimeReportProps,
 	MarkupReportProps,
+	PresentValueReportProps,
 } from '@/types/calculations';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
@@ -60,7 +63,7 @@ export const calculateInvestmentTime = (
 	};
 };
 
-export const calculatePresentValue = (formData: IPresentValueFormData) => {
+export const calculatePresentValue = (formData: IPresentValueFormData): PresentValueReportProps => {
 	const { startingBalance, discountRate, duration, durationMultiplier } = formData;
 
 	// PV = FV * (1 / (1 + r) ^ n)
@@ -70,4 +73,24 @@ export const calculatePresentValue = (formData: IPresentValueFormData) => {
 	const PV = FV * (1 / (1 + r) ** n);
 
 	return { startingBalance, discountRate, duration, durationMultiplier, presentValue: PV };
+};
+
+export const calculateAnnualizedReturn = (
+	formData: IAnnualizedReturnFormData
+): AnnualizedReturnReportProps => {
+	const { startingBalance, endingBalance, duration, durationMultiplier } = formData;
+
+	// Time in years
+	const t = (duration * durationMultiplier) / 12;
+	const annualizedReturn = ((endingBalance / startingBalance) ** (1 / t) - 1) * 100;
+	const percentReturn = ((endingBalance - startingBalance) / startingBalance) * 100;
+
+	return {
+		startingBalance,
+		endingBalance,
+		duration,
+		durationMultiplier,
+		annualizedReturn,
+		percentReturn,
+	};
 };

@@ -41,8 +41,8 @@ export const breakEvenPointFormDataSchema = z.object({
 
 export const investmentTimeFormDataSchema = z
 	.object({
-		startingBalance: positiveNumberFieldSchema('Starting value'),
-		endingBalance: positiveNumberFieldSchema('Future value'),
+		startingBalance: positiveNumberFieldSchema('Initial value'),
+		endingBalance: positiveNumberFieldSchema('Ending value'),
 		annualInterestRate: positiveNumberFieldSchema('Annual interest rate'),
 	})
 	.superRefine((data, ctx) => {
@@ -72,7 +72,7 @@ export const presentValueFormDataSchema = z.object({
 });
 
 export const annualizedReturnFormDataSchema = z.object({
-	startingBalance: positiveNumberFieldSchema('Starting value'),
+	startingBalance: positiveNumberFieldSchema('Initial value'),
 	endingBalance: positiveNumberFieldSchema('Ending value'),
 	duration: positiveNumberFieldSchema('Duration'),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),

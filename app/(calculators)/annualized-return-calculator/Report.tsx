@@ -1,13 +1,11 @@
-'use client';
-
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency, formatPercentage } from '@/lib/utils';
-import { InvestmentTimeReportProps } from '@/types/calculations';
+import { formatCurrency, formatPercentage, getCurrencySymbol, getDurationLabel } from '@/lib/utils';
+import { AnnualizedReturnReportProps } from '@/types/calculations';
 import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 
 interface ReportProps {
-	report: InvestmentTimeReportProps;
+	report: AnnualizedReturnReportProps;
 }
 
 const Report = ({ report }: ReportProps) => {
@@ -16,10 +14,10 @@ const Report = ({ report }: ReportProps) => {
 	const {
 		startingBalance,
 		endingBalance,
-		annualInterestRate,
-		yearsRequired,
-		monthsRequired,
-		daysRequired,
+		duration,
+		durationMultiplier,
+		annualizedReturn,
+		percentReturn,
 	} = report;
 
 	return (
@@ -29,28 +27,20 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup header="Ending Value" value={formatCurrency(endingBalance, currency)} />
 
 			<ReportGroup
-				header="Annual interest rate"
-				value={formatPercentage(annualInterestRate)}
-			/>
-
-			<ReportGroup
-				header="Total Interest"
+				header={`Total Return ${getCurrencySymbol(currency)}`}
 				value={formatCurrency(endingBalance - startingBalance, currency)}
 			/>
 
+			<ReportGroup header="Total Return %" value={formatPercentage(percentReturn)} />
+
 			<ReportGroup
-				header="Years required"
-				value={isFinite(yearsRequired) ? yearsRequired.toFixed(2) : 'N/A'}
+				header="Annualized Return"
+				value={isFinite(annualizedReturn) ? formatPercentage(annualizedReturn) : 'N/A'}
 			/>
 
 			<ReportGroup
-				header="Months required"
-				value={isFinite(yearsRequired) ? monthsRequired.toFixed(2) : 'N/A'}
-			/>
-
-			<ReportGroup
-				header="Days required"
-				value={isFinite(yearsRequired) ? daysRequired.toFixed(2) : 'N/A'}
+				header="Duration"
+				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
 		</ReportSummaryContainer>
 	);

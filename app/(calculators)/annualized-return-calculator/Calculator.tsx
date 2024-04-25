@@ -22,32 +22,32 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import {
-	PRESENT_VALUE_CALCULATIONS_API_URL,
-	PRESENT_VALUE_CALCULATIONS_QUERY_KEY,
+	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
+	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
 } from '@/constants/api';
 import { durationMultipliers } from '@/constants/data';
 import useCalculator from '@/hooks/useCalculator';
-import { calculatePresentValue } from '@/lib/calculatorFns';
+import { calculateAnnualizedReturn } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
-import { presentValueFormDataSchema } from '@/schemas';
-import { IPresentValueFormData, PresentValueReportProps } from '@/types/calculations';
+import { annualizedReturnFormDataSchema } from '@/schemas';
+import { AnnualizedReturnReportProps, IAnnualizedReturnFormData } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PresentValueCalculation } from '@prisma/client';
+import { AnnualizedReturnCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Report from './Report';
 
-const defaultValues: IPresentValueFormData = {
+const defaultValues: IAnnualizedReturnFormData = {
 	startingBalance: 0,
-	discountRate: 0,
+	endingBalance: 0,
 	duration: 0,
 	durationMultiplier: 12,
 };
 
 const Calculator = () => {
-	const form = useForm<IPresentValueFormData>({
-		resolver: zodResolver(presentValueFormDataSchema),
+	const form = useForm<IAnnualizedReturnFormData>({
+		resolver: zodResolver(annualizedReturnFormDataSchema),
 		defaultValues,
 	});
 
@@ -71,12 +71,16 @@ const Calculator = () => {
 		closeRenameModal,
 		handleImportStart,
 		closeImportModal,
-	} = useCalculator<IPresentValueFormData, PresentValueReportProps, PresentValueCalculation>({
-		apiUrl: PRESENT_VALUE_CALCULATIONS_API_URL,
-		queryKey: PRESENT_VALUE_CALCULATIONS_QUERY_KEY,
+	} = useCalculator<
+		IAnnualizedReturnFormData,
+		AnnualizedReturnReportProps,
+		AnnualizedReturnCalculation
+	>({
+		apiUrl: ANNUALIZED_RETURN_CALCULATIONS_API_URL,
+		queryKey: ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
 		defaultValues,
 		form,
-		calcFn: calculatePresentValue,
+		calcFn: calculateAnnualizedReturn,
 	});
 
 	const { status: sessionStatus } = useSession();
@@ -85,9 +89,9 @@ const Calculator = () => {
 		data: calculations,
 		isLoading: isCalculationsLoading,
 		isFetching,
-	} = useQuery<PresentValueCalculation[] | null>({
-		queryKey: [PRESENT_VALUE_CALCULATIONS_QUERY_KEY],
-		queryFn: () => getCalculations(PRESENT_VALUE_CALCULATIONS_API_URL),
+	} = useQuery<AnnualizedReturnCalculation[] | null>({
+		queryKey: [ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY],
+		queryFn: () => getCalculations(ANNUALIZED_RETURN_CALCULATIONS_API_URL),
 		staleTime: 1_000 * 60 * 10, // 10 minutes
 		enabled: sessionStatus === 'authenticated',
 	});
@@ -95,7 +99,7 @@ const Calculator = () => {
 	return (
 		<>
 			<FormContainer>
-				<FormControlsTop<IPresentValueFormData, PresentValueCalculation>
+				<FormControlsTop<IAnnualizedReturnFormData, AnnualizedReturnCalculation>
 					reset={resetForm}
 					handleSaveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
@@ -124,7 +128,7 @@ const Calculator = () => {
 								name="startingBalance"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Future Value</FormLabel>
+										<FormLabel>Initial Value</FormLabel>
 
 										<FormControl>
 											<NumberInputWithIcon
@@ -143,19 +147,18 @@ const Calculator = () => {
 
 							<FormField
 								control={form.control}
-								name="discountRate"
+								name="endingBalance"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Discount Rate</FormLabel>
+										<FormLabel>Ending Value</FormLabel>
 
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
-												name="discountRate"
-												iconType="percentage"
+												name="endingBalance"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
-														form.setValue('discountRate', 0);
+														form.setValue('endingBalance', 0);
 												}}
 											/>
 										</FormControl>

@@ -8,10 +8,9 @@ import { BreakEvenPointReportProps } from '@/types/calculations';
 
 interface ReportProps {
 	report: BreakEvenPointReportProps;
-	isLoading?: boolean;
 }
 
-const Report = ({ report, isLoading = false }: ReportProps) => {
+const Report = ({ report }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
 	const {
@@ -40,6 +39,16 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 			/>
 
 			<ReportGroup
+				header="Contribution Margin %"
+				value={formatPercentage(contributionMarginPercent)}
+			/>
+
+			<ReportGroup
+				header={`Contribution Margin ${getCurrencySymbol(currency)}`}
+				value={formatCurrency(contributionMarginMoney, currency)}
+			/>
+
+			<ReportGroup
 				header="Break Even Point (Unit)"
 				value={isFinite(breakEvenPointUnits) ? breakEvenPointUnits.toFixed(2) : 'N/A'}
 			/>
@@ -51,16 +60,6 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 						? formatCurrency(breakEvenPointMoney, currency)
 						: 'N/A'
 				}
-			/>
-
-			<ReportGroup
-				header="Contribution Margin %"
-				value={formatPercentage(contributionMarginPercent)}
-			/>
-
-			<ReportGroup
-				header={`Contribution Margin ${getCurrencySymbol(currency)}`}
-				value={formatCurrency(contributionMarginMoney, currency)}
 			/>
 		</ReportSummaryContainer>
 	);

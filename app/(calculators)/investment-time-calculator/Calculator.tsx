@@ -134,7 +134,7 @@ const Calculator = () => {
 								name="startingBalance"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Starting Value</FormLabel>
+										<FormLabel>Initial Value</FormLabel>
 
 										<FormControl>
 											<NumberInputWithIcon
@@ -158,7 +158,7 @@ const Calculator = () => {
 								name="endingBalance"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Future Value</FormLabel>
+										<FormLabel>Ending Value</FormLabel>
 
 										<FormControl>
 											<NumberInputWithIcon
