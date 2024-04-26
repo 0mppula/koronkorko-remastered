@@ -9,7 +9,7 @@ import {
 import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 import { ReportProps } from './Calculator';
 
-const Report = ({ report, isLoading = false }: ReportProps) => {
+const Report = ({ report }: ReportProps) => {
 	const { currency } = useCurrencyStore();
 
 	const {
@@ -30,7 +30,7 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer isLoading={isLoading} className="mb-12">
+		<ReportSummaryContainer className="mb-12">
 			<ReportGroup header="Initial Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup

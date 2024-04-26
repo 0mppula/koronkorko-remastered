@@ -36,14 +36,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CompoundInterestCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Breakdown from './Breakdown';
 import Report from './Report';
 
 export interface ReportProps {
 	report: CompoundInterestReportProps;
-	isLoading?: boolean;
 }
 
 const defaultValues: ICompoundInterestFormData = {
@@ -58,8 +56,6 @@ const defaultValues: ICompoundInterestFormData = {
 };
 
 const Calculator = () => {
-	const [IsLoadingVisualization, setIsLoadingVisualization] = useState(false);
-
 	const form = useForm<ICompoundInterestFormData>({
 		resolver: zodResolver(compoundInterestFormDataSchema),
 		defaultValues,
@@ -350,16 +346,9 @@ const Calculator = () => {
 				</Form>
 			</FormContainer>
 
-			{report && <Report report={report} isLoading={IsLoadingVisualization} />}
+			{report && <Report report={report} />}
 
-			{report && (
-				<Breakdown
-					formData={form.getValues()}
-					report={report}
-					isLoading={IsLoadingVisualization}
-					setIsLoading={setIsLoadingVisualization}
-				/>
-			)}
+			{report && <Breakdown formData={form.getValues()} report={report} />}
 		</>
 	);
 };

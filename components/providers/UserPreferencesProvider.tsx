@@ -24,6 +24,7 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 		queryKey: [USER_QUERY_KEY, { sessionStatus }],
 		queryFn: () => getUser(sessionStatus),
 		enabled: sessionStatus === 'authenticated',
+		refetchOnWindowFocus: false,
 	});
 
 	const { mutate } = useMutation({
