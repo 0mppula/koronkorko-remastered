@@ -64,7 +64,7 @@ const FormControlsTop = <
 				<div className="flex flex-wrap gap-1 items-center order-1 xs:order-none w-full xs:w-auto justify-between xs:justify-normal">
 					{activeCalculation && (
 						<>
-							<p className="text-ellipsis whitespace-nowrap overflow-hidden w-44 xs:w-auto">
+							<p className="font-medium text-ellipsis whitespace-nowrap overflow-hidden w-44 xs:w-auto">
 								{activeCalculation.name}
 							</p>
 
@@ -140,7 +140,7 @@ const FormControlsTop = <
 				</div>
 			</div>
 
-			<Separator className="h-[1px] bg-input dark:bg-input my-1 mb-3" />
+			<Separator className="h-[1px] bg-input dark:bg-input my-1 mb-6" />
 		</>
 	);
 };
