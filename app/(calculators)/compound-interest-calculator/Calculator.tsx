@@ -237,7 +237,6 @@ const Calculator = () => {
 												{...field}
 												name="interestRate"
 												iconType="percentage"
-												placeholder="10%"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
 														form.setValue('interestRate', 0);
@@ -295,8 +294,10 @@ const Calculator = () => {
 												{...field}
 												name="duration"
 												placeholder="10"
-												step="0.00"
+												step="0.01"
 												type="number"
+												max={200}
+												min={0}
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
 														form.setValue('duration', 0);
@@ -348,7 +349,7 @@ const Calculator = () => {
 
 			{report && <Report report={report} />}
 
-			{report && <Breakdown formData={form.getValues()} report={report} />}
+			{report && <Breakdown report={report} />}
 		</>
 	);
 };

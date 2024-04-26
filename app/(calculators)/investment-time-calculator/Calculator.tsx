@@ -192,7 +192,6 @@ const Calculator = () => {
 												{...field}
 												name="annualInterestRate"
 												iconType="percentage"
-												placeholder="10%"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
 														form.setValue('annualInterestRate', 0);

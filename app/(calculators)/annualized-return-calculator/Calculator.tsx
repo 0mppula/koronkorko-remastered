@@ -181,8 +181,10 @@ const Calculator = () => {
 												{...field}
 												name="duration"
 												placeholder="10"
-												step="0.00"
+												step="0.01"
 												type="number"
+												max={200}
+												min={0}
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
 														form.setValue('duration', 0);

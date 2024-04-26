@@ -80,6 +80,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 					step="0.01"
 					placeholder={iconType === 'percentage' ? '10' : '1000'}
 					ref={ref}
+					min={0}
 					{...props}
 				/>
 

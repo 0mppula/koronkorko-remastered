@@ -28,6 +28,12 @@ const positiveNumberFieldSchema = (fieldName = 'Number') => {
 		});
 };
 
+const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => {
+	return positiveNumberFieldSchema(fieldName).max(max, {
+		message: `${fieldName} cannot be greater than ${max}`,
+	});
+};
+
 export const markupFormDataSchema = z.object({
 	cost: positiveNumberFieldSchema('Cost'),
 	salesPrice: positiveNumberFieldSchema('Sales price'),
@@ -66,7 +72,7 @@ export const investmentTimeFormDataSchema = z
 
 export const presentValueFormDataSchema = z.object({
 	startingBalance: positiveNumberFieldSchema('Future value'),
-	duration: positiveNumberFieldSchema('Duration'),
+	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 	discountRate: positiveNumberFieldSchema('Discount rate'),
 });
@@ -74,7 +80,7 @@ export const presentValueFormDataSchema = z.object({
 export const annualizedReturnFormDataSchema = z.object({
 	startingBalance: positiveNumberFieldSchema('Initial value'),
 	endingBalance: positiveNumberFieldSchema('Ending value'),
-	duration: positiveNumberFieldSchema('Duration'),
+	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });
 
@@ -104,6 +110,6 @@ export const compoundInterestFormDataSchema = z.object({
 	contributionFrequency: positiveNumberFieldSchema('Contribution frequency'),
 	interestRate: positiveNumberFieldSchema('Interest rate'),
 	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
-	duration: positiveNumberFieldSchema('Duration'),
+	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });

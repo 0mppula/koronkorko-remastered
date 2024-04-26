@@ -5,25 +5,31 @@ import {
 	ICompoundInterestChartData,
 	createCounpoundInterestChartData,
 } from '@/lib/createCounpoundInterestChartData';
-import { ICompoundInterestFormData } from '@/types/calculations';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BreakdownControls from './BreakdownControls';
 import { ReportProps } from './Calculator';
 
-interface BreakdownProps extends ReportProps {
-	formData: ICompoundInterestFormData;
-}
-
-const Breakdown = ({ formData, report }: BreakdownProps) => {
+const Breakdown = ({ report }: ReportProps) => {
 	const [visualizationType, setVisualizationType] = useState<'chart' | 'table'>('chart');
 	const [breakdownInterval, setBreakdownInterval] = useState<'monthly' | 'yearly'>('yearly');
+
+	const {
+		startingBalance,
+		contribution,
+		contributionFrequency,
+		interestRate,
+		duration,
+		durationMultiplier,
+		contributionMultiplier,
+		compoundFrequency,
+	} = report;
 
 	const queryClient = useQueryClient();
 	useEffect(() => {
 		if (report) {
 			queryClient.invalidateQueries({
-				queryKey: ['COMPOUND_INTEREST_CALCULATION_BREAKDOWN', formData],
+				queryKey: ['COMPOUND_INTEREST_CALCULATION_BREAKDOWN', report],
 			});
 		}
 	}, [report]);
@@ -31,8 +37,18 @@ const Breakdown = ({ formData, report }: BreakdownProps) => {
 	const { data: chartData, isLoading: isChartDataLoading } = useQuery<
 		ICompoundInterestChartData[]
 	>({
-		queryKey: ['COMPOUND_INTEREST_CALCULATION_BREAKDOWN', formData],
-		queryFn: () => createCounpoundInterestChartData(formData),
+		queryKey: ['COMPOUND_INTEREST_CALCULATION_BREAKDOWN', report],
+		queryFn: () =>
+			createCounpoundInterestChartData({
+				compoundFrequency,
+				contribution,
+				contributionFrequency,
+				contributionMultiplier,
+				duration,
+				durationMultiplier,
+				interestRate,
+				startingBalance,
+			}),
 		refetchOnWindowFocus: false,
 	});
 

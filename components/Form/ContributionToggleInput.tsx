@@ -48,6 +48,7 @@ const ContributionToggleInput = React.forwardRef<HTMLInputElement, ContributionT
 					type="number"
 					step="0.01"
 					placeholder="1000"
+					min={0}
 					ref={ref}
 					{...props}
 				/>
