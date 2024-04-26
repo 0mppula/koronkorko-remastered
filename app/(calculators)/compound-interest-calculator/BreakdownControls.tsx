@@ -1,6 +1,5 @@
 import { ButtonWithIcon } from '@/components/ButtonWithIcon';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download } from 'lucide-react';
 
 interface BreakdownControlsProps {
@@ -16,7 +15,7 @@ const BreakdownControls = ({
 	setVisualizationType,
 	visualizationType,
 }: BreakdownControlsProps) => {
-	const handleBreakdownIntervalChange = (value: 'monthly' | 'yearly') => {
+	const handleBreakdownIntervalChange = (value: 'yearly' | 'monthly') => {
 		setBreakdownInterval(value);
 	};
 
@@ -25,58 +24,39 @@ const BreakdownControls = ({
 	};
 
 	return (
-		<div className="flex flex-col gap-4 xs:flex-row w-full">
-			<RadioGroup
-				className="w-full flex justify-center items-end rounded-sm group gap-0"
-				onValueChange={handleBreakdownIntervalChange}
+		<div className="flex flex-col gap-4 sm:flex-row w-full">
+			<Tabs
+				onValueChange={(value) =>
+					handleBreakdownIntervalChange(value as 'monthly' | 'yearly')
+				}
 				value={breakdownInterval}
+				className="w-full"
 			>
-				<div className="w-full">
-					<RadioGroupItem value="yearly" id="yearly" className="peer sr-only" />
-					<Label
-						htmlFor="yearly"
-						className="peer-data-[state=checked]:bg-primary bg-secondary peer-data-[state=checked]:text-secondary-foreground p-[10px] cursor-pointer w-full text-primary-foreground rounded-s-md font-semibold h-11 flex items-center justify-center shadow-inset-xl peer-data-[state=checked]:shadow-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ring-offset-background peer-focus-visible:rounded-md relative peer-focus-visible:z-10"
-					>
+				<TabsList className="w-full h-11">
+					<TabsTrigger value="yearly" className="w-full">
 						Yearly
-					</Label>
-				</div>
+					</TabsTrigger>
 
-				<div className="w-full">
-					<RadioGroupItem value="monthly" id="monthly" className="peer sr-only" />
-					<Label
-						htmlFor="monthly"
-						className="peer-data-[state=checked]:bg-primary bg-secondary peer-data-[state=checked]:text-secondary-foreground p-[10px] cursor-pointer w-full text-primary-foreground rounded-e-md font-semibold h-11 flex items-center justify-center shadow-inset-xl peer-data-[state=checked]:shadow-none peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ring-offset-background peer-focus-visible:rounded-md relative peer-focus-visible:z-10"
-					>
+					<TabsTrigger value="monthly" className="w-full">
 						Monthly
-					</Label>
-				</div>
-			</RadioGroup>
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
-			<RadioGroup
-				className="w-full flex justify-center items-end rounded-sm group gap-0"
-				onValueChange={handleVisualizationTypeChange}
+			<Tabs
+				onValueChange={(value) => handleVisualizationTypeChange(value as 'chart' | 'table')}
 				value={visualizationType}
+				className="w-full"
 			>
-				<div className="w-full">
-					<RadioGroupItem value="chart" id="chart" className="peer sr-only" />
-					<Label
-						htmlFor="chart"
-						className="peer-data-[state=checked]:bg-primary bg-secondary peer-data-[state=checked]:text-secondary-foreground p-[10px] cursor-pointer w-full text-primary-foreground rounded-s-md font-semibold h-11 flex items-center justify-center shadow-inset-xl peer-data-[state=checked]:shadow-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ring-offset-background peer-focus-visible:rounded-md relative peer-focus-visible:z-10"
-					>
+				<TabsList className="w-full h-11">
+					<TabsTrigger value="chart" className="w-full">
 						Chart
-					</Label>
-				</div>
-
-				<div className="w-full">
-					<RadioGroupItem value="table" id="table" className="peer sr-only" />
-					<Label
-						htmlFor="table"
-						className="peer-data-[state=checked]:bg-primary bg-secondary peer-data-[state=checked]:text-secondary-foreground p-[10px] cursor-pointer w-full text-primary-foreground rounded-e-md font-semibold h-11 flex items-center justify-center shadow-inset-xl peer-data-[state=checked]:shadow-none peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ring-offset-background peer-focus-visible:rounded-md relative peer-focus-visible:z-10"
-					>
+					</TabsTrigger>
+					<TabsTrigger value="table" className="w-full">
 						Table
-					</Label>
-				</div>
-			</RadioGroup>
+					</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			<ButtonWithIcon className="h-11" loading={false} icon={Download}>
 				<span aria-hidden>.xlsx</span>
