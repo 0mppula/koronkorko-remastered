@@ -128,7 +128,7 @@ export const footerSocialMedia = [
 	},
 	{
 		name: 'Source Code',
-		url: 'https://github.com/0mppula/money-mapper',
+		url: 'https://github.com/0mppula/next-koronkorko',
 		Icon: FaCode,
 	},
 ] as const;

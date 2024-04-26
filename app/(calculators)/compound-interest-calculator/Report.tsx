@@ -6,13 +6,8 @@ import {
 	getContributionFrequencyShortLabel,
 	getDurationLabel,
 } from '@/lib/utils';
-import { CompoundInterestReportProps } from '@/types/calculations';
 import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
-
-interface ReportProps {
-	report: CompoundInterestReportProps;
-	isLoading?: boolean;
-}
+import { ReportProps } from './Calculator';
 
 const Report = ({ report, isLoading = false }: ReportProps) => {
 	const { currency } = useCurrencyStore();
@@ -35,7 +30,7 @@ const Report = ({ report, isLoading = false }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer isLoading={isLoading}>
+		<ReportSummaryContainer isLoading={isLoading} className="mb-12">
 			<ReportGroup header="Initial Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup
