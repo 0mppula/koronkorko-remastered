@@ -79,7 +79,7 @@ export const footerLinks = [
 				url: 'https://ui.shadcn.com/',
 				text: 'shadcn/ui',
 			},
-			{ url: 'https://github.com/reactchartjs/react-chartjs-2', text: 'React Chartjs 2' },
+			{ url: 'https://recharts.org/', text: 'Recharts' },
 			{
 				url: 'https://lucide.dev/',
 				text: 'Lucide',
