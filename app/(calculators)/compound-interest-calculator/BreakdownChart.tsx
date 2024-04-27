@@ -117,12 +117,19 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 
 	const totalContributionsTotalInterestBars = [
 		<Bar
+			key="totalContributions"
 			name={`${isDepositting ? 'Total Deposits' : 'Total Withdrawals'}`}
 			dataKey="totalContributions"
 			stackId="a"
 			fill={totalContributionsColor}
 		/>,
-		<Bar name="Total Interest" dataKey="totalInterest" stackId="a" fill={totalInterestColor} />,
+		<Bar
+			key="totalInterest"
+			name="Total Interest"
+			dataKey="totalInterest"
+			stackId="a"
+			fill={totalInterestColor}
+		/>,
 	];
 
 	return (
