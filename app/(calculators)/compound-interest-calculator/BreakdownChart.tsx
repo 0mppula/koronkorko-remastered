@@ -95,7 +95,10 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 		formattedValue = formatCurrency(value, currency);
 
 		return [
-			<div className="flex gap-1 items-center justify-start">
+			<div
+				key={`${props?.name}-${formattedValue}`}
+				className="flex gap-1 items-center justify-start"
+			>
 				<div
 					className="w-[14px] h-[10.5px]"
 					style={{
@@ -108,7 +111,7 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 	};
 
 	const getYAxisTickLen = () => {
-		const charWidth = 8; // example w/ estimated 8px width/char
+		const charWidth = 8;
 		return longestTick.length * charWidth + 10;
 	};
 
