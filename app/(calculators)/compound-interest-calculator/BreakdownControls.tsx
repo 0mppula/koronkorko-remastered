@@ -3,6 +3,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download } from 'lucide-react';
 
 interface BreakdownControlsProps {
+	isLoading: boolean;
 	visualizationType: 'chart' | 'table';
 	setVisualizationType: (value: 'chart' | 'table') => void;
 	breakdownInterval: 'monthly' | 'yearly';
@@ -10,6 +11,7 @@ interface BreakdownControlsProps {
 }
 
 const BreakdownControls = ({
+	isLoading,
 	breakdownInterval,
 	setBreakdownInterval,
 	setVisualizationType,
@@ -33,11 +35,11 @@ const BreakdownControls = ({
 				className="w-full"
 			>
 				<TabsList className="w-full h-11">
-					<TabsTrigger value="yearly" className="w-full">
+					<TabsTrigger value="yearly" className="w-full" disabled={isLoading}>
 						Yearly
 					</TabsTrigger>
 
-					<TabsTrigger value="monthly" className="w-full">
+					<TabsTrigger value="monthly" className="w-full" disabled={isLoading}>
 						Monthly
 					</TabsTrigger>
 				</TabsList>
@@ -49,10 +51,10 @@ const BreakdownControls = ({
 				className="w-full"
 			>
 				<TabsList className="w-full h-11">
-					<TabsTrigger value="chart" className="w-full">
+					<TabsTrigger value="chart" className="w-full" disabled={isLoading}>
 						Chart
 					</TabsTrigger>
-					<TabsTrigger value="table" className="w-full">
+					<TabsTrigger value="table" className="w-full" disabled={isLoading}>
 						Table
 					</TabsTrigger>
 				</TabsList>

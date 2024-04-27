@@ -2,6 +2,7 @@ import { ICompoundInterestFormData } from '@/types/calculations';
 
 export interface ICompoundInterestChartData {
 	month: number;
+	year: number;
 	totalPrincipal: number;
 	totalContributions: number;
 	totalInterest: number;
@@ -45,7 +46,7 @@ export const createCounpoundInterestChartData = (
 
 		const depositting = contributionMultiplier > -1;
 
-		const _chartData: ICompoundInterestChartData[] = [];
+		const chartData: ICompoundInterestChartData[] = [];
 
 		const PMT =
 			contributionMultiplier * contribution * (contributionFrequency / compoundFrequency);
@@ -66,6 +67,7 @@ export const createCounpoundInterestChartData = (
 			const additions = i * pmt;
 			const interest = T_i - (P + additions);
 			const month = i;
+			const year = Math.floor(i / 12);
 			const principal = P;
 
 			const entry: ICompoundInterestChartData = {} as ICompoundInterestChartData;
@@ -73,6 +75,7 @@ export const createCounpoundInterestChartData = (
 			entry.totalContributions = additions;
 
 			entry.month = month;
+			entry.year = year;
 
 			if (depositting) {
 				entry.totalPrincipal = principal;
@@ -99,9 +102,9 @@ export const createCounpoundInterestChartData = (
 			// This array is for table
 			entry.totalAbsInterest = interest;
 
-			_chartData.push(entry);
+			chartData.push(entry);
 		}
 
-		resolve(_chartData);
+		resolve(chartData);
 	});
 };

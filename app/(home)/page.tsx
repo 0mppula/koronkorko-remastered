@@ -32,9 +32,9 @@ export default function Home() {
 			</div>
 
 			<div className="flex justify-center items-center my-4 gap-8 w-full">
-				<div className="bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
+				<div className="bg-primary-neutral h-[2px] grow-1 w-full" />
 				<TypographyH2>Featured</TypographyH2>
-				<div className="bg-neutral-300 dark:bg-neutral-700 h-[2px] grow-1 w-full" />
+				<div className="bg-primary-neutral h-[2px] grow-1 w-full" />
 			</div>
 
 			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">

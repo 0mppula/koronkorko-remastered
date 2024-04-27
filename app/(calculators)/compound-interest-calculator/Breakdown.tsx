@@ -7,6 +7,7 @@ import {
 } from '@/lib/createCounpoundInterestChartData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import BreakdownChart from './BreakdownChart';
 import BreakdownControls from './BreakdownControls';
 import { ReportProps } from './Calculator';
 
@@ -90,11 +91,22 @@ const Breakdown = ({ report }: ReportProps) => {
 	return (
 		<ReportSummaryContainer isLoading={isChartDataLoading} title="Breakdown">
 			<BreakdownControls
+				isLoading={isChartDataLoading}
 				visualizationType={visualizationType}
 				setVisualizationType={setVisualizationType}
 				breakdownInterval={breakdownInterval}
 				setBreakdownInterval={setBreakdownInterval}
 			/>
+
+			{visualizationType === 'chart' ? (
+				<BreakdownChart
+					data={filteredChartData}
+					report={report}
+					breakdownInterval={breakdownInterval}
+				/>
+			) : (
+				''
+			)}
 		</ReportSummaryContainer>
 	);
 };

@@ -76,3 +76,24 @@ export const formatCurrency = (
 
 	return formatted;
 };
+
+export const formatCurrencyK = (
+	value: number,
+	currency: (typeof currencies)[number]['value'] = 'usd'
+) => {
+	if (!isNaN(value)) {
+		let formatted = new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency,
+			maximumFractionDigits: 0,
+		}).format(value / 1000);
+		return `${formatted}k`;
+	} else {
+		let formatted = new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency,
+			maximumFractionDigits: 0,
+		}).format(0);
+		return formatted;
+	}
+};
