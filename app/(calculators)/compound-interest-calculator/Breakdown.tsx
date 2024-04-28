@@ -4,12 +4,15 @@ import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import {
 	ICompoundInterestChartData,
 	createCounpoundInterestChartData,
+	createTableData,
 } from '@/lib/createCounpoundInterestChartData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import BreakdownChart from './BreakdownChart';
 import BreakdownControls from './BreakdownControls';
+import BreakdownTable from './BreakdownTable';
 import { ReportProps } from './Calculator';
+import { columns } from './columns';
 
 const Breakdown = ({ report }: ReportProps) => {
 	const [visualizationType, setVisualizationType] = useState<'chart' | 'table'>('chart');
@@ -88,6 +91,13 @@ const Breakdown = ({ report }: ReportProps) => {
 		return [];
 	}, [chartData, breakdownInterval]);
 
+	const filteredTableData = useMemo(() => {
+		if (filteredChartData.length > 0) {
+			return createTableData(filteredChartData);
+		}
+		return [];
+	}, [filteredChartData, breakdownInterval]);
+
 	return (
 		<ReportSummaryContainer isLoading={isChartDataLoading} title="Breakdown">
 			<BreakdownControls
@@ -105,7 +115,12 @@ const Breakdown = ({ report }: ReportProps) => {
 					breakdownInterval={breakdownInterval}
 				/>
 			) : (
-				''
+				<BreakdownTable
+					data={filteredTableData}
+					report={report}
+					columns={columns}
+					breakdownInterval={breakdownInterval}
+				/>
 			)}
 		</ReportSummaryContainer>
 	);
