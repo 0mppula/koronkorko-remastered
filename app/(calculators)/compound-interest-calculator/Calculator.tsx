@@ -168,7 +168,7 @@ const Calculator = () => {
 								name="contribution"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Contributions (optional)</FormLabel>
+										<FormLabel>Contributions</FormLabel>
 
 										<FormControl>
 											<ContributionToggleInput

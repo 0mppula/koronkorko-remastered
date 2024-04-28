@@ -90,7 +90,7 @@ const ImportCalculationModal = <
 							{calculations.map((calculation) => (
 								<Fragment key={calculation.id}>
 									<li className="flex items-center gap-x-4 gap-y-2 flex-wrap justify-between">
-										<div className="text-ellipsis whitespace-nowrap overflow-hidden w-44 xs:w-auto">
+										<div className="text-ellipsis whitespace-nowrap overflow-hidden w-56 xs:w-auto">
 											{calculation.name}
 										</div>
 

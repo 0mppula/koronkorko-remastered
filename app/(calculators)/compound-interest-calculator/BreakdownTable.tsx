@@ -64,7 +64,9 @@ const BreakdownTable = ({ data, breakdownInterval, report }: BreakdownTableProps
 		<Table>
 			<TableHeader>
 				<TableRow>
-					<TableHead>{`${breakdownInterval === 'yearly' ? 'Year' : 'Month'}`}</TableHead>
+					<TableHead className="min-w-[78px]">{`${
+						breakdownInterval === 'yearly' ? 'Year' : 'Month'
+					}`}</TableHead>
 					<TableHead>{`${isDepositting ? 'Deposit' : 'Withdrawal'}`}</TableHead>
 					<TableHead>Interest</TableHead>
 					<TableHead>{`Total ${isDepositting ? 'Deposits' : 'Withdrawals'}`}</TableHead>
