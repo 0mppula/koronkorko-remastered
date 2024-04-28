@@ -4,7 +4,7 @@ import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import {
 	ICompoundInterestChartData,
 	createCounpoundInterestChartData,
-	createTableData,
+	createCounpoundInterestTableData,
 } from '@/lib/createCounpoundInterestChartData';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -93,7 +93,7 @@ const Breakdown = ({ report }: ReportProps) => {
 
 	const filteredTableData = useMemo(() => {
 		if (filteredChartData.length > 0) {
-			return createTableData(filteredChartData);
+			return createCounpoundInterestTableData(filteredChartData);
 		}
 		return [];
 	}, [filteredChartData, breakdownInterval]);

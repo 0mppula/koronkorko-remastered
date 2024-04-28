@@ -113,7 +113,7 @@ export const createCounpoundInterestChartData = (formData: ICompoundInterestForm
 	return chartData;
 };
 
-export const createTableData = (
+export const createCounpoundInterestTableData = (
 	data: ICompoundInterestChartData[]
 ): ICompoundInterestTableData[] => {
 	if (data.length === 0) return [];

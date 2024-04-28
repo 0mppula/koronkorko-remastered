@@ -33,7 +33,9 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 		const originalConsoleError = console.error;
 
 		console.error = (...args: any[]) => {
-			if (typeof args[0] === 'string' && /defaultProps/.test(args[0])) {
+			const rechartsWarning = /Warning: Cannot update a component/.test(args[0]);
+
+			if ((typeof args[0] === 'string' && /defaultProps/.test(args[0])) || rechartsWarning) {
 				return;
 			}
 
