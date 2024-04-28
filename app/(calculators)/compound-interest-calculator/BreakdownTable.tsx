@@ -1,71 +1,82 @@
+'use client';
+
 import {
 	Table,
 	TableBody,
 	TableCell,
+	TableFooter,
 	TableHead,
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
-import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import useCurrencyStore from '@/hooks/useCurrency';
+import { ICompoundInterestTableData } from '@/lib/createCounpoundInterestChartData';
+import { cn, formatCurrency } from '@/lib/utils';
 import { ReportProps } from './Calculator';
 
-interface BreakdownTableProps<TData, TValue> extends ReportProps {
-	data: TData[];
+interface BreakdownTableProps extends ReportProps {
+	data: ICompoundInterestTableData[];
 	breakdownInterval: 'monthly' | 'yearly';
-	columns: ColumnDef<TData, TValue>[];
 }
 
-const BreakdownTable = <TData, TValue>({
-	columns,
-	data,
-	breakdownInterval,
-	report,
-}: BreakdownTableProps<TData, TValue>) => {
-	const table = useReactTable({
-		data,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-	});
+const BreakdownTable = ({ data, breakdownInterval, report }: BreakdownTableProps) => {
+	const { currency } = useCurrencyStore();
+
+	const isDepositting = report.contributionMultiplier === 1;
+
+	const renderRow = (row: ICompoundInterestTableData) => (
+		<TableRow key={row.i + row.contributions}>
+			{/* Date interval */}
+			<TableCell className="text-center">{row.i}</TableCell>
+
+			{/* Contributions */}
+			<TableCell
+				className={cn(
+					row.contributions > 0 && 'text-success',
+					row.contributions < 0 && 'text-destructive'
+				)}
+			>
+				{formatCurrency(row.contributions, currency)}
+			</TableCell>
+
+			{/* Interest */}
+			<TableCell>{formatCurrency(row.interest, currency)}</TableCell>
+
+			{/* Total contributions */}
+			<TableCell
+				className={cn(
+					row.totalContributions > 0 && 'text-success',
+					row.totalContributions < 0 && 'text-destructive'
+				)}
+			>
+				{formatCurrency(row.totalContributions, currency)}
+			</TableCell>
+
+			{/* Total interest */}
+			<TableCell>{formatCurrency(row.totalInterest, currency)}</TableCell>
+
+			{/* Balance */}
+			<TableCell>{formatCurrency(row.balance, currency)}</TableCell>
+		</TableRow>
+	);
 
 	return (
 		<Table>
 			<TableHeader>
-				{table.getHeaderGroups().map((headerGroup) => (
-					<TableRow key={headerGroup.id}>
-						{headerGroup.headers.map((header) => {
-							return (
-								<TableHead key={header.id} className="font-semibold">
-									{header.isPlaceholder
-										? null
-										: flexRender(
-												header.column.columnDef.header,
-												header.getContext()
-										  )}
-								</TableHead>
-							);
-						})}
-					</TableRow>
-				))}
+				<TableRow>
+					<TableHead>{`${breakdownInterval === 'yearly' ? 'Year' : 'Month'}`}</TableHead>
+					<TableHead>{`${isDepositting ? 'Deposit' : 'Withdrawal'}`}</TableHead>
+					<TableHead>Interest</TableHead>
+					<TableHead>{`Total ${isDepositting ? 'Deposits' : 'Withdrawals'}`}</TableHead>
+					<TableHead>Total Interest</TableHead>
+
+					<TableHead>Balance</TableHead>
+				</TableRow>
 			</TableHeader>
-			<TableBody>
-				{table.getRowModel().rows?.length ? (
-					table.getRowModel().rows.map((row) => (
-						<TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-							{row.getVisibleCells().map((cell) => (
-								<TableCell key={cell.id}>
-									{flexRender(cell.column.columnDef.cell, cell.getContext())}
-								</TableCell>
-							))}
-						</TableRow>
-					))
-				) : (
-					<TableRow>
-						<TableCell colSpan={columns.length} className="h-24 text-center">
-							No results.
-						</TableCell>
-					</TableRow>
-				)}
-			</TableBody>
+
+			<TableBody>{data.slice(0, -1).map((row) => renderRow(row))}</TableBody>
+
+			<TableFooter>{data.slice(-1).map((row) => renderRow(row))}</TableFooter>
 		</Table>
 	);
 };

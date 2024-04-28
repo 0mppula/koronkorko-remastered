@@ -12,7 +12,6 @@ import BreakdownChart from './BreakdownChart';
 import BreakdownControls from './BreakdownControls';
 import BreakdownTable from './BreakdownTable';
 import { ReportProps } from './Calculator';
-import { columns } from './columns';
 
 const Breakdown = ({ report }: ReportProps) => {
 	const [visualizationType, setVisualizationType] = useState<'chart' | 'table'>('chart');
@@ -118,7 +117,6 @@ const Breakdown = ({ report }: ReportProps) => {
 				<BreakdownTable
 					data={filteredTableData}
 					report={report}
-					columns={columns}
 					breakdownInterval={breakdownInterval}
 				/>
 			)}
