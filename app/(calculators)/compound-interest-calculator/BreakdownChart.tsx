@@ -135,87 +135,86 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 	];
 
 	return (
-		<>
-			<div className="h-[416px] w-full">
-				<ResponsiveContainer width="100%" height="100%">
-					<BarChart
-						stackOffset="sign"
-						data={data}
-						margin={{
-							top: 12,
-							right: 0,
-							left: 0,
-							bottom: 0,
+		<div className="h-[416px] w-full">
+			<ResponsiveContainer width="100%" height="100%">
+				<BarChart
+					stackOffset="sign"
+					data={data}
+					margin={{
+						top: 12,
+						right: 0,
+						left: 0,
+						bottom: 0,
+					}}
+				>
+					<Legend
+						verticalAlign="top"
+						height={48}
+						formatter={legendFormatter}
+						wrapperStyle={{
+							fontSize: 14,
+							color: foregroundColor,
+							fill: foregroundColor,
 						}}
-					>
-						<Legend
-							verticalAlign="top"
-							height={48}
-							formatter={legendFormatter}
-							wrapperStyle={{
-								fontSize: 14,
-								color: foregroundColor,
-								fill: foregroundColor,
-							}}
-						/>
+					/>
 
-						<CartesianGrid vertical={false} stroke={chartLinesColor} />
+					<CartesianGrid vertical={false} stroke={chartLinesColor} />
 
-						<XAxis
-							dataKey={breakdownInterval === 'yearly' ? 'year' : 'month'}
-							stroke={foregroundColor}
-							fontSize={13}
-							tickLine={false}
-							axisLine={{ stroke: chartLinesColor }}
-							interval="preserveStartEnd"
-							label={{
-								value: breakdownInterval === 'yearly' ? 'Year' : 'Month',
-								position: 'insideBottom',
-								fill: foregroundColor,
-								fontSize: 13,
-							}}
-							height={48}
-						/>
+					<XAxis
+						dataKey={breakdownInterval === 'yearly' ? 'year' : 'month'}
+						stroke={foregroundColor}
+						fontSize={13}
+						tickLine={false}
+						axisLine={{ stroke: chartLinesColor }}
+						interval="preserveStartEnd"
+						label={{
+							value: breakdownInterval === 'yearly' ? 'Year' : 'Month',
+							position: 'insideBottom',
+							fill: foregroundColor,
+							fontSize: 13,
+						}}
+						height={48}
+					/>
 
-						<YAxis
-							tickCount={10}
-							stroke={foregroundColor}
-							tickFormatter={tickFormatter}
-							width={getYAxisTickLen()}
-							fontSize={13}
-							tickLine={false}
-							axisLine={{ stroke: 'transparent' }}
-						/>
+					<YAxis
+						type="number"
+						tickCount={8}
+						stroke={foregroundColor}
+						tickFormatter={tickFormatter}
+						width={getYAxisTickLen()}
+						fontSize={13}
+						tickLine={false}
+						axisLine={{ stroke: 'transparent' }}
+					/>
 
-						{/* @ts-ignore */}
-						<Tooltip
-							cursor={false}
-							labelFormatter={tooltipLabelFormatter}
-							formatter={tooltipFormatter}
-							contentStyle={{
-								borderRadius: '8px',
-								backgroundColor: cardColor,
-								borderColor: primaryColor,
-								fontSize: '14px',
-							}}
-						/>
+					{/* @ts-ignore */}
+					<Tooltip
+						cursor={false}
+						labelFormatter={tooltipLabelFormatter}
+						formatter={tooltipFormatter}
+						contentStyle={{
+							borderRadius: '8px',
+							backgroundColor: cardColor,
+							borderColor: primaryColor,
+							fontSize: '14px',
+						}}
+					/>
 
-						<Legend />
+					<Legend />
 
-						<Bar
-							dataKey="totalPrincipal"
-							stackId="a"
-							fill={totalPrincipalColor}
-							name="Total Principal"
-						/>
+					<Bar
+						dataKey="totalPrincipal"
+						stackId="a"
+						fill={totalPrincipalColor}
+						name="Total Principal"
+					/>
 
-						{isDepositting
-							? totalContributionsTotalInterestBars
-							: totalContributionsTotalInterestBars.reverse()}
-					</BarChart>
-				</ResponsiveContainer>
-			</div>
-		</>
+					{isDepositting
+						? totalContributionsTotalInterestBars
+						: totalContributionsTotalInterestBars.reverse()}
+				</BarChart>
+			</ResponsiveContainer>
+		</div>
 	);
 };
 
