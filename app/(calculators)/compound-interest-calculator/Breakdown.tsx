@@ -105,6 +105,8 @@ const Breakdown = ({ report }: ReportProps) => {
 				setVisualizationType={setVisualizationType}
 				breakdownInterval={breakdownInterval}
 				setBreakdownInterval={setBreakdownInterval}
+				data={filteredTableData}
+				report={report}
 			/>
 
 			{visualizationType === 'chart' ? (
