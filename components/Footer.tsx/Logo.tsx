@@ -1,13 +1,16 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import Image, { StaticImageData } from 'next/image';
-import { useEffect, useState } from 'react';
+import { HtmlHTMLAttributes, useEffect, useState } from 'react';
 import logo_dark from '../../public/assets/images/logo_dark.png';
 import logo_light from '../../public/assets/images/logo_light.png';
 import { Skeleton } from '../ui/skeleton';
 
-const Logo = () => {
+interface LogoProps extends HtmlHTMLAttributes<HTMLImageElement> {}
+
+const Logo = ({ className, ...props }: LogoProps) => {
 	const [src, setSrc] = useState<null | StaticImageData>(null);
 
 	const { resolvedTheme } = useTheme();
@@ -19,9 +22,13 @@ const Logo = () => {
 		<>
 			{src ? (
 				<Image
+					{...props}
 					src={src}
 					alt="KoronKorko Logo"
-					className="h-[50px] w-[50px] cursor-pointer select-none min-h-[50px] min-w-[50px]"
+					className={cn(
+						'h-[50px] w-[50px] cursor-pointer select-none min-h-[50px] min-w-[50px]',
+						className
+					)}
 				/>
 			) : (
 				<Skeleton className="h-[50px] w-[50px] rounded-full" />

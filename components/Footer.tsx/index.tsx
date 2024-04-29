@@ -1,5 +1,4 @@
 import { footerLinks, footerSocialMedia } from '@/constants/data';
-import TypographyH2 from '../TypographyH2';
 import { Separator } from '../ui/separator';
 import Link from './Link';
 import Logo from './Logo';
@@ -14,13 +13,13 @@ const Footer = () => {
 				<div className="grid xl:grid-cols-12 gap-y-8 gap-x-4 pb-8">
 					<div className="flex flex-col col-span-12 xl:col-span-4">
 						<div className="flex items-center gap-2">
-							<Logo />
-							<TypographyH2
+							<Logo aria-hidden className="cursor-default" />
+							<h4
 								aria-hidden
 								className="scroll-m-20 text-4xl font-extrabold tracking-tight select-none mt-[4px] hidden xs:block"
 							>
 								KoronKorko
-							</TypographyH2>
+							</h4>
 						</div>
 					</div>
 
@@ -28,7 +27,9 @@ const Footer = () => {
 						{footerLinks.map((section) => (
 							<div key={`section-${section.title}`}>
 								<div className="mb-4 xl:h-12 flex items-end">
-									<TypographyH2>{section.title}</TypographyH2>
+									<h4 className="scroll-m-20 text-2xl font-bold tracking-tight transition-colors first:mt-0">
+										{section.title}
+									</h4>
 								</div>
 
 								<ul>

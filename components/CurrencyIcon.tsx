@@ -14,7 +14,12 @@ interface CurrencyIconProps extends Omit<LucideProps, 'ref'> {
 	SrNamePlural?: boolean;
 }
 
-const CurrencyIcon = ({ currency, SrNamePlural = false, ...props }: CurrencyIconProps) => {
+const CurrencyIcon = ({
+	currency,
+	SrNamePlural = false,
+	className,
+	...props
+}: CurrencyIconProps) => {
 	const getIcon = () => {
 		const SRCurrencyName = (
 			<span className="sr-only">{getCurrencyName(currency, SrNamePlural)}</span>
@@ -24,18 +29,14 @@ const CurrencyIcon = ({ currency, SrNamePlural = false, ...props }: CurrencyIcon
 			case 'eur':
 				return (
 					<>
-						<Euro {...props} className={cn('h-4 w-4', props.className)} aria-hidden />
+						<Euro {...props} className={cn('h-4 w-4', className)} aria-hidden />
 						{SRCurrencyName}
 					</>
 				);
 			case 'usd':
 				return (
 					<>
-						<DollarSign
-							{...props}
-							className={cn('h-4 w-4', props.className)}
-							aria-hidden
-						/>
+						<DollarSign {...props} className={cn('h-4 w-4', className)} aria-hidden />
 						{SRCurrencyName}
 					</>
 				);
@@ -44,7 +45,7 @@ const CurrencyIcon = ({ currency, SrNamePlural = false, ...props }: CurrencyIcon
 					<>
 						<PoundSterling
 							{...props}
-							className={cn('h-4 w-4', props.className)}
+							className={cn('h-4 w-4', className)}
 							aria-hidden
 						/>
 						{SRCurrencyName}
@@ -53,33 +54,21 @@ const CurrencyIcon = ({ currency, SrNamePlural = false, ...props }: CurrencyIcon
 			case 'jpy':
 				return (
 					<>
-						<JapaneseYen
-							{...props}
-							className={cn('h-4 w-4', props.className)}
-							aria-hidden
-						/>
+						<JapaneseYen {...props} className={cn('h-4 w-4', className)} aria-hidden />
 						{SRCurrencyName}
 					</>
 				);
 			case 'inr':
 				return (
 					<>
-						<IndianRupee
-							{...props}
-							className={cn('h-4 w-4', props.className)}
-							aria-hidden
-						/>
+						<IndianRupee {...props} className={cn('h-4 w-4', className)} aria-hidden />
 						{SRCurrencyName}
 					</>
 				);
 			default:
 				return (
 					<>
-						<DollarSign
-							{...props}
-							className={cn('h-4 w-4', props.className)}
-							aria-hidden
-						/>
+						<DollarSign {...props} className={cn('h-4 w-4', className)} aria-hidden />
 						{SRCurrencyName}
 					</>
 				);
