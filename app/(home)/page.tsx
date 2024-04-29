@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function Home() {
 	return (
 		<>
-			<TypographyH1 className="mb-6">Home</TypographyH1>
+			<TypographyH1 className="mb-6">Choose a Calculator</TypographyH1>
 
 			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">
 				{calculators.map((calculator, i) => (
@@ -31,10 +31,10 @@ export default function Home() {
 				))}
 			</div>
 
-			<div className="flex justify-center items-center my-4 gap-8 w-full">
-				<div className="bg-primary-neutral h-[2px] grow-1 w-full" />
-				<TypographyH2>Featured</TypographyH2>
-				<div className="bg-primary-neutral h-[2px] grow-1 w-full" />
+			<div className="flex justify-center items-center my-6 gap-8 w-full">
+				<div className="bg-primary-neutral h-[2px] grow w-full shrink" />
+				<TypographyH2 className="whitespace-nowrap">Featured Apps</TypographyH2>
+				<div className="bg-primary-neutral h-[2px] grow w-full" />
 			</div>
 
 			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">

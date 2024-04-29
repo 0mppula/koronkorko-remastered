@@ -43,16 +43,28 @@ export const calculators = [
 
 export const featuredApps = [
 	{
+		name: 'Money Mapper',
+		url: 'https://moneymapper.vercel.app/',
+		description:
+			'An all-in-one personal finance tracker. Users can track and visualize their money, income, net worth, debts, and everything in between.',
+	},
+	{
 		name: 'CoinCaps',
 		url: 'https://coincaps.netlify.app/',
 		description:
 			'A web-application allowing the user to view the 250 most valuable cryptocurrencies by market capitalization.',
 	},
 	{
-		name: 'Money Mapper',
-		url: 'https://moneymapper.vercel.app/',
+		name: 'KoronKorko (MERN)',
+		url: 'https://koronkorko.com/',
 		description:
-			'An all-in-one personal finance tracker. Users can track their money, income, net worth, debts, and everything in between.',
+			'An earlier MERN stack version of KoronKorko. It mirrors the current functionality, enabling users to save calculations. However, the current version boasts slight improvements.',
+	},
+	{
+		name: 'WSB-Tickers',
+		url: 'https://wsb-tickers.netlify.app/',
+		description:
+			'View the sentiment of the top 50 stocks mentioned on reddit.com/r/wallstreetbets before the closing of its API on October 14, 2023.',
 	},
 ] as const;
 
@@ -62,10 +74,16 @@ export const footerLinks = [
 		links: [
 			{ url: 'https://nextjs.org/', text: 'Next.js' },
 			{ url: 'https://reactjs.org/', text: 'React.js' },
+			{ url: 'https://www.typescriptlang.org/', text: 'TypeScript' },
 			{ url: 'https://www.mongodb.com/', text: 'MongoDB' },
 			{ url: 'https://www.prisma.io/', text: 'Prisma' },
-			{ url: 'https://zustand-demo.pmnd.rs/', text: 'Zustand' },
 			{ url: 'https://tanstack.com/query/latest', text: 'TanStack Query' },
+			{ url: 'https://next-auth.js.org/', text: 'next-auth' },
+
+			{
+				url: 'https://github.com/pacocoursey/next-themes',
+				text: 'next-themes',
+			},
 		],
 	},
 	{
@@ -81,17 +99,32 @@ export const footerLinks = [
 			},
 			{ url: 'https://recharts.org/', text: 'Recharts' },
 			{
+				url: 'https://sonner.emilkowal.ski/',
+				text: 'Sonner',
+			},
+			{
 				url: 'https://lucide.dev/',
 				text: 'Lucide',
 			},
+			{
+				url: 'https://react-icons.github.io/react-icons/',
+				text: 'react-icons',
+			},
+
+			{ url: 'https://zustand-demo.pmnd.rs/', text: 'Zustand' },
+
+			{ url: 'https://github.com/LuisEnMarroquin/json-as-xlsx', text: 'json-as-xlsx' },
+			{ url: 'https://zod.dev/', text: 'Zod' },
 		],
 	},
 	{
 		title: 'Developer',
 		links: [
 			{ url: 'https://www.omarkraidie.com/', text: 'Omar Kraidié Portfolio' },
+			{ url: 'https://github.com/0mppula', text: 'Omar Kraidié GitHub' },
 			{ url: 'https://moneymapper.vercel.app/', text: 'Project: Money Mapper' },
 			{ url: 'https://coincaps.netlify.app/', text: 'Project: CoinCaps' },
+			{ url: 'https://koronkorko.com/', text: 'Project: KoronKorko (MERN)' },
 			{
 				url: 'https://www.goodreads.com/review/list/135003326-0mppu?ref=nav_mybooks&shelf=programming',
 				text: 'Technology Books',
