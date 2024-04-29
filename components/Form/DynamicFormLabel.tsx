@@ -13,7 +13,7 @@ const DynamicFormLabel = ({ label, shortLabel = '', ...props }: DynamicFormLabel
 
 	return (
 		<FormLabel aria-label={label} {...props}>
-			{!shortLabel || (!isXs && <span aria-hidden>{label}</span>)}
+			{(!shortLabel || !isXs) && <span aria-hidden>{label}</span>}
 			{shortLabel && isXs && <span aria-hidden>{shortLabel}</span>}
 		</FormLabel>
 	);

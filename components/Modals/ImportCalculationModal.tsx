@@ -106,7 +106,7 @@ const ImportCalculationModal = <
 														<FileDown className="h-4 w-4" aria-hidden />
 
 														<span className="sr-only">
-															Import calculation
+															{`Import ${calculation.name}`}
 														</span>
 													</Button>
 												</TooltipTrigger>
@@ -129,7 +129,7 @@ const ImportCalculationModal = <
 														<Trash className="h-4 w-4" aria-hidden />
 
 														<span className="sr-only">
-															Delete Calculation
+															{`Delete ${calculation.name}`}
 														</span>
 													</Button>
 												</TooltipTrigger>
