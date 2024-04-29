@@ -59,7 +59,7 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 				<DropdownMenuSeparator />
 
 				<DropdownMenuItem className="focus:bg-destructive/25" onClick={() => signOut()}>
-					<LogOut className="mr-2 h-[1.125rem] w-[1.125rem]" /> Sign out
+					<LogOut aria-hidden className="mr-2 h-4 w-4" /> Sign out
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

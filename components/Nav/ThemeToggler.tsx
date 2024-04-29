@@ -58,11 +58,11 @@ const ThemeToggler = () => {
 				<Button variant="ghost" size="icon" suppressHydrationWarning>
 					<Sun
 						aria-hidden
-						className="h-[1.375rem] w-[1.375rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+						className="h-[1.25rem] w-[1.25rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
 					/>
 					<Moon
 						aria-hidden
-						className="absolute h-[1.375rem] w-[1.375rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+						className="absolute h-[1.25rem] w-[1.25rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
 					/>
 					<span className="sr-only">Toggle theme</span>
 				</Button>
@@ -70,13 +70,13 @@ const ThemeToggler = () => {
 
 			<DropdownMenuContent align="end">
 				<DropdownMenuItem onClick={() => handleThemeChange('light')}>
-					<Sun aria-hidden className="mr-2 h-[1.125rem] w-[1.125rem]" /> Light
+					<Sun aria-hidden className="mr-2 h-4 w-4" /> Light
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => handleThemeChange('dark')}>
-					<Moon aria-hidden className="mr-2 h-[1.125rem] w-[1.125rem]" /> Dark
+					<Moon aria-hidden className="mr-2 h-4 w-4" /> Dark
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => handleThemeChange('system')}>
-					<Laptop aria-hidden className="mr-2 h-[1.125rem] w-[1.125rem]" /> System
+					<Laptop aria-hidden className="mr-2 h-4 w-4" /> System
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

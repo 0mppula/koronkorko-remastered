@@ -1,7 +1,8 @@
 import useCurrencyStore from '@/hooks/useCurrency';
-import { cn, getCurrencyName } from '@/lib/utils';
-import { DollarSign, Euro, IndianRupee, JapaneseYen, Percent, PoundSterling } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Percent } from 'lucide-react';
 import React from 'react';
+import CurrencyIcon from '../CurrencyIcon';
 import { InputProps } from '../ui/input';
 
 interface NumberInputWithIconProps extends InputProps {
@@ -13,61 +14,15 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {
-			if (iconType === 'percentage')
+			if (iconType === 'percentage') {
 				return (
 					<>
 						<Percent className="h-4 w-4" aria-hidden />
 						<span className="sr-only">Percent</span>
 					</>
 				);
-
-			const SRCurrencyName = (
-				<span className="sr-only">{getCurrencyName(currency, true)}</span>
-			);
-
-			switch (currency) {
-				case 'eur':
-					return (
-						<>
-							<Euro className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
-				case 'usd':
-					return (
-						<>
-							<DollarSign className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
-				case 'gbp':
-					return (
-						<>
-							<PoundSterling className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
-				case 'jpy':
-					return (
-						<>
-							<JapaneseYen className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
-				case 'inr':
-					return (
-						<>
-							<IndianRupee className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
-				default:
-					return (
-						<>
-							<DollarSign className="h-4 w-4" aria-hidden />
-							{SRCurrencyName}
-						</>
-					);
+			} else {
+				return <CurrencyIcon currency={currency} />;
 			}
 		};
 

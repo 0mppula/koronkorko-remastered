@@ -12,11 +12,11 @@ import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
-import { getCurrencySymbol } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
+import CurrencyIcon from '../CurrencyIcon';
 
 const PreferredCurrencyToggler = () => {
 	const { currency, setCurrency } = useCurrencyStore();
@@ -57,7 +57,7 @@ const PreferredCurrencyToggler = () => {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button variant="ghost" size="icon" suppressHydrationWarning>
-					<span className="text-[1.375rem]">{getCurrencySymbol(currency)}</span>
+					<CurrencyIcon currency={currency} className="h-[1.25rem] w-[1.25rem]" />
 
 					<span className="sr-only">Set preferred currency</span>
 				</Button>
@@ -66,7 +66,8 @@ const PreferredCurrencyToggler = () => {
 			<DropdownMenuContent align="end">
 				{currencies.map((c) => (
 					<DropdownMenuItem key={c.value} onClick={(e) => handleCurrencyChange(c.value)}>
-						<span className="mr-2">{c.symbol}</span>
+						<CurrencyIcon className="mr-2" currency={c.value} />
+
 						<span>{c.value.toUpperCase()}</span>
 					</DropdownMenuItem>
 				))}
