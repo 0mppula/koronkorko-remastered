@@ -23,13 +23,17 @@ export function ButtonWithIcon({
 		<>
 			{loading ? (
 				<ImSpinner8
+					aria-hidden
 					className={cn(
 						'h-4 w-4 animate-spin',
 						iconPosition === 'right' ? 'ml-1.5' : 'mr-1.5'
 					)}
 				/>
 			) : Icon ? (
-				<Icon className={cn('h-4 w-4', iconPosition === 'right' ? 'ml-1.5' : 'mr-1.5')} />
+				<Icon
+					aria-hidden
+					className={cn('h-4 w-4', iconPosition === 'right' ? 'ml-1.5' : 'mr-1.5')}
+				/>
 			) : (
 				<></>
 			)}

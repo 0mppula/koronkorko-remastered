@@ -85,7 +85,7 @@ const FormControlsTop = <
 											size="icon"
 											className="h-8 w-8 hover:text-destructive"
 										>
-											<X className="h-4 w-4" aria-hidden />
+											<X aria-hidden className="h-4 w-4" />
 
 											<span className="sr-only">Close calculation</span>
 										</Button>
@@ -127,7 +127,7 @@ const FormControlsTop = <
 								className="h-8 w-8 hover:text-destructive"
 								onClick={reset}
 							>
-								<RotateCw className="h-4 w-4 " />
+								<RotateCw aria-hidden className="h-4 w-4 " />
 
 								<span className="sr-only">Reset calculator</span>
 							</Button>

@@ -2,6 +2,13 @@ import { FaCode, FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
 
 export const appName = 'KoronKorko';
 
+export const XsScreen = 480;
+export const SmScreen = 640;
+export const MdScreen = 768;
+export const LgScreen = 1024;
+export const XlScreen = 1280;
+export const XxlScreen = 1536;
+
 export const calculators = [
 	{
 		name: 'Compound Interest Calculator',
@@ -171,11 +178,35 @@ export const footerSocialMedia = [
 ] as const;
 
 export const currencies = [
-	{ name: 'United States dollar', value: 'usd', symbol: '$', locale: 'en-US' },
-	{ name: 'Euro', value: 'eur', symbol: '€', locale: 'fi-FI' },
-	{ name: 'British Pound Sterling ', value: 'gbp', symbol: '£', locale: 'en-US' },
-	{ name: 'Japanese Yen', value: 'jpy', symbol: '¥', locale: 'en-US' },
-	{ name: 'Indian Rupee', value: 'inr', symbol: '₹', locale: 'en-US' },
+	{
+		name: 'United States dollar',
+		value: 'usd',
+		symbol: '$',
+		locale: 'en-US',
+		pluralName: 'United States dollars',
+	},
+	{ name: 'Euro', value: 'eur', symbol: '€', locale: 'fi-FI', pluralName: 'Euros' },
+	{
+		name: 'British Pound Sterling ',
+		value: 'gbp',
+		symbol: '£',
+		locale: 'en-US',
+		pluralName: 'British Pounds Sterling',
+	},
+	{
+		name: 'Japanese Yen',
+		value: 'jpy',
+		symbol: '¥',
+		locale: 'en-US',
+		pluralName: 'Japanese Yen',
+	},
+	{
+		name: 'Indian Rupee',
+		value: 'inr',
+		symbol: '₹',
+		locale: 'en-US',
+		pluralName: 'Indian Rupees',
+	},
 ] as const;
 
 export const durationMultipliers = [

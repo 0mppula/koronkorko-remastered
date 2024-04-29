@@ -42,7 +42,7 @@ const ToTop = () => {
 				active ? 'opacity-1' : 'opacity-0 pointer-events-none'
 			)}
 		>
-			<ChevronUp className="h-7 w-7" />
+			<ChevronUp aria-hidden className="h-7 w-7" />
 
 			<span className="sr-only">Scroll to the top of the page</span>
 		</Button>

@@ -52,13 +52,14 @@ const Footer = () => {
 					<div className="flex justify-between mb-7 w-[min(300px,80vw)]">
 						{footerSocialMedia.map((social) => (
 							<a
+								aria-label={social.name}
 								key={social.name}
 								href={social.url}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="transition-all p-2 rounded-full hover:text-primary dark:hover:text-primary dark:hover:bg-opacity-20"
 							>
-								<social.Icon className="text-[1.6875rem]" />
+								<social.Icon className="text-[1.6875rem]" aria-hidden />
 							</a>
 						))}
 					</div>

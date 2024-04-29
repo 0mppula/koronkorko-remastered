@@ -1,6 +1,7 @@
 'use client';
 
 import ContributionToggleInput from '@/components/Form/ContributionToggleInput';
+import DynamicFormLabel from '@/components/Form/DynamicFormLabel';
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
 import FormGroup from '@/components/Form/FormGroup';
@@ -162,7 +163,7 @@ const Calculator = () => {
 							/>
 						</FormGroup>
 
-						<FormGroup>
+						<FormGroup inline>
 							<FormField
 								control={form.control}
 								name="contribution"
@@ -196,7 +197,11 @@ const Calculator = () => {
 								name="contributionFrequency"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Contribution Frequency</FormLabel>
+										<DynamicFormLabel
+											label="Contribution Frequency"
+											shortLabel="Frequency"
+										/>
+
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={String(field.value)}
@@ -224,13 +229,16 @@ const Calculator = () => {
 							/>
 						</FormGroup>
 
-						<FormGroup>
+						<FormGroup inline>
 							<FormField
 								control={form.control}
 								name="interestRate"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Annual interest rate</FormLabel>
+										<DynamicFormLabel
+											label="Annual interest rate"
+											shortLabel="Interest rate"
+										/>
 
 										<FormControl>
 											<NumberInputWithIcon
@@ -253,7 +261,10 @@ const Calculator = () => {
 								name="contributionFrequency"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Compound Interval</FormLabel>
+										<DynamicFormLabel
+											label="Compound Interval"
+											shortLabel="Interval"
+										/>
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={String(field.value)}
@@ -281,7 +292,7 @@ const Calculator = () => {
 							/>
 						</FormGroup>
 
-						<FormGroup>
+						<FormGroup inline>
 							<FormField
 								control={form.control}
 								name="duration"
@@ -314,7 +325,8 @@ const Calculator = () => {
 								name="durationMultiplier"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Duration Type</FormLabel>
+										<DynamicFormLabel label="Duration Type" shortLabel="Type" />
+
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={String(field.value)}

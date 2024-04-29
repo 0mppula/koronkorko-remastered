@@ -28,6 +28,20 @@ const getCurrencyLocale = (value: (typeof currencies)[number]['value']): string 
 	return currencies.find((currency) => currency.value === value)?.locale || 'en-US';
 };
 
+export const getCurrencyName = (
+	value: (typeof currencies)[number]['value'],
+	plural = false
+): string => {
+	if (plural) {
+		return (
+			currencies.find((currency) => currency.value === value)?.pluralName ||
+			'United States dollar'
+		);
+	}
+
+	return currencies.find((currency) => currency.value === value)?.name || 'United States dollar';
+};
+
 export const getCurrencySymbol = (value: (typeof currencies)[number]['value']): string => {
 	return currencies.find((currency) => currency.value === value)?.symbol || '$';
 };

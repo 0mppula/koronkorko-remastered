@@ -1,10 +1,10 @@
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { cn } from '@/lib/utils';
+import { cn, getCurrencyName } from '@/lib/utils';
 import { HandCoins, PiggyBank } from 'lucide-react';
 import React from 'react';
-import { InputProps } from '../ui/input';
 import { Button } from '../ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InputProps } from '../ui/input';
 
 interface ContributionToggleInputProps extends InputProps {
 	contributionMultiplier: 1 | -1;
@@ -20,10 +20,12 @@ const ContributionToggleInput = React.forwardRef<HTMLInputElement, ContributionT
 		const getIcon = () => {
 			const icon = isDepositting ? (
 				<PiggyBank
+					aria-hidden
 					className={cn('h-4 w-4', isDepositting ? 'text-success' : 'text-destructive')}
 				/>
 			) : (
 				<HandCoins
+					aria-hidden
 					className={cn('h-4 w-4', isDepositting ? 'text-success' : 'text-destructive')}
 				/>
 			);
@@ -52,6 +54,8 @@ const ContributionToggleInput = React.forwardRef<HTMLInputElement, ContributionT
 					ref={ref}
 					{...props}
 				/>
+
+				<span className="sr-only">{getCurrencyName(currency, true)}</span>
 
 				<Tooltip>
 					<TooltipTrigger asChild>
