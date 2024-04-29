@@ -78,11 +78,15 @@ export const footerLinks = [
 			{ url: 'https://www.mongodb.com/', text: 'MongoDB' },
 			{ url: 'https://www.prisma.io/', text: 'Prisma' },
 			{ url: 'https://tanstack.com/query/latest', text: 'TanStack Query' },
-			{ url: 'https://next-auth.js.org/', text: 'next-auth' },
+			{ url: 'https://next-auth.js.org/', text: 'NextAuth' },
 
 			{
 				url: 'https://github.com/pacocoursey/next-themes',
 				text: 'next-themes',
+			},
+			{
+				url: 'https://axios-http.com/',
+				text: 'Axios',
 			},
 		],
 	},
@@ -97,6 +101,9 @@ export const footerLinks = [
 				url: 'https://ui.shadcn.com/',
 				text: 'shadcn/ui',
 			},
+			{ url: 'https://react-hook-form.com/', text: 'React Hook Form' },
+			{ url: 'https://zustand-demo.pmnd.rs/', text: 'Zustand' },
+			{ url: 'https://zod.dev/', text: 'Zod' },
 			{ url: 'https://recharts.org/', text: 'Recharts' },
 			{
 				url: 'https://sonner.emilkowal.ski/',
@@ -108,13 +115,10 @@ export const footerLinks = [
 			},
 			{
 				url: 'https://react-icons.github.io/react-icons/',
-				text: 'react-icons',
+				text: 'React Icons',
 			},
 
-			{ url: 'https://zustand-demo.pmnd.rs/', text: 'Zustand' },
-
 			{ url: 'https://github.com/LuisEnMarroquin/json-as-xlsx', text: 'json-as-xlsx' },
-			{ url: 'https://zod.dev/', text: 'Zod' },
 		],
 	},
 	{
