@@ -63,9 +63,9 @@ export const featuredApps = [
 	},
 	{
 		name: 'KoronKorko (MERN)',
-		url: 'https://koronkorko.com/',
+		url: 'https://koronkorko.herokuapp.com/',
 		description:
-			'An earlier MERN stack version of KoronKorko. It mirrors the current functionality, enabling users to save calculations. However, the current version boasts slight improvements.',
+			'An earlier version of KoronKorko built with the MERN stack. It mirrors the current functionality, enabling users to utilize various financial calculators and save their results. However, the current version boasts slight improvements.',
 	},
 	{
 		name: 'WSB-Tickers',
@@ -135,7 +135,7 @@ export const footerLinks = [
 			{ url: 'https://github.com/0mppula', text: 'Omar Kraidié GitHub' },
 			{ url: 'https://moneymapper.vercel.app/', text: 'Project: Money Mapper' },
 			{ url: 'https://coincaps.netlify.app/', text: 'Project: CoinCaps' },
-			{ url: 'https://koronkorko.com/', text: 'Project: KoronKorko (MERN)' },
+			{ url: 'https://koronkorko.herokuapp.com/', text: 'Project: KoronKorko (MERN)' },
 			{
 				url: 'https://www.goodreads.com/review/list/135003326-0mppu?ref=nav_mybooks&shelf=programming',
 				text: 'Technology Books',
