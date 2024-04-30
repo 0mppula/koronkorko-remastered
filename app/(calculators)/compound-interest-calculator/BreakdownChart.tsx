@@ -178,7 +178,6 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 
 					<YAxis
 						type="number"
-						tickCount={8}
 						stroke={foregroundColor}
 						tickFormatter={tickFormatter}
 						width={getYAxisTickLen()}
