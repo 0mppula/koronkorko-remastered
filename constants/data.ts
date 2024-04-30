@@ -172,7 +172,7 @@ export const footerSocialMedia = [
 	},
 	{
 		name: 'Source Code',
-		url: 'https://github.com/0mppula/next-koronkorko',
+		url: 'https://github.com/0mppula/koronkorko-remastered',
 		Icon: FaCode,
 	},
 ] as const;
