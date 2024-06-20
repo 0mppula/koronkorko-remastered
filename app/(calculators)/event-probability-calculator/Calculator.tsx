@@ -28,13 +28,14 @@ import { EventProbabilityCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
+import Report from './Report';
 
 export interface ReportProps {
 	report: EventProbabilityReportProps;
 }
 
 const defaultValues: IEventProbabilityFormData = {
-	eventProbability: 0.05,
+	eventProbabilityPercent: 5,
 	eventTries: 10,
 };
 
@@ -118,7 +119,7 @@ const Calculator = () => {
 						<FormGroup>
 							<FormField
 								control={form.control}
-								name="eventProbability"
+								name="eventProbabilityPercent"
 								render={({ field }) => (
 									<FormItem className="w-full">
 										<FormLabel>Event Probability</FormLabel>
@@ -126,11 +127,13 @@ const Calculator = () => {
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
-												name="eventProbability"
+												name="eventProbabilityPercent"
 												iconType="percentage"
+												step={0.000000000001}
+												max={100}
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
-														form.setValue('eventProbability', 0);
+														form.setValue('eventProbabilityPercent', 0);
 												}}
 											/>
 										</FormControl>
@@ -171,6 +174,8 @@ const Calculator = () => {
 					</form>
 				</Form>
 			</FormContainer>
+
+			{report && <Report report={report} />}
 		</>
 	);
 };

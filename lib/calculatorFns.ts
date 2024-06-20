@@ -180,12 +180,12 @@ export const calculateEventProbability = (
 	formData: IEventProbabilityFormData
 ): EventProbabilityReportProps => {
 	// EP = 1 - ( ( 1 - O ) ^ T )
-	// O = Odds of event occurring
+	// O = Odds of event occurring in a single trial
 	// T = Number of trials
 
-	const { eventProbability, eventTries } = formData;
+	const { eventProbabilityPercent, eventTries } = formData;
 
-	const EP = 1 - (1 - eventProbability) ** eventTries;
+	const EP = 1 - (1 - eventProbabilityPercent / 100) ** eventTries;
 
 	return { ...formData, probability: EP };
 };

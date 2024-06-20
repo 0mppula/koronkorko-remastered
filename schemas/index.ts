@@ -127,6 +127,8 @@ export const compoundInterestFormDataSchema = z.object({
 });
 
 export const eventProbabilityFormDataSchema = z.object({
-	eventProbability: positiveNumberFieldSchema('Event probability'),
+	eventProbabilityPercent: positiveNumberFieldSchema('Event probability').max(100, {
+		message: 'Event probability cannot be greater than 100',
+	}),
 	eventTries: positiveIntegerFieldSchema('Event tries'),
 });

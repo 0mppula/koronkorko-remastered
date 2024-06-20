@@ -158,8 +158,8 @@ model CompoundInterestCalculation {
 }
 
 type EventProbabilityCalculationFormData {
-  eventProbability Float
-  eventTries       Int
+  eventProbabilityPercent Float
+  eventTries              Int
 }
 
 model EventProbabilityCalculation {

@@ -15,11 +15,11 @@ export function getCalculatorWithPathname(path: (typeof calculators)[number]['ur
 	return calculators.find((calculator) => calculator.url === path)!;
 }
 
-export const formatPercentage = (value: number) => {
+export const formatPercentage = (value: number, fractionDigits = 2) => {
 	let formatted = '0.00%';
 
 	if (!isNaN(value)) {
-		formatted = `${Number(value).toFixed(2)}%`;
+		formatted = `${Number(value).toFixed(fractionDigits)}%`;
 	}
 	return formatted;
 };

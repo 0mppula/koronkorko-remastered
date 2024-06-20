@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
 		}
 
-		const { eventProbability, eventTries } = eventProbabilityFormDataSchema.parse(
+		const { eventProbabilityPercent, eventTries } = eventProbabilityFormDataSchema.parse(
 			body.formData
 		);
 		const name = calculationNameStringSchema.parse(body.name);
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 			data: {
 				name,
 				formData: {
-					eventProbability,
+					eventProbabilityPercent,
 					eventTries,
 				},
 				userId: session?.user.id,
