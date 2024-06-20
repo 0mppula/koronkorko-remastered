@@ -2,9 +2,11 @@ import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
+	EventProbabilityReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
+	IEventProbabilityFormData,
 	IInvestmentTimeFormData,
 	IMarkupFormData,
 	IPresentValueFormData,
@@ -172,4 +174,18 @@ export const calcualteCoumpoundInterest = (
 		depositting,
 		totalReturnPercent,
 	};
+};
+
+export const calculateEventProbability = (
+	formData: IEventProbabilityFormData
+): EventProbabilityReportProps => {
+	// EP = 1 - ( ( 1 - O ) ^ T )
+	// O = Odds of event occurring
+	// T = Number of trials
+
+	const { eventProbability, eventTries } = formData;
+
+	const EP = 1 - (1 - eventProbability) ** eventTries;
+
+	return { ...formData, probability: EP };
 };

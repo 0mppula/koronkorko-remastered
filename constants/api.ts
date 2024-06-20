@@ -7,6 +7,8 @@ export const COMPOUND_INTEREST_CALCULATIONS_API_URL =
 	'/api/compound-interest-calculations' as const;
 export const INVESTMENT_TIME_CALCULATIONS_API_URL = '/api/investment-time-calculations' as const;
 export const PRESENT_VALUE_CALCULATIONS_API_URL = '/api/present-value-calculations' as const;
+export const EVENT_PROBABILITY_CALCULATIONS_API_URL =
+	'/api/event-probability-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -15,6 +17,7 @@ export const API_URLS = [
 	INVESTMENT_TIME_CALCULATIONS_API_URL,
 	MARKUP_CALCULATIONS_API_URL,
 	PRESENT_VALUE_CALCULATIONS_API_URL,
+	EVENT_PROBABILITY_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -25,6 +28,7 @@ export const BREAK_EVEN_POINT_CALCULATIONS_QUERY_KEY = 'break-even-point-calcula
 export const COMPOUND_INTEREST_CALCULATIONS_QUERY_KEY = 'compound-interest-calculations' as const;
 export const INVESTMENT_TIME_CALCULATIONS_QUERY_KEY = 'investment-time-calculations' as const;
 export const PRESENT_VALUE_CALCULATIONS_QUERY_KEY = 'present-value-calculations' as const;
+export const EVENT_PROBABILITY_CALCULATIONS_QUERY_KEY = 'event-probability-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -33,4 +37,5 @@ export const QUERY_KEYS = [
 	INVESTMENT_TIME_CALCULATIONS_QUERY_KEY,
 	MARKUP_CALCULATIONS_QUERY_KEY,
 	PRESENT_VALUE_CALCULATIONS_QUERY_KEY,
+	EVENT_PROBABILITY_CALCULATIONS_QUERY_KEY,
 ] as const;

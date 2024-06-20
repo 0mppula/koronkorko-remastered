@@ -46,6 +46,12 @@ export const calculators = [
 		description:
 			'Calculate the difference between the cost and the selling price of your product. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Event Probability Calculator',
+		url: 'event-probability-calculator',
+		description:
+			'Calculate the probability of an event occurring atleast once given the number of trials and the probability of the event occurring. Additionally, logged in users can save their calculations.',
+	},
 ] as const;
 
 export const featuredApps = [

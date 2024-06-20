@@ -13,6 +13,7 @@ import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
+	EventProbabilityCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
 	PresentValueCalculation,
@@ -104,4 +105,5 @@ export type CalculationType =
 	| InvestmentTimeCalculation
 	| PresentValueCalculation
 	| AnnualizedReturnCalculation
-	| CompoundInterestCalculation;
+	| CompoundInterestCalculation
+	| EventProbabilityCalculation;
