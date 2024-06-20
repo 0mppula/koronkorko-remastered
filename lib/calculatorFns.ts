@@ -179,13 +179,28 @@ export const calcualteCoumpoundInterest = (
 export const calculateEventProbability = (
 	formData: IEventProbabilityFormData
 ): EventProbabilityReportProps => {
-	// EP = 1 - ( ( 1 - O ) ^ T )
-	// O = Odds of event occurring in a single trial
+	// At least once probability
+	// AOP = 1 - ( ( 1 - P ) ^ T )
+	// P = Odds of event occurring in a single trial
 	// T = Number of trials
 
-	const { eventProbabilityPercent, eventTries } = formData;
+	// More than once probability
+	// MOP = AOP - EOP
 
-	const EP = 1 - (1 - eventProbabilityPercent / 100) ** eventTries;
+	// Exactly once probability
+	// EOP = T * P * (1 - P) ^ (T - 1)
 
-	return { ...formData, probability: EP };
+	const { eventProbabilityPercent, eventTries: T } = formData;
+	const P = eventProbabilityPercent / 100;
+
+	const AOP = 1 - (1 - P) ** T;
+	const EOP = T * P * (1 - P) ** (T - 1);
+	const MOP = AOP - EOP;
+
+	return {
+		...formData,
+		atLeastOnceProbability: AOP,
+		moreThanOnceProbability: MOP,
+		exactlyOnceProbability: EOP,
+	};
 };

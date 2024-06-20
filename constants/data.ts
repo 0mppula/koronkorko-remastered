@@ -50,7 +50,7 @@ export const calculators = [
 		name: 'Event Probability Calculator',
 		url: 'event-probability-calculator',
 		description:
-			'Calculate the probability of an event occurring atleast once given the number of trials and the probability of the event occurring. Additionally, logged in users can save their calculations.',
+			'Calculate the probability of an event occurring at least once, more than once, or exactly once in a given number of attempts. Additionally, logged in users can save their calculations.',
 	},
 ] as const;
 

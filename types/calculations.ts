@@ -96,7 +96,9 @@ export interface CompoundInterestReportProps extends ICompoundInterestFormData {
 export type IEventProbabilityFormData = z.infer<typeof eventProbabilityFormDataSchema>;
 
 export interface EventProbabilityReportProps extends IEventProbabilityFormData {
-	probability: number;
+	atLeastOnceProbability: number;
+	moreThanOnceProbability: number;
+	exactlyOnceProbability: number;
 }
 
 export type CalculationType =

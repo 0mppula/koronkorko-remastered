@@ -147,7 +147,7 @@ const Calculator = () => {
 								name="eventTries"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Trial Count</FormLabel>
+										<FormLabel>Total Attempts</FormLabel>
 
 										<FormControl>
 											<Input

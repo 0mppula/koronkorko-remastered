@@ -8,7 +8,13 @@ interface ReportProps {
 }
 
 const Report = ({ report }: ReportProps) => {
-	const { eventProbabilityPercent, eventTries, probability } = report;
+	const {
+		eventProbabilityPercent,
+		eventTries,
+		atLeastOnceProbability,
+		moreThanOnceProbability,
+		exactlyOnceProbability,
+	} = report;
 
 	return (
 		<ReportSummaryContainer>
@@ -16,16 +22,38 @@ const Report = ({ report }: ReportProps) => {
 				header="Event Probability"
 				value={
 					isFinite(eventProbabilityPercent)
-						? formatPercentage(eventProbabilityPercent)
+						? formatPercentage(eventProbabilityPercent, 8)
 						: 'N/A'
 				}
 			/>
 
-			<ReportGroup header="Trial Count" value={eventTries.toString()} />
+			<ReportGroup header="Total Attempts" value={eventTries.toString()} />
 
 			<ReportGroup
-				header="Probability"
-				value={isFinite(probability) ? formatPercentage(probability, 8) : 'N/A'}
+				header="At Least Once Probability"
+				value={
+					isFinite(atLeastOnceProbability)
+						? formatPercentage(atLeastOnceProbability, 8)
+						: 'N/A'
+				}
+			/>
+
+			<ReportGroup
+				header="More Than Once Probability"
+				value={
+					isFinite(moreThanOnceProbability)
+						? formatPercentage(moreThanOnceProbability, 8)
+						: 'N/A'
+				}
+			/>
+
+			<ReportGroup
+				header="Exactly Once Probability"
+				value={
+					isFinite(exactlyOnceProbability)
+						? formatPercentage(exactlyOnceProbability, 8)
+						: 'N/A'
+				}
 			/>
 		</ReportSummaryContainer>
 	);
