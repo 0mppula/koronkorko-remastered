@@ -11,9 +11,9 @@ const Report = ({ report }: ReportProps) => {
 	const {
 		eventProbabilityPercent,
 		eventTries,
-		atLeastOnceProbability,
-		moreThanOnceProbability,
-		exactlyOnceProbability,
+		atLeastOnceProbabilityPercent,
+		moreThanOnceProbabilityPercent,
+		exactlyOnceProbabilityPercent,
 	} = report;
 
 	return (
@@ -32,8 +32,8 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup
 				header="At Least Once Probability"
 				value={
-					isFinite(atLeastOnceProbability)
-						? formatPercentage(atLeastOnceProbability, 8)
+					isFinite(atLeastOnceProbabilityPercent)
+						? formatPercentage(atLeastOnceProbabilityPercent, 8)
 						: 'N/A'
 				}
 			/>
@@ -41,8 +41,8 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup
 				header="More Than Once Probability"
 				value={
-					isFinite(moreThanOnceProbability)
-						? formatPercentage(moreThanOnceProbability, 8)
+					isFinite(moreThanOnceProbabilityPercent)
+						? formatPercentage(moreThanOnceProbabilityPercent, 8)
 						: 'N/A'
 				}
 			/>
@@ -50,8 +50,8 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup
 				header="Exactly Once Probability"
 				value={
-					isFinite(exactlyOnceProbability)
-						? formatPercentage(exactlyOnceProbability, 8)
+					isFinite(exactlyOnceProbabilityPercent)
+						? formatPercentage(exactlyOnceProbabilityPercent, 8)
 						: 'N/A'
 				}
 			/>
