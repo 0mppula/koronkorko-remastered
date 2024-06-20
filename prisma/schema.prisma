@@ -46,6 +46,7 @@ model User {
   PresentValueCalculations     PresentValueCalculation[]
   AnnualizedReturnCalculations AnnualizedReturnCalculation[]
   CompoundInterestCalculations CompoundInterestCalculation[]
+  EventProbabilityCalculations EventProbabilityCalculation[]
 }
 
 type BreakEvenPointCalculationFormData {
@@ -150,6 +151,22 @@ model CompoundInterestCalculation {
   userId    String                              @db.ObjectId
   name      String
   formData  CompoundInterestCalculationFormData
+  createdAt DateTime                            @default(now())
+  updatedAt DateTime                            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type EventProbabilityCalculationFormData {
+  eventProbability Float
+  eventTries       Int
+}
+
+model EventProbabilityCalculation {
+  id        String                              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                              @db.ObjectId
+  name      String
+  formData  EventProbabilityCalculationFormData
   createdAt DateTime                            @default(now())
   updatedAt DateTime                            @updatedAt
 
