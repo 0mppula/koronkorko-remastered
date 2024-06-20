@@ -4,6 +4,7 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	eventProbabilityFormDataSchema,
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
@@ -89,6 +90,12 @@ export interface CompoundInterestReportProps extends ICompoundInterestFormData {
 	additionalContributions: number;
 	depositting: boolean;
 	totalReturnPercent: number;
+}
+
+export type IEventProbabilityFormData = z.infer<typeof eventProbabilityFormDataSchema>;
+
+export interface EventProbabilityReportProps extends IEventProbabilityFormData {
+	probability: number;
 }
 
 export type CalculationType =
