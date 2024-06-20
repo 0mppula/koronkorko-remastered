@@ -28,6 +28,18 @@ const positiveNumberFieldSchema = (fieldName = 'Number') => {
 		});
 };
 
+const positiveIntegerFieldSchema = (fieldName = 'Number') => {
+	return z.coerce
+		.number({
+			required_error: `${fieldName} is required`,
+			invalid_type_error: `${fieldName} has to be a number`,
+		})
+		.int()
+		.min(0, {
+			message: `${fieldName} cannot be negative`,
+		});
+};
+
 const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => {
 	return positiveNumberFieldSchema(fieldName).max(max, {
 		message: `${fieldName} cannot be greater than ${max}`,
@@ -112,4 +124,9 @@ export const compoundInterestFormDataSchema = z.object({
 	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
 	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+});
+
+export const eventProbabilityFormDataSchema = z.object({
+	eventProbability: positiveNumberFieldSchema('Event probability'),
+	eventTries: positiveIntegerFieldSchema('Event tries'),
 });
