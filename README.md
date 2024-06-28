@@ -1,12 +1,12 @@
 # KoronKorko Remastered
 
-[KoronKorko][0] was previously created using the MERN stack with vanilla JavaScript & CSS. However, this implementation is a remastered version of the previous one and is developed using Next.js, NextAuth, MondoDB, TypeScript and Tailwind CSS.
+[KoronKorko][site] was previously created using the MERN stack with vanilla JavaScript & CSS. However, this implementation is a remastered version of the previous one and is developed using Next.js, NextAuth, MondoDB, TypeScript and Tailwind CSS.
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
 
 ## What is KoronKorko?
 
-[KoronKorko][0] is a full-stack finance web-app developed by [Omar Kraidié][dev]. KoronKorko has different types of finance calculators. All the available calculators are listed below in this `README.md` file.
+[KoronKorko][site] is a full-stack finance web-app developed by [Omar Kraidié][dev]. KoronKorko has different types of finance calculators. All the available calculators are listed below in this `README.md` file.
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
@@ -55,13 +55,20 @@ Calculate the difference between the cost and the selling price of your product.
 
 ---
 
+### [Event Probability Calculator][7]
+
+Calculate the difference between the cost and the selling price of your product.
+
+---
+
 [dev]: https://github.com/0mppula
-[0]: https://www.koronkorko.com/
+[site]: https://www.koronkorko.com/
 [1]: https://www.koronkorko.com/compound-interest-calculator
 [2]: https://www.koronkorko.com/annualized-return-calculator
 [3]: https://www.koronkorko.com/present-value-calculator
 [4]: https://www.koronkorko.com/investment-time-calculator
 [5]: https://www.koronkorko.com/break-even-point-calculator
-[6]: https://www.koronkorko.com/
+[6]: https://www.koronkorko.com/markup-calculator
+[7]: https://www.koronkorko.com/event-probability-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
