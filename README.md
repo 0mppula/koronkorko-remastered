@@ -57,7 +57,7 @@ Calculate the difference between the cost and the selling price of your product.
 
 ### [Event Probability Calculator][7]
 
-Calculate the difference between the cost and the selling price of your product.
+Calculate the probability of an event occurring at least once, more than once, or exactly once in a given number of attempts.
 
 ---
 
