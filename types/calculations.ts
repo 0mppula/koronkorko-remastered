@@ -8,6 +8,7 @@ import {
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
+	priceToEarningsRatioFormDataSchema,
 } from '@/schemas';
 import {
 	AnnualizedReturnCalculation,
@@ -17,6 +18,7 @@ import {
 	InvestmentTimeCalculation,
 	MarkupCalculation,
 	PresentValueCalculation,
+	PriceToEarningsRatioCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
 
@@ -80,6 +82,7 @@ export interface AnnualizedReturnReportProps extends IAnnualizedReturnFormData {
 	percentReturn: number;
 }
 
+// Compound Interest Calculation
 export type ICompoundInterestFormData = z.infer<typeof compoundInterestFormDataSchema>;
 
 export interface CompoundInterestReportProps extends ICompoundInterestFormData {
@@ -93,12 +96,20 @@ export interface CompoundInterestReportProps extends ICompoundInterestFormData {
 	totalReturnPercent: number;
 }
 
+// Event Probability Calculation
 export type IEventProbabilityFormData = z.infer<typeof eventProbabilityFormDataSchema>;
 
 export interface EventProbabilityReportProps extends IEventProbabilityFormData {
 	atLeastOnceProbabilityPercent: number;
 	moreThanOnceProbabilityPercent: number;
 	exactlyOnceProbabilityPercent: number;
+}
+
+// Price to Earnings Ratio Calculation
+export type IPriceToEarningsRatioFormData = z.infer<typeof priceToEarningsRatioFormDataSchema>;
+
+export interface PriceToEarningsRatioReportProps extends IPriceToEarningsRatioFormData {
+	peRatio: number;
 }
 
 export type CalculationType =
@@ -108,4 +119,5 @@ export type CalculationType =
 	| PresentValueCalculation
 	| AnnualizedReturnCalculation
 	| CompoundInterestCalculation
-	| EventProbabilityCalculation;
+	| EventProbabilityCalculation
+	| PriceToEarningsRatioCalculation;

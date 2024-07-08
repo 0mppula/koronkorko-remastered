@@ -10,9 +10,11 @@ import {
 	IInvestmentTimeFormData,
 	IMarkupFormData,
 	IPresentValueFormData,
+	IPriceToEarningsRatioFormData,
 	InvestmentTimeReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
+	PriceToEarningsRatioReportProps,
 } from '@/types/calculations';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
@@ -203,4 +205,14 @@ export const calculateEventProbability = (
 		moreThanOnceProbabilityPercent: MOP * 100,
 		exactlyOnceProbabilityPercent: EOP * 100,
 	};
+};
+
+export const calculateEarningsPerShare = (
+	formData: IPriceToEarningsRatioFormData
+): PriceToEarningsRatioReportProps => {
+	const { sharePrice, earningsPerShare } = formData;
+
+	const peRatio = sharePrice / earningsPerShare;
+
+	return { sharePrice, earningsPerShare, peRatio };
 };

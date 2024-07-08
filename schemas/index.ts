@@ -17,6 +17,13 @@ export const calculationNameFormDataSchema = z.object({
 	name: calculationNameStringSchema,
 });
 
+const numberFieldSchema = (fieldName = 'Number') => {
+	return z.coerce.number({
+		required_error: `${fieldName} is required`,
+		invalid_type_error: `${fieldName} has to be a number`,
+	});
+};
+
 const positiveNumberFieldSchema = (fieldName = 'Number') => {
 	return z.coerce
 		.number({
@@ -131,4 +138,9 @@ export const eventProbabilityFormDataSchema = z.object({
 		message: 'Event probability cannot be greater than 100',
 	}),
 	eventTries: positiveIntegerFieldSchema('Event tries'),
+});
+
+export const priceToEarningsRatioFormDataSchema = z.object({
+	sharePrice: positiveNumberFieldSchema('Share price'),
+	earningsPerShare: numberFieldSchema('Earnings per share'),
 });
