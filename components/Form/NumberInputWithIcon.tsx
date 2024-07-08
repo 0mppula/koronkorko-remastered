@@ -7,10 +7,11 @@ import { InputProps } from '../ui/input';
 
 interface NumberInputWithIconProps extends InputProps {
 	iconType?: 'currency' | 'percentage';
+	min0?: boolean;
 }
 
 const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIconProps>(
-	({ className, type, iconType = 'currency', ...props }, ref) => {
+	({ className, type, min0 = true, iconType = 'currency', ...props }, ref) => {
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {
@@ -37,7 +38,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 					step="0.01"
 					placeholder={iconType === 'percentage' ? '10' : '1000'}
 					ref={ref}
-					min={0}
+					{...(min0 ? { min: 0 } : {})}
 					{...props}
 				/>
 

@@ -52,6 +52,12 @@ export const calculators = [
 		description:
 			'Calculate the probability of an event occurring at least once, more than once, or exactly once in a given number of attempts. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Price to Earnings Ratio Calculator',
+		url: 'price-to-earnings-ratio-calculator',
+		description:
+			'Calculate the price-to-earnings (P/E) ratio of a company to determine if its stock is overvalued or undervalued. Additionally, logged in users can save their calculations.',
+	},
 ] as const;
 
 export const featuredApps = [
