@@ -70,7 +70,7 @@ const useCalculator = <
 
 	const resetForm = useCallback(() => {
 		setReport(null);
-		toast.success('Form cleared');
+		toast.success('Calculator cleared');
 
 		form.reset(defaultValues);
 	}, [setReport, defaultValues, form]);
