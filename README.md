@@ -61,6 +61,12 @@ Calculate the probability of an event occurring at least once, more than once, o
 
 ---
 
+### [Price to Earnings Ratio Calculator][8]
+
+Calculate the price-to-earnings (P/E) ratio of a company to determine if its stock is overvalued or undervalued.
+
+---
+
 [dev]: https://github.com/0mppula
 [site]: https://www.koronkorko.com/
 [1]: https://www.koronkorko.com/compound-interest-calculator
@@ -70,5 +76,6 @@ Calculate the probability of an event occurring at least once, more than once, o
 [5]: https://www.koronkorko.com/break-even-point-calculator
 [6]: https://www.koronkorko.com/markup-calculator
 [7]: https://www.koronkorko.com/event-probability-calculator
+[8]: https://www.koronkorko.com/price-to-earnings-ratio-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
