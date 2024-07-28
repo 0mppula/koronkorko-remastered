@@ -5,6 +5,7 @@ import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { appName } from '@/constants/data';
 import { cn } from '@/lib/utils';
+import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
@@ -29,6 +30,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={cn(poppins.className, 'overflow-y-scroll')}>
+				<Analytics />
 				<Providers>
 					<Nav />
 
