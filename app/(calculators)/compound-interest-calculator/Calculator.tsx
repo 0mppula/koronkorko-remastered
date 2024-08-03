@@ -117,8 +117,6 @@ const Calculator = () => {
 		form.setValue('contributionMultiplier', value * -1);
 	};
 
-	console.log(form.getValues());
-
 	return (
 		<>
 			<FormContainer>
