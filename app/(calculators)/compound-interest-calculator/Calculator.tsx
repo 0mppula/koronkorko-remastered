@@ -27,7 +27,11 @@ import {
 	COMPOUND_INTEREST_CALCULATIONS_API_URL,
 	COMPOUND_INTEREST_CALCULATIONS_QUERY_KEY,
 } from '@/constants/api';
-import { contributionFrequencies, durationMultipliers } from '@/constants/data';
+import {
+	compoundFrequencies,
+	contributionFrequencies,
+	durationMultipliers,
+} from '@/constants/data';
 import useCalculator from '@/hooks/useCalculator';
 import { calcualteCoumpoundInterest } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
@@ -112,6 +116,8 @@ const Calculator = () => {
 	const setContributionMultiplier = (value: 1 | -1) => {
 		form.setValue('contributionMultiplier', value * -1);
 	};
+
+	console.log(form.getValues());
 
 	return (
 		<>
@@ -258,7 +264,7 @@ const Calculator = () => {
 
 							<FormField
 								control={form.control}
-								name="contributionFrequency"
+								name="compoundFrequency"
 								render={({ field }) => (
 									<FormItem className="w-full">
 										<DynamicFormLabel
@@ -276,9 +282,9 @@ const Calculator = () => {
 											</FormControl>
 
 											<SelectContent>
-												{contributionFrequencies.map((multiplier) => (
+												{compoundFrequencies.map((multiplier) => (
 													<SelectItem
-														key={`contributionFrequency-${multiplier.value}`}
+														key={`compoundFrequency-${multiplier.value}`}
 														value={String(multiplier.value)}
 													>
 														{multiplier.label}
