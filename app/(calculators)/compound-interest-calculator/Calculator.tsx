@@ -208,7 +208,7 @@ const Calculator = () => {
 
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={String(field.value)}
+											value={String(field.value)}
 										>
 											<FormControl>
 												<SelectTrigger>
@@ -271,7 +271,7 @@ const Calculator = () => {
 										/>
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={String(field.value)}
+											value={String(field.value)}
 										>
 											<FormControl>
 												<SelectTrigger>
@@ -333,7 +333,7 @@ const Calculator = () => {
 
 										<Select
 											onValueChange={field.onChange}
-											defaultValue={String(field.value)}
+											value={String(field.value)}
 										>
 											<FormControl>
 												<SelectTrigger>
