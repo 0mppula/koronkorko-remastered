@@ -144,3 +144,14 @@ export const priceToEarningsRatioFormDataSchema = z.object({
 	sharePrice: positiveNumberFieldSchema('Share price'),
 	earningsPerShare: numberFieldSchema('Earnings per share'),
 });
+
+export const dollarCostAverageFormDataSchema = z.object({
+	initialInvestment: positiveNumberFieldSchema('Initial investment'),
+	sharePrice: positiveNumberFieldSchema('Share price'),
+	deposit: positiveNumberFieldSchema('Deposit'),
+	depositFrequency: positiveNumberFieldSchema('Deposit frequency'),
+	interestRate: positiveNumberFieldSchema('Interest rate'),
+	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
+	duration: positiveNumberFieldSchema('Duration'),
+	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+});

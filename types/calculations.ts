@@ -4,6 +4,7 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	dollarCostAverageFormDataSchema,
 	eventProbabilityFormDataSchema,
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
@@ -14,6 +15,7 @@ import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
+	DollarCostAverageCalculation,
 	EventProbabilityCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
@@ -112,6 +114,9 @@ export interface PriceToEarningsRatioReportProps extends IPriceToEarningsRatioFo
 	peRatio: number;
 }
 
+// Dollar Cost Average Calculation
+export type IDollarCostAverageFormData = z.infer<typeof dollarCostAverageFormDataSchema>;
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -120,4 +125,5 @@ export type CalculationType =
 	| AnnualizedReturnCalculation
 	| CompoundInterestCalculation
 	| EventProbabilityCalculation
-	| PriceToEarningsRatioCalculation;
+	| PriceToEarningsRatioCalculation
+	| DollarCostAverageCalculation;
