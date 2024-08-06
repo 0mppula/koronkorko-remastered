@@ -30,7 +30,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={cn(poppins.className, 'overflow-y-scroll')}>
-				<Analytics />
+				<Analytics debug={false} />
 				<Providers>
 					<Nav />
 

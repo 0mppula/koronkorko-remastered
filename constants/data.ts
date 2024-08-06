@@ -58,6 +58,12 @@ export const calculators = [
 		description:
 			'Calculate the price-to-earnings (P/E) ratio of a company to determine if its stock is overvalued or undervalued. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Dollar Cost Average Calculator',
+		url: 'dollar-cost-average-calculator',
+		description:
+			'Calculate the average cost of an investment over a time period, given an interest rate, initial investment amount and a series of periodic investments. Additionally, logged in users can save their calculations.',
+	},
 ] as const;
 
 export const featuredApps = [
@@ -232,6 +238,13 @@ export const contributionFrequencies = [
 	// The value represents the contribution frequency per year in given option
 	{ value: 1, label: 'Annualy', shortLabel: 'y' },
 	{ value: 12, label: 'Monthly', shortLabel: 'm' },
+] as const;
+
+export const depositFrequencies = [
+	{ value: 7, label: 'Weekly', shortLabel: 'w' },
+	{ value: 30.416666666666666666666666666667, label: 'Monthly', shortLabel: 'm' },
+	{ value: 91.25, label: 'Quarterly', shortLabel: 'q' },
+	{ value: 365, label: 'Yearly', shortLabel: 'y' },
 ] as const;
 
 export const compoundFrequencies = [

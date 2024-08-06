@@ -1,6 +1,5 @@
 'use client';
 
-import ContributionToggleInput from '@/components/Form/ContributionToggleInput';
 import DynamicFormLabel from '@/components/Form/DynamicFormLabel';
 import FormContainer from '@/components/Form/FormContainer';
 import FormControlsTop from '@/components/Form/FormControlsTop';
@@ -24,45 +23,40 @@ import {
 	SelectValue,
 } from '@/components/ui/select';
 import {
-	COMPOUND_INTEREST_CALCULATIONS_API_URL,
-	COMPOUND_INTEREST_CALCULATIONS_QUERY_KEY,
+	DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL,
+	DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY,
 } from '@/constants/api';
-import {
-	compoundFrequencies,
-	contributionFrequencies,
-	durationMultipliers,
-} from '@/constants/data';
+import { compoundFrequencies, depositFrequencies, durationMultipliers } from '@/constants/data';
 import useCalculator from '@/hooks/useCalculator';
-import { calcualteCoumpoundInterest } from '@/lib/calculatorFns';
+import { calculateDollarCostAverage } from '@/lib/calculatorFns';
 import { getCalculations } from '@/lib/queryFns/calculations';
-import { compoundInterestFormDataSchema } from '@/schemas';
-import { CompoundInterestReportProps, ICompoundInterestFormData } from '@/types/calculations';
+import { dollarCostAverageFormDataSchema } from '@/schemas';
+import { DollarCostAverageReportProps, IDollarCostAverageFormData } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CompoundInterestCalculation } from '@prisma/client';
+import { DollarCostAverageCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
-import Breakdown from './Breakdown';
 import Report from './Report';
 
 export interface ReportProps {
-	report: CompoundInterestReportProps;
+	report: DollarCostAverageReportProps;
 }
 
-const defaultValues: ICompoundInterestFormData = {
-	startingBalance: 0,
-	contribution: 0,
-	contributionMultiplier: 1,
-	contributionFrequency: 12,
-	compoundFrequency: 12,
+const defaultValues: IDollarCostAverageFormData = {
+	initialInvestment: 0,
+	sharePrice: 0,
+	deposit: 0,
+	depositFrequency: 30.416666666666666666666666666667,
 	interestRate: 0,
-	durationMultiplier: 12,
+	compoundFrequency: 12,
 	duration: 0,
+	durationMultiplier: 12,
 };
 
 const Calculator = () => {
-	const form = useForm<ICompoundInterestFormData>({
-		resolver: zodResolver(compoundInterestFormDataSchema),
+	const form = useForm<IDollarCostAverageFormData>({
+		resolver: zodResolver(dollarCostAverageFormDataSchema),
 		defaultValues,
 	});
 
@@ -87,15 +81,15 @@ const Calculator = () => {
 		handleImportStart,
 		closeImportModal,
 	} = useCalculator<
-		ICompoundInterestFormData,
-		CompoundInterestReportProps,
-		CompoundInterestCalculation
+		IDollarCostAverageFormData,
+		DollarCostAverageReportProps,
+		DollarCostAverageCalculation
 	>({
-		apiUrl: COMPOUND_INTEREST_CALCULATIONS_API_URL,
-		queryKey: COMPOUND_INTEREST_CALCULATIONS_QUERY_KEY,
+		apiUrl: DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL,
+		queryKey: DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY,
 		defaultValues,
 		form,
-		calcFn: calcualteCoumpoundInterest,
+		calcFn: calculateDollarCostAverage,
 	});
 
 	const { status: sessionStatus } = useSession();
@@ -104,23 +98,17 @@ const Calculator = () => {
 		data: calculations,
 		isLoading: isCalculationsLoading,
 		isFetching,
-	} = useQuery<CompoundInterestCalculation[] | null>({
-		queryKey: [COMPOUND_INTEREST_CALCULATIONS_QUERY_KEY],
-		queryFn: () => getCalculations(COMPOUND_INTEREST_CALCULATIONS_API_URL),
+	} = useQuery<DollarCostAverageCalculation[] | null>({
+		queryKey: [DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY],
+		queryFn: () => getCalculations(DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL),
 		staleTime: 1_000 * 60 * 10, // 10 minutes
 		enabled: sessionStatus === 'authenticated',
 	});
 
-	const computedContributionMultiplier = form.watch('contributionMultiplier');
-
-	const setContributionMultiplier = (value: 1 | -1) => {
-		form.setValue('contributionMultiplier', value * -1);
-	};
-
 	return (
 		<>
 			<FormContainer>
-				<FormControlsTop<ICompoundInterestFormData, CompoundInterestCalculation>
+				<FormControlsTop<IDollarCostAverageFormData, DollarCostAverageCalculation>
 					reset={resetForm}
 					handleSaveUpdateStart={handleSaveUpdateStart}
 					activeCalculation={activeCalculation}
@@ -146,18 +134,40 @@ const Calculator = () => {
 						<FormGroup>
 							<FormField
 								control={form.control}
-								name="startingBalance"
+								name="initialInvestment"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Initial Value</FormLabel>
+										<FormLabel>Initial Investment</FormLabel>
 
 										<FormControl>
 											<NumberInputWithIcon
 												{...field}
-												name="startingBalance"
+												name="initialInvestment"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
-														form.setValue('startingBalance', 0);
+														form.setValue('initialInvestment', 0);
+												}}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="sharePrice"
+								render={({ field }) => (
+									<FormItem className="w-full">
+										<FormLabel>Share Price</FormLabel>
+
+										<FormControl>
+											<NumberInputWithIcon
+												{...field}
+												name="sharePrice"
+												onBlur={(e) => {
+													ifFieldIsEmpty(e) &&
+														form.setValue('sharePrice', 0);
 												}}
 											/>
 										</FormControl>
@@ -167,27 +177,21 @@ const Calculator = () => {
 							/>
 						</FormGroup>
 
-						<FormGroup inline>
+						<FormGroup>
 							<FormField
 								control={form.control}
-								name="contribution"
+								name="deposit"
 								render={({ field }) => (
 									<FormItem className="w-full">
-										<FormLabel>Contributions</FormLabel>
+										<FormLabel>Deposit</FormLabel>
 
 										<FormControl>
-											<ContributionToggleInput
+											<NumberInputWithIcon
 												{...field}
-												setContributionMultiplier={
-													setContributionMultiplier
-												}
-												contributionMultiplier={
-													computedContributionMultiplier as 1 | -1
-												}
-												name="contribution"
+												name="deposit"
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&
-														form.setValue('contribution', 0);
+														form.setValue('deposit', 0);
 												}}
 											/>
 										</FormControl>
@@ -198,11 +202,11 @@ const Calculator = () => {
 
 							<FormField
 								control={form.control}
-								name="contributionFrequency"
+								name="depositFrequency"
 								render={({ field }) => (
 									<FormItem className="w-full">
 										<DynamicFormLabel
-											label="Contribution Frequency"
+											label="Deposit Frequency"
 											shortLabel="Frequency"
 										/>
 
@@ -217,9 +221,9 @@ const Calculator = () => {
 											</FormControl>
 
 											<SelectContent>
-												{contributionFrequencies.map((multiplier) => (
+												{depositFrequencies.map((multiplier) => (
 													<SelectItem
-														key={`contributionFrequency-${multiplier.value}`}
+														key={`depositFrequency-${multiplier.value}`}
 														value={String(multiplier.value)}
 													>
 														{multiplier.label}
@@ -364,8 +368,6 @@ const Calculator = () => {
 			</FormContainer>
 
 			{report && <Report report={report} />}
-
-			{report && <Breakdown report={report} />}
 		</>
 	);
 };
