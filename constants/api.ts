@@ -11,6 +11,8 @@ export const EVENT_PROBABILITY_CALCULATIONS_API_URL =
 	'/api/event-probability-calculations' as const;
 export const PRICE_TO_EARNINGS_RATIO_CALCULATIONS_API_URL =
 	'/api/price-to-earnings-ratio-calculations' as const;
+export const DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL =
+	'/api/dollar-cost-average-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -21,6 +23,7 @@ export const API_URLS = [
 	PRESENT_VALUE_CALCULATIONS_API_URL,
 	EVENT_PROBABILITY_CALCULATIONS_API_URL,
 	PRICE_TO_EARNINGS_RATIO_CALCULATIONS_API_URL,
+	DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -34,6 +37,8 @@ export const PRESENT_VALUE_CALCULATIONS_QUERY_KEY = 'present-value-calculations'
 export const EVENT_PROBABILITY_CALCULATIONS_QUERY_KEY = 'event-probability-calculations' as const;
 export const PRICE_TO_EARNINGS_RATIO_CALCULATIONS_QUERY_KEY =
 	'price-to-earnings-ratio-calculations' as const;
+export const DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY =
+	'dollar-cost-average-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -44,4 +49,5 @@ export const QUERY_KEYS = [
 	PRESENT_VALUE_CALCULATIONS_QUERY_KEY,
 	EVENT_PROBABILITY_CALCULATIONS_QUERY_KEY,
 	PRICE_TO_EARNINGS_RATIO_CALCULATIONS_QUERY_KEY,
+	DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY,
 ] as const;

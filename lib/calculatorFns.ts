@@ -2,10 +2,12 @@ import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
+	DollarCostAverageReportProps,
 	EventProbabilityReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
+	IDollarCostAverageFormData,
 	IEventProbabilityFormData,
 	IInvestmentTimeFormData,
 	IMarkupFormData,
@@ -215,4 +217,56 @@ export const calculateEarningsPerShare = (
 	const peRatio = sharePrice / earningsPerShare;
 
 	return { sharePrice, earningsPerShare, peRatio };
+};
+
+export const calculateDollarCostAverage = (
+	formData: IDollarCostAverageFormData
+): DollarCostAverageReportProps => {
+	const {
+		compoundFrequency,
+		deposit,
+		depositFrequency,
+		duration,
+		durationMultiplier,
+		initialInvestment,
+		interestRate,
+		sharePrice,
+	} = formData;
+
+	// r = Annual interest rate (decimal)
+	// n = Compound frequency per year
+
+	const duationInDays = duration * durationMultiplier * (365 / 12);
+	const depositCount = Math.floor(duationInDays / depositFrequency);
+	const r = interestRate / 100;
+	const n = compoundFrequency;
+
+	let newSharePrice = sharePrice;
+	let totalShares = initialInvestment / sharePrice;
+	let dollarCostAverage = initialInvestment / totalShares;
+	let totalInvested = initialInvestment;
+	let endingValue = initialInvestment;
+
+	// Loop through each deposit
+	for (let i = 0; i < depositCount; i++) {
+		newSharePrice = newSharePrice * (1 + r / n) ** (n * (depositFrequency / 365));
+
+		totalShares += deposit / newSharePrice;
+		dollarCostAverage = (initialInvestment + deposit * (i + 1)) / totalShares;
+		totalInvested = initialInvestment + deposit * i;
+		endingValue = newSharePrice * totalShares;
+	}
+
+	return {
+		...formData,
+		sharePrice: sharePrice,
+		newSharePrice: newSharePrice,
+		totalShares,
+		dollarCostAverage,
+		totalInvested,
+		endingValue,
+		totalReturnPercent: ((endingValue - totalInvested) / totalInvested) * 100,
+		totalReturn: endingValue - totalInvested,
+		AbosluteReturnPercent: ((newSharePrice - sharePrice) / sharePrice) * 100,
+	};
 };

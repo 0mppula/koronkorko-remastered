@@ -117,6 +117,17 @@ export interface PriceToEarningsRatioReportProps extends IPriceToEarningsRatioFo
 // Dollar Cost Average Calculation
 export type IDollarCostAverageFormData = z.infer<typeof dollarCostAverageFormDataSchema>;
 
+export interface DollarCostAverageReportProps extends IDollarCostAverageFormData {
+	newSharePrice: number;
+	dollarCostAverage: number;
+	totalShares: number;
+	totalInvested: number;
+	totalReturnPercent: number;
+	endingValue: number;
+	totalReturn: number;
+	AbosluteReturnPercent: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation

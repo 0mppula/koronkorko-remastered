@@ -2,6 +2,7 @@ import {
 	calculators,
 	contributionFrequencies,
 	currencies,
+	depositFrequencies,
 	durationMultipliers,
 } from '@/constants/data';
 import { clsx, type ClassValue } from 'clsx';
@@ -51,7 +52,11 @@ export const getDurationLabel = (value: number) => {
 };
 
 export const getContributionFrequencyShortLabel = (value: number) => {
-	return contributionFrequencies.find((duration) => duration.value === value)?.shortLabel || 'Y';
+	return contributionFrequencies.find((duration) => duration.value === value)?.shortLabel || 'y';
+};
+
+export const getDepositFrequencyShortLabel = (value: number) => {
+	return depositFrequencies.find((duration) => duration.value === value)?.shortLabel || 'y';
 };
 
 export const formatCurrency = (
