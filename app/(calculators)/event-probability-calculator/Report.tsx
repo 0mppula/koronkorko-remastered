@@ -1,4 +1,5 @@
 import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import { formatPercentage } from '@/lib/utils';
 import { EventProbabilityReportProps } from '@/types/calculations';
@@ -28,6 +29,8 @@ const Report = ({ report }: ReportProps) => {
 			/>
 
 			<ReportGroup header="Total Attempts" value={eventTries.toString()} />
+
+			<ReportDivider />
 
 			<ReportGroup
 				header="At Least Once Probability"

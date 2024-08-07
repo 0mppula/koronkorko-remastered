@@ -1,5 +1,6 @@
 'use client';
 
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getDurationLabel } from '@/lib/utils';
@@ -26,6 +27,8 @@ const Report = ({ report }: ReportProps) => {
 				header="Duration"
 				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
+
+			<ReportDivider />
 
 			<ReportGroup header="Present Value" value={formatCurrency(presentValue, currency)} />
 

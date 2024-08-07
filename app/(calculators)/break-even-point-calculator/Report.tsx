@@ -1,6 +1,7 @@
 'use client';
 
 import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getCurrencySymbol } from '@/lib/utils';
@@ -37,6 +38,8 @@ const Report = ({ report }: ReportProps) => {
 				header="Price Per Unit"
 				value={formatCurrency(pricePerUnit, currency)}
 			/>
+
+			<ReportDivider />
 
 			<ReportGroup
 				header="Contribution Margin %"

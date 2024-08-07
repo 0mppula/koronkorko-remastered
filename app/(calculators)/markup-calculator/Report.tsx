@@ -1,5 +1,6 @@
 'use client';
 
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
@@ -19,6 +20,8 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup header="Cost" value={formatCurrency(cost, currency)} />
 
 			<ReportGroup header="Sales Price" value={formatCurrency(salesPrice, currency)} />
+
+			<ReportDivider />
 
 			<ReportGroup
 				header="Markup"

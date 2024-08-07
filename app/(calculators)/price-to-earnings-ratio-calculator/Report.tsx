@@ -1,6 +1,7 @@
 'use client';
 
 import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency } from '@/lib/utils';
@@ -23,6 +24,8 @@ const Report = ({ report }: ReportProps) => {
 				header="Earnings per Share"
 				value={formatCurrency(earningsPerShare, currency)}
 			/>
+
+			<ReportDivider />
 
 			<ReportGroup
 				header="P/E Ratio"

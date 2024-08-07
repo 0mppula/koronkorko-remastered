@@ -1,3 +1,4 @@
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
@@ -58,6 +59,8 @@ const Report = ({ report }: ReportProps) => {
 				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
 
+			<ReportDivider />
+
 			<ReportGroup header="Total Invested" value={formatCurrency(totalInvested)} />
 
 			<ReportGroup header="Ending Value" value={formatCurrency(endingValue)} />
@@ -75,10 +78,7 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup header="Ending Share Price" value={formatCurrency(newSharePrice)} />
 
-			<ReportGroup
-				header="Absolute Return %"
-				value={formatPercentage(AbosluteReturnPercent)}
-			/>
+			<ReportGroup header="Price Change %" value={formatPercentage(AbosluteReturnPercent)} />
 		</ReportSummaryContainer>
 	);
 };

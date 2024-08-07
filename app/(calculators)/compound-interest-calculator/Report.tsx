@@ -1,3 +1,4 @@
+import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
@@ -41,6 +42,15 @@ const Report = ({ report }: ReportProps) => {
 				)}/${getContributionFrequencyShortLabel(contributionFrequency)}`}
 			/>
 
+			<ReportGroup header="Annual interest rate" value={formatPercentage(interestRate)} />
+
+			<ReportGroup
+				header="Duration"
+				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
+			/>
+
+			<ReportDivider />
+
 			<ReportGroup
 				header={depositting ? 'Total Deposits' : 'Total Withdrawals'}
 				value={formatCurrency(Math.abs(additionalContributions), currency)}
@@ -51,20 +61,13 @@ const Report = ({ report }: ReportProps) => {
 				value={formatCurrency(totalContribution, currency)}
 			/>
 
-			<ReportGroup header="Annual interest rate" value={formatPercentage(interestRate)} />
+			<ReportGroup header="Total Interest" value={formatCurrency(totalProfit, currency)} />
 
-			<ReportGroup
-				header="Duration"
-				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
-			/>
+			<ReportGroup header="Ending Value" value={formatCurrency(futureValue, currency)} />
 
 			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
 			<ReportGroup header="Total Return (APY)" value={formatPercentage(totalReturn)} />
-
-			<ReportGroup header="Total Interest" value={formatCurrency(totalProfit, currency)} />
-
-			<ReportGroup header="Ending Value" value={formatCurrency(futureValue, currency)} />
 		</ReportSummaryContainer>
 	);
 };
