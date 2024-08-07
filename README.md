@@ -67,6 +67,12 @@ Calculate the price-to-earnings (P/E) ratio of a company to determine if its sto
 
 ---
 
+### [Dollar Cost Average Calculator][9]
+
+Calculate the average cost of an investment over a time period, given an interest rate, initial investment amount and a series of periodic investments.
+
+---
+
 [dev]: https://github.com/0mppula
 [site]: https://www.koronkorko.com/
 [1]: https://www.koronkorko.com/compound-interest-calculator
@@ -77,5 +83,6 @@ Calculate the price-to-earnings (P/E) ratio of a company to determine if its sto
 [6]: https://www.koronkorko.com/markup-calculator
 [7]: https://www.koronkorko.com/event-probability-calculator
 [8]: https://www.koronkorko.com/price-to-earnings-ratio-calculator
+[9]: https://www.koronkorko.com/dollar-cost-average-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
