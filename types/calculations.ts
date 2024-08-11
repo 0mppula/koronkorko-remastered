@@ -5,6 +5,7 @@ import {
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
 	dollarCostAverageFormDataSchema,
+	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	investmentTimeFormDataSchema,
 	markupFormDataSchema,
@@ -16,6 +17,7 @@ import {
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
 	DollarCostAverageCalculation,
+	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
 	InvestmentTimeCalculation,
 	MarkupCalculation,
@@ -128,6 +130,14 @@ export interface DollarCostAverageReportProps extends IDollarCostAverageFormData
 	AbosluteReturnPercent: number;
 }
 
+// Enterprise Value Calculation
+export type IEnterpriseValueFormData = z.infer<typeof enterpriseValueFormDataSchema>;
+
+export interface EnterpriseValueReportProps extends IEnterpriseValueFormData {
+	marketCap: number;
+	enterpriseValue: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -137,4 +147,5 @@ export type CalculationType =
 	| CompoundInterestCalculation
 	| EventProbabilityCalculation
 	| PriceToEarningsRatioCalculation
-	| DollarCostAverageCalculation;
+	| DollarCostAverageCalculation
+	| EnterpriseValueCalculation;

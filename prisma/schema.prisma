@@ -49,6 +49,7 @@ model User {
   EventProbabilityCalculations     EventProbabilityCalculation[]
   PriceToEarningsRatioCalculations PriceToEarningsRatioCalculation[]
   DollarCostAverageCalculations    DollarCostAverageCalculation[]
+  EnterpriseValueCalculations      EnterpriseValueCalculation[]
 }
 
 type BreakEvenPointCalculationFormData {
@@ -209,6 +210,24 @@ model DollarCostAverageCalculation {
   formData  DollarCostAverageCalculationFormData
   createdAt DateTime                             @default(now())
   updatedAt DateTime                             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type EnterpriseValueCalculationFormData {
+  sharePrice        Float
+  sharesOutstanding Float
+  cash              Float
+  debt              Float
+}
+
+model EnterpriseValueCalculation {
+  id        String                             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                             @db.ObjectId
+  name      String
+  formData  EnterpriseValueCalculationFormData
+  createdAt DateTime                           @default(now())
+  updatedAt DateTime                           @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

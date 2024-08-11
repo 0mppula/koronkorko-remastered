@@ -3,11 +3,13 @@ import {
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
 	DollarCostAverageReportProps,
+	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
 	IDollarCostAverageFormData,
+	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
 	IInvestmentTimeFormData,
 	IMarkupFormData,
@@ -269,4 +271,15 @@ export const calculateDollarCostAverage = (
 		totalReturn: endingValue - totalInvested,
 		AbosluteReturnPercent: ((newSharePrice - sharePrice) / sharePrice) * 100,
 	};
+};
+
+export const calculateEnterpriseValue = (
+	formData: IEnterpriseValueFormData
+): EnterpriseValueReportProps => {
+	const { sharePrice, sharesOutstanding, cash, debt } = formData;
+
+	const marketCap = sharePrice * sharesOutstanding;
+	const enterpriseValue = marketCap + debt - cash;
+
+	return { sharePrice, sharesOutstanding, cash, debt, marketCap, enterpriseValue };
 };

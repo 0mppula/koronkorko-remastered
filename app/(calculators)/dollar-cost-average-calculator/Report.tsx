@@ -33,7 +33,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer className="mb-12">
+		<ReportSummaryContainer>
 			<ReportGroup
 				header="Initial Investment"
 				value={formatCurrency(initialInvestment, currency)}
