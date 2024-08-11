@@ -1,7 +1,6 @@
 import ReportSection from '@/components/Report/ReportSection';
+import ReportSource from '@/components/Report/ReportSource';
 import TypographyH3 from '@/components/TypographyH3';
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 const Info = () => {
 	return (
@@ -25,46 +24,30 @@ const Info = () => {
 				<TypographyH3>Key Takeaways</TypographyH3>
 
 				<ul className="my-4 ml-6 list-disc [&>li]:mt-2">
+					<li>Compounding multiplies savings or debt at an accelerated rate.</li>
 					<li>
-						Compounding multiplies savings or debt at an accelerated rate. Compound
-						interest is
+						Compound interest is interest calculated on both the initial principal and
+						all of the previously accumulated interest.
 					</li>
 					<li>
-						interest calculated on both the initial principal and all of the previously
-						accumulated
-					</li>
-					<li>
-						interest. Generating &quot;interest on interest&quot; is known as the power
-						of compound interest.
+						Generating &quot;interest on interest&quot; (koronkorko in Finnish) is known
+						as the power of compound interest.
 					</li>
 					<li>
 						Interest can be compounded on a variety of frequencies, such as daily,
-						monthly,
+						monthly, quarterly, or annually.
 					</li>
 					<li>
-						quarterly, or annually. The higher the number of compounding periods, the
-						larger the effect of compounding.
+						The higher the number of compounding periods, the larger the effect of
+						compounding.
 					</li>
 				</ul>
 			</div>
 
-			<p className="ml-auto">
-				Source:{' '}
-				<a
-					className={cn(
-						buttonVariants({
-							variant: 'link',
-							size: 'sm',
-						}),
-						'p-0 h-auto transition-none'
-					)}
-					href="https://www.investopedia.com/terms/c/compoundinterest.asp#toc-what-is-compound-interest"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					Investopedia
-				</a>
-			</p>
+			<ReportSource
+				href="https://www.investopedia.com/terms/c/compoundinterest.asp#toc-what-is-compound-interest"
+				text="Investopedia"
+			/>
 		</ReportSection>
 	);
 };
