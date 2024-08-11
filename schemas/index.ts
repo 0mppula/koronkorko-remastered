@@ -155,3 +155,10 @@ export const dollarCostAverageFormDataSchema = z.object({
 	duration: positiveNumberFieldSchema('Duration'),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });
+
+export const enterpriseValueFormDataSchema = z.object({
+	sharePrice: positiveNumberFieldSchema('Share price'),
+	sharesOutstanding: positiveIntegerFieldSchema('Shares outstanding'),
+	cash: positiveNumberFieldSchema('Cash'),
+	debt: positiveNumberFieldSchema('Debt'),
+});
