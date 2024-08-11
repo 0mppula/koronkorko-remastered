@@ -13,8 +13,9 @@ const Info = () => {
 			</p>
 
 			<p>
-				An annualized total return provides only a snapshot of an investment's performance
-				and does not give investors any indication of its volatility or price fluctuations.
+				An annualized total return provides only a snapshot of an investment&apos;s
+				performance and does not give investors any indication of its volatility or price
+				fluctuations.
 			</p>
 
 			<div className="mt-4">
