@@ -34,7 +34,7 @@ export default function RootLayout({
 				<Providers>
 					<Nav />
 
-					<main className="pt-16 flex flex-col min-h-[calc(100vh-3.5rem-2px)] max-w-6xl items-center mx-auto px-6 md:px-8 pb-32">
+					<main className="pt-10 lg:pt-16 flex flex-col min-h-[calc(100vh-3.5rem-2px)] max-w-6xl items-center mx-auto px-6 md:px-8 pb-32">
 						{children}
 					</main>
 
