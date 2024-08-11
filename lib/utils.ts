@@ -1,5 +1,5 @@
+import { calculators } from '@/constants/calculators';
 import {
-	calculators,
 	contributionFrequencies,
 	currencies,
 	depositFrequencies,
