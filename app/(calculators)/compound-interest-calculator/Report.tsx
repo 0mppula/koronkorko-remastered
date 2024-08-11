@@ -31,7 +31,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSection className="mt-12">
+		<ReportSection>
 			<ReportGroup header="Initial Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup

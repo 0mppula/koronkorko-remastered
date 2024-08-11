@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is Compound Interest?" className="mt-12">
+		<ReportSection title="What Is Compound Interest?" className="mt-10">
 			<p>
 				Compound interest is interest that applies not only to the initial principal of an
 				investment or a loan, but also to the accumulated interest from previous periods. In
