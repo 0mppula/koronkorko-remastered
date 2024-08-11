@@ -56,7 +56,7 @@ const Info = () => {
 							variant: 'link',
 							size: 'sm',
 						}),
-						'p-0 h-auto'
+						'p-0 h-auto transition-none'
 					)}
 					href="https://www.investopedia.com/terms/c/compoundinterest.asp#toc-what-is-compound-interest"
 					target="_blank"
