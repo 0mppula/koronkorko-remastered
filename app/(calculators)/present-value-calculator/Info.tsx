@@ -34,7 +34,7 @@ const Info = () => {
 
 					<li>
 						Investors can also calculate future value (FV) by applying an estimated rate
-						of return to a sum of money's value today.
+						of return to a sum of money&apos;s value today.
 					</li>
 				</ul>
 			</div>
