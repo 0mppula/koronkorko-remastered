@@ -34,8 +34,8 @@ const Info = () => {
 						accumulated
 					</li>
 					<li>
-						interest. Generating "interest on interest" is known as the power of
-						compound interest.
+						interest. Generating &quot;interest on interest&quot; is known as the power
+						of compound interest.
 					</li>
 					<li>
 						Interest can be compounded on a variety of frequencies, such as daily,
