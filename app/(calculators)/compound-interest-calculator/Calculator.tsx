@@ -43,6 +43,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import Breakdown from './Breakdown';
+import Info from './Info';
 import Report from './Report';
 
 export interface ReportProps {
@@ -366,6 +367,8 @@ const Calculator = () => {
 			{report && <Report report={report} />}
 
 			{report && <Breakdown report={report} />}
+
+			<Info />
 		</>
 	);
 };
