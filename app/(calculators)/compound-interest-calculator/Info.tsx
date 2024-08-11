@@ -1,11 +1,11 @@
-import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
+import ReportSection from '@/components/Report/ReportSection';
 import TypographyH3 from '@/components/TypographyH3';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const Info = () => {
 	return (
-		<ReportSummaryContainer title="What Is Compound Interest?" className="mt-12">
+		<ReportSection title="What Is Compound Interest?" className="mt-12">
 			<p>
 				Compound interest is interest that applies not only to the initial principal of an
 				investment or a loan, but also to the accumulated interest from previous periods. In
@@ -65,7 +65,7 @@ const Info = () => {
 					Investopedia
 				</a>
 			</p>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

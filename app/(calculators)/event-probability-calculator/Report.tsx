@@ -1,6 +1,6 @@
-import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import { formatPercentage } from '@/lib/utils';
 import { EventProbabilityReportProps } from '@/types/calculations';
 
@@ -18,7 +18,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup
 				header="Event Probability"
 				value={
@@ -58,7 +58,7 @@ const Report = ({ report }: ReportProps) => {
 						: 'N/A'
 				}
 			/>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

@@ -1,6 +1,6 @@
-import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency } from '@/lib/utils';
 import { EnterpriseValueReportProps } from '@/types/calculations';
@@ -15,7 +15,7 @@ const Report = ({ report }: ReportProps) => {
 	const { sharePrice, sharesOutstanding, cash, debt, enterpriseValue, marketCap } = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup header="Share Price" value={formatCurrency(sharePrice, currency)} />
 
 			<ReportGroup header="Shares Outstanding" value={String(sharesOutstanding)} />
@@ -35,7 +35,7 @@ const Report = ({ report }: ReportProps) => {
 				header="Enterprise value"
 				value={formatCurrency(enterpriseValue, currency)}
 			/>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

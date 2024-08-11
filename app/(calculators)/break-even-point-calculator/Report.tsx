@@ -1,8 +1,8 @@
 'use client';
 
-import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getCurrencySymbol } from '@/lib/utils';
 import { BreakEvenPointReportProps } from '@/types/calculations';
@@ -25,7 +25,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup header="Fixed Costs" value={formatCurrency(fixedCosts, currency)} />
 
 			<ReportGroup
@@ -64,7 +64,7 @@ const Report = ({ report }: ReportProps) => {
 						: 'N/A'
 				}
 			/>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

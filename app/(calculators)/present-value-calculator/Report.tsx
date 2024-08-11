@@ -2,10 +2,10 @@
 
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getDurationLabel } from '@/lib/utils';
 import { PresentValueReportProps } from '@/types/calculations';
-import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 
 interface ReportProps {
 	report: PresentValueReportProps;
@@ -17,7 +17,7 @@ const Report = ({ report }: ReportProps) => {
 	const { startingBalance, discountRate, duration, durationMultiplier, presentValue } = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup header="Future Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup header="Discount Rate" value={formatPercentage(discountRate)} />
@@ -36,7 +36,7 @@ const Report = ({ report }: ReportProps) => {
 				header="Total Interest"
 				value={formatCurrency(startingBalance - presentValue, currency)}
 			/>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

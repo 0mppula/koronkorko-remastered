@@ -2,20 +2,20 @@ import TypographyH2 from '@/components/TypographyH2';
 import { Separator } from '@/components/ui/separator';
 import ReportSpinner from '../Spinners/ReportSpinner';
 
-interface ReportSummaryContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ReportSectionProps extends React.HTMLAttributes<HTMLDivElement> {
 	title?: string;
 	children: React.ReactNode;
 	isLoading?: boolean;
 }
 
-const ReportSummaryContainer = ({
+const ReportSection = ({
 	title = 'Summary',
 	children,
 	isLoading = false,
 	...props
-}: ReportSummaryContainerProps) => {
+}: ReportSectionProps) => {
 	return (
-		<div {...props}>
+		<section {...props} id={title.toLowerCase().replaceAll(' ', '-')}>
 			<TypographyH2 className="mb-3 text-3xl">{title}</TypographyH2>
 
 			<Separator className="h-[2px] bg-primary dark:bg-primary" />
@@ -27,8 +27,8 @@ const ReportSummaryContainer = ({
 			)}
 
 			<Separator className="h-[2px] bg-primary dark:bg-primary" />
-		</div>
+		</section>
 	);
 };
 
-export default ReportSummaryContainer;
+export default ReportSection;

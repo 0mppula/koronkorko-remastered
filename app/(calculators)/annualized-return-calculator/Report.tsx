@@ -1,9 +1,9 @@
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import { formatCurrency, formatPercentage, getCurrencySymbol, getDurationLabel } from '@/lib/utils';
 import { AnnualizedReturnReportProps } from '@/types/calculations';
-import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 
 interface ReportProps {
 	report: AnnualizedReturnReportProps;
@@ -22,7 +22,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup header="Initial Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup header="Ending Value" value={formatCurrency(endingBalance, currency)} />
@@ -46,7 +46,7 @@ const Report = ({ report }: ReportProps) => {
 				header="Annualized Return"
 				value={isFinite(annualizedReturn) ? formatPercentage(annualizedReturn) : 'N/A'}
 			/>
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

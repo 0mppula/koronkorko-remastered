@@ -1,6 +1,6 @@
 'use client';
 
-import ReportSummaryContainer from '@/components/Form/ReportSummaryContainer';
+import ReportSection from '@/components/Report/ReportSection';
 import {
 	ICompoundInterestChartData,
 	createCounpoundInterestChartData,
@@ -98,7 +98,7 @@ const Breakdown = ({ report }: ReportProps) => {
 	}, [filteredChartData, breakdownInterval]);
 
 	return (
-		<ReportSummaryContainer isLoading={isChartDataLoading} title="Breakdown">
+		<ReportSection isLoading={isChartDataLoading} title="Breakdown">
 			<BreakdownControls
 				isLoading={isChartDataLoading}
 				visualizationType={visualizationType}
@@ -122,7 +122,7 @@ const Breakdown = ({ report }: ReportProps) => {
 					breakdownInterval={breakdownInterval}
 				/>
 			)}
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

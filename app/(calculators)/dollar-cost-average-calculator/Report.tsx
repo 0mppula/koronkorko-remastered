@@ -1,5 +1,6 @@
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
 	formatCurrency,
@@ -8,7 +9,6 @@ import {
 	getDepositFrequencyShortLabel,
 	getDurationLabel,
 } from '@/lib/utils';
-import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 import { ReportProps } from './Calculator';
 
 const Report = ({ report }: ReportProps) => {
@@ -33,7 +33,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer>
+		<ReportSection>
 			<ReportGroup
 				header="Initial Investment"
 				value={formatCurrency(initialInvestment, currency)}
@@ -79,7 +79,7 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup header="Ending Share Price" value={formatCurrency(newSharePrice)} />
 
 			<ReportGroup header="Price Change %" value={formatPercentage(AbosluteReturnPercent)} />
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 

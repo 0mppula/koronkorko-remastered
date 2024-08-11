@@ -1,5 +1,6 @@
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
+import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
 	formatCurrency,
@@ -7,7 +8,6 @@ import {
 	getContributionFrequencyShortLabel,
 	getDurationLabel,
 } from '@/lib/utils';
-import ReportSummaryContainer from '../../../components/Form/ReportSummaryContainer';
 import { ReportProps } from './Calculator';
 
 const Report = ({ report }: ReportProps) => {
@@ -31,7 +31,7 @@ const Report = ({ report }: ReportProps) => {
 	} = report;
 
 	return (
-		<ReportSummaryContainer className="mb-12">
+		<ReportSection className="mb-12">
 			<ReportGroup header="Initial Value" value={formatCurrency(startingBalance, currency)} />
 
 			<ReportGroup
@@ -68,7 +68,7 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
 			<ReportGroup header="Total Return (APY)" value={formatPercentage(totalReturn)} />
-		</ReportSummaryContainer>
+		</ReportSection>
 	);
 };
 
