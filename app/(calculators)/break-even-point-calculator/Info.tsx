@@ -4,7 +4,7 @@ import TypographyH3 from '@/components/TypographyH3';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is the Breakeven Point?" className="mt-10">
+		<ReportSection title="What Is the Breakeven Point?">
 			<p>
 				In corporate accounting, the breakeven point (BEP) is the moment a company&apos;s
 				operations stop being unprofitable and starts to earn a profit. The breakeven point

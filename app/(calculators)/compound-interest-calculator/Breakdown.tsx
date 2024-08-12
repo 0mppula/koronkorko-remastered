@@ -98,7 +98,7 @@ const Breakdown = ({ report }: ReportProps) => {
 	}, [filteredChartData, breakdownInterval]);
 
 	return (
-		<ReportSection isLoading={isChartDataLoading} title="Breakdown" className="mt-10">
+		<ReportSection isLoading={isChartDataLoading} title="Breakdown">
 			<BreakdownControls
 				isLoading={isChartDataLoading}
 				visualizationType={visualizationType}

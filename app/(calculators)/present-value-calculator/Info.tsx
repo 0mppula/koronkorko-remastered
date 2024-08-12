@@ -4,7 +4,7 @@ import TypographyH3 from '@/components/TypographyH3';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is Present Value?" className="mt-10">
+		<ReportSection title="What Is Present Value?">
 			<p>
 				Present value (PV) is the current value of a future sum of money or stream of cash
 				flows. It is determined by discounting the future value by the estimated rate of

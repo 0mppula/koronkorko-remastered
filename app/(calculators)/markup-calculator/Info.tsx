@@ -4,7 +4,7 @@ import TypographyH3 from '@/components/TypographyH3';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is a Markup?" className="mt-10">
+		<ReportSection title="What Is a Markup?">
 			<p>
 				In finance, markup refers to the difference between the cost of a product or service
 				and its selling price. It&apos;s essentially the amount added to the cost price of

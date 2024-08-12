@@ -4,7 +4,7 @@ import TypographyH3 from '@/components/TypographyH3';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is an Investment Time Horizon?" className="mt-10">
+		<ReportSection title="What Is an Investment Time Horizon?">
 			<p>
 				An investment time horizon, or just time horizon, is the period of time one expects
 				to hold an investment until they need the money back or want to rach a certain

@@ -4,7 +4,7 @@ import TypographyH3 from '@/components/TypographyH3';
 
 const Info = () => {
 	return (
-		<ReportSection title="What Is Annualized Return?" className="mt-10">
+		<ReportSection title="What Is Annualized Return?">
 			<p>
 				An annualized total return is the geometric average amount of money an investment
 				earns each year over a given period. The annualized return formula is calculated as
