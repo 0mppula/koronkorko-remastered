@@ -206,6 +206,7 @@ export const calculateEventProbability = (
 	return {
 		...formData,
 		atLeastOnceProbabilityPercent: AOP * 100,
+		neverOccuresProbabilityPercent: (1 - AOP) * 100,
 		moreThanOnceProbabilityPercent: MOP * 100,
 		exactlyOnceProbabilityPercent: EOP * 100,
 	};

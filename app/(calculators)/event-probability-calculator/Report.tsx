@@ -15,6 +15,7 @@ const Report = ({ report }: ReportProps) => {
 		atLeastOnceProbabilityPercent,
 		moreThanOnceProbabilityPercent,
 		exactlyOnceProbabilityPercent,
+		neverOccuresProbabilityPercent,
 	} = report;
 
 	return (
@@ -37,6 +38,15 @@ const Report = ({ report }: ReportProps) => {
 				value={
 					isFinite(atLeastOnceProbabilityPercent)
 						? formatPercentage(atLeastOnceProbabilityPercent, 8)
+						: 'N/A'
+				}
+			/>
+
+			<ReportGroup
+				header="Never Occurs Probability"
+				value={
+					isFinite(neverOccuresProbabilityPercent)
+						? formatPercentage(neverOccuresProbabilityPercent, 8)
 						: 'N/A'
 				}
 			/>

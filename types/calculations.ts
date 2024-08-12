@@ -107,6 +107,7 @@ export interface EventProbabilityReportProps extends IEventProbabilityFormData {
 	atLeastOnceProbabilityPercent: number;
 	moreThanOnceProbabilityPercent: number;
 	exactlyOnceProbabilityPercent: number;
+	neverOccuresProbabilityPercent: number;
 }
 
 // Price to Earnings Ratio Calculation
