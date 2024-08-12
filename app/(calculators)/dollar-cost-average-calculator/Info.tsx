@@ -12,7 +12,7 @@ const Info = () => {
 
 			<p>
 				Dollar-cost averaging is a strategy that can make it easier to deal with uncertain
-				markets by making purchases automatic. It also supports an investor's effort to
+				markets by making purchases automatic. It also supports an investor&apos;s effort to
 				invest regularly.
 			</p>
 
