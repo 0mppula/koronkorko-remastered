@@ -24,6 +24,7 @@ import { MarkupCalculation } from '@prisma/client';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
+import Info from './Info';
 import Report from './Report';
 
 const defaultValues: IMarkupFormData = {
@@ -155,6 +156,8 @@ const Calculator = () => {
 			</FormContainer>
 
 			{report && <Report report={report} />}
+
+			<Info />
 		</>
 	);
 };

@@ -10,7 +10,7 @@ interface ReportSourceProps extends React.HTMLAttributes<HTMLParagraphElement> {
 const ReportSource = ({ href, text, className, ...props }: ReportSourceProps) => {
 	return (
 		<p {...props} className={cn('ml-auto', className)}>
-			Source:{' '}
+			Learn more at{' '}
 			<a
 				className={cn(
 					buttonVariants({
