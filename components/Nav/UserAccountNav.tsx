@@ -9,9 +9,11 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import usePremiumModal from '@/hooks/usePremiumModal';
 import { LogOut } from 'lucide-react';
 import type { User } from 'next-auth';
 import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { Button } from '../ui/button';
 
@@ -20,6 +22,8 @@ interface UserAccountNavProps {
 }
 
 const UserAccountNav = ({ user }: UserAccountNavProps) => {
+	const { setIsOpen } = usePremiumModal();
+
 	const initials = useMemo(() => {
 		return user?.name
 			?.split(' ', 2)
@@ -32,7 +36,12 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" size="icon" suppressHydrationWarning>
+				<Button
+					variant="ghost"
+					size="icon"
+					suppressHydrationWarning
+					aria-label="Open user menu"
+				>
 					<Avatar className="h-[1.625rem] w-[1.625rem]">
 						<AvatarImage src={user?.image ? user.image : ''} />
 
@@ -55,6 +64,16 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 						</p>
 					)}
 				</DropdownMenuLabel>
+
+				<DropdownMenuSeparator className="md:hidden" />
+
+				<DropdownMenuItem className="md:hidden" asChild>
+					<Link href="/">Calculators</Link>
+				</DropdownMenuItem>
+
+				<DropdownMenuItem className="md:hidden" onClick={() => setIsOpen(true)}>
+					Premium
+				</DropdownMenuItem>
 
 				<DropdownMenuSeparator />
 
