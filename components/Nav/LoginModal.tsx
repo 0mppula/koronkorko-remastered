@@ -14,6 +14,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import useLoginModal from '@/hooks/useLoginModal';
 import usePremiumModal from '@/hooks/usePremiumModal';
 import { LogIn, Menu } from 'lucide-react';
 import { signIn } from 'next-auth/react';
@@ -27,9 +28,17 @@ import { Button } from '../ui/button';
 const LoginModal = () => {
 	const [googleIsLoading, setGoogleIsLoading] = useState(false);
 	const [githubIsLoading, setGithubIsLoading] = useState(false);
-	const { setIsOpen } = usePremiumModal();
+	const { setIsOpen: setIsPremiumModalOpen } = usePremiumModal();
+	const { isOpen: isloginModalIsOpen, setIsOpen: setIsLoginModalOpen } = useLoginModal();
 
 	const socialAction = async (provider: string) => {
+		const stripePaymentLink = localStorage.getItem('stripePaymentLink');
+		const authCallbackPageUrl =
+			'/auth/callback' +
+			(stripePaymentLink ? `?callbackUrl=${encodeURIComponent(stripePaymentLink)}` : '');
+
+		localStorage.removeItem('stripePaymentLink');
+
 		if (provider === 'google') {
 			setGoogleIsLoading(true);
 		}
@@ -38,7 +47,10 @@ const LoginModal = () => {
 			setGithubIsLoading(true);
 		}
 
-		await signIn(provider).then((callback) => {
+		await signIn(provider, {
+			callbackUrl: authCallbackPageUrl,
+			redirect: true,
+		}).then((callback) => {
 			if (callback?.error) {
 				toast.error('An error occurred while trying to login. Please try again.');
 			}
@@ -47,7 +59,10 @@ const LoginModal = () => {
 
 	return (
 		<>
-			<Dialog>
+			<Dialog
+				open={isloginModalIsOpen}
+				onOpenChange={(openState) => setIsLoginModalOpen(openState)}
+			>
 				{/* Desktop Login button */}
 				<DialogTrigger asChild className="hidden md:flex">
 					<Button>
@@ -68,7 +83,10 @@ const LoginModal = () => {
 							<Link href="/">Calculators</Link>
 						</DropdownMenuItem>
 
-						<DropdownMenuItem className="md:hidden" onClick={() => setIsOpen(true)}>
+						<DropdownMenuItem
+							className="md:hidden"
+							onClick={() => setIsPremiumModalOpen(true)}
+						>
 							Premium
 						</DropdownMenuItem>
 

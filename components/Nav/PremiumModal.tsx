@@ -8,8 +8,11 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog';
+import useLoginModal from '@/hooks/useLoginModal';
 import usePremiumModal from '@/hooks/usePremiumModal';
 import { CircleCheck } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -21,6 +24,7 @@ const plans = [
 		price: 5,
 		features: ['Unlimited calculations', 'Priority support', 'Cancel anytime'],
 		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_WEEKLY_PREMIUM_LINK,
 	},
 	{
 		title: 'Monthly Plan',
@@ -28,6 +32,7 @@ const plans = [
 		price: 10,
 		features: ['Unlimited calculations', 'Priority support', 'Save 50%', 'Cancel anytime'],
 		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PREMIUM_LINK,
 	},
 	{
 		title: 'Yearly Plan',
@@ -35,14 +40,17 @@ const plans = [
 		price: 90,
 		features: ['Unlimited calculations', 'Priority support', 'Save 65%', 'Cancel anytime'],
 		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PREMIUM_LINK,
 	},
 ];
 
 const PremiumModal = () => {
-	const { isOpen, setIsOpen } = usePremiumModal();
+	const { isOpen: isPremiumModalOpen, setIsOpen: setIsPremiumModalOpen } = usePremiumModal();
+	const { setIsOpen: setIsLoginModalOpen } = useLoginModal();
+	const { status: sessionStatus, data: userData } = useSession();
 
 	return (
-		<Dialog open={isOpen} onOpenChange={(state) => setIsOpen(state)}>
+		<Dialog open={isPremiumModalOpen} onOpenChange={(state) => setIsPremiumModalOpen(state)}>
 			<DialogTrigger asChild className="hidden md:block">
 				<Button variant="link">Premium</Button>
 			</DialogTrigger>
@@ -81,7 +89,36 @@ const PremiumModal = () => {
 								</CardContent>
 
 								<CardFooter>
-									<Button className="w-full">{plan.actionLabel}</Button>
+									<Button
+										className="w-full"
+										asChild={sessionStatus === 'authenticated'}
+										onClick={
+											sessionStatus === 'authenticated'
+												? undefined
+												: () => {
+														setIsPremiumModalOpen(false);
+														localStorage.setItem(
+															'stripePaymentLink',
+															plan.paymentLink || ''
+														);
+														setIsLoginModalOpen(true);
+												  }
+										}
+									>
+										{sessionStatus === 'authenticated' ? (
+											<Link
+												href={
+													plan.paymentLink
+														? `${plan.paymentLink}?prefilled_email=${userData.user.email}`
+														: '#'
+												}
+											>
+												{plan.actionLabel}
+											</Link>
+										) : (
+											<>{plan.actionLabel}</>
+										)}
+									</Button>
 								</CardFooter>
 							</Card>
 						))}
