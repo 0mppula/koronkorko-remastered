@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 const Body = () => {
-	const { status: sessionStatus } = useSession();
+	const { status: sessionStatus, data: sessionData } = useSession();
 	const { isGlobalLoading } = useLoadingStore();
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -27,15 +27,15 @@ const Body = () => {
 		refetchOnWindowFocus: false,
 	});
 
-	if (sessionStatus === 'unauthenticated') router.replace('/');
-
 	useEffect(() => {
 		if (sessionStatus === 'authenticated' && callbackUrl !== null && userData?.email) {
 			router.replace(callbackUrl + `?prefilled_email=${userData.email}`);
-		} else if (sessionStatus === 'unauthenticated') {
+		}
+		// Check if the user is already a premium user or not authenticated.
+		else if (sessionStatus === 'unauthenticated' || sessionData?.user?.plan === 'premium') {
 			router.replace('/');
 		}
-	}, [sessionStatus, userData, callbackUrl, isLoading]);
+	}, [sessionStatus, userData, callbackUrl, isLoading, sessionData]);
 
 	return (
 		<div>

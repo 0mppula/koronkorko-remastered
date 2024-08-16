@@ -1,5 +1,10 @@
 'use client';
 
+import { USER_QUERY_KEY } from '@/constants/api';
+import { getUser } from '@/lib/queryFns/auth';
+import { User } from '@prisma/client';
+import { useQuery } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { useTheme } from 'next-themes';
 import Image, { StaticImageData } from 'next/image';
 import Link from 'next/link';
@@ -11,11 +16,19 @@ import { Skeleton } from '../ui/skeleton';
 const Logo = () => {
 	const [src, setSrc] = useState<null | StaticImageData>(null);
 
+	const { status: sessionStatus } = useSession();
 	const { resolvedTheme } = useTheme();
 
 	useEffect(() => {
 		setSrc(resolvedTheme === 'dark' ? logo_dark : logo_light);
 	}, [resolvedTheme]);
+
+	const { data: userData } = useQuery<User | null>({
+		queryKey: [USER_QUERY_KEY, { sessionStatus }],
+		queryFn: () => getUser(sessionStatus),
+		enabled: sessionStatus === 'authenticated',
+		refetchOnWindowFocus: false,
+	});
 
 	return (
 		<div>
@@ -34,7 +47,7 @@ const Logo = () => {
 				)}
 
 				<p aria-hidden className="font-bold text-2xl hidden xs:block">
-					KoronKorko
+					{userData?.plan === 'premium' ? 'Premium' : 'KoronKorko'}
 				</p>
 			</Link>
 		</div>

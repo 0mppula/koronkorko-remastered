@@ -33,9 +33,9 @@ const LoginModal = () => {
 
 	const socialAction = async (provider: string) => {
 		const stripePaymentLink = localStorage.getItem('stripePaymentLink');
-		const authCallbackPageUrl =
-			'/auth/callback' +
-			(stripePaymentLink ? `?callbackUrl=${encodeURIComponent(stripePaymentLink)}` : '');
+		const authCallbackPageUrl = stripePaymentLink
+			? `/auth/callback?callbackUrl=${encodeURIComponent(stripePaymentLink)}`
+			: '';
 
 		localStorage.removeItem('stripePaymentLink');
 

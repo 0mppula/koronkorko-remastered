@@ -1,5 +1,6 @@
 'use client';
 
+import { getUsersSubscriptionData } from '@/app/actions/subscription';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
 	Dialog,
@@ -8,8 +9,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog';
+import { SUBSCRIPTION_QUERY_KEY } from '@/constants/api';
+import { plans } from '@/constants/data';
 import useLoginModal from '@/hooks/useLoginModal';
 import usePremiumModal from '@/hooks/usePremiumModal';
+import { Subscription } from '@prisma/client';
+import { useQuery } from '@tanstack/react-query';
 import { CircleCheck } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -17,47 +22,31 @@ import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 
-const plans = [
-	{
-		title: 'Weekly Plan',
-		interval: 'week',
-		price: 5,
-		features: ['Unlimited calculations', 'Priority support', 'Cancel anytime'],
-		actionLabel: 'Get Started',
-		paymentLink: process.env.NEXT_PUBLIC_STRIPE_WEEKLY_PREMIUM_LINK,
-	},
-	{
-		title: 'Monthly Plan',
-		interval: 'month',
-		price: 10,
-		features: ['Unlimited calculations', 'Priority support', 'Save 50%', 'Cancel anytime'],
-		actionLabel: 'Get Started',
-		paymentLink: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PREMIUM_LINK,
-	},
-	{
-		title: 'Yearly Plan',
-		interval: 'year',
-		price: 90,
-		features: ['Unlimited calculations', 'Priority support', 'Save 65%', 'Cancel anytime'],
-		actionLabel: 'Get Started',
-		paymentLink: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PREMIUM_LINK,
-	},
-];
-
 const PremiumModal = () => {
 	const { isOpen: isPremiumModalOpen, setIsOpen: setIsPremiumModalOpen } = usePremiumModal();
 	const { setIsOpen: setIsLoginModalOpen } = useLoginModal();
-	const { status: sessionStatus, data: userData } = useSession();
+	const { status: sessionStatus, data: sessionData } = useSession();
+
+	const { data: subData } = useQuery<Subscription | null>({
+		queryKey: [SUBSCRIPTION_QUERY_KEY, { sessionStatus }],
+		queryFn: () => getUsersSubscriptionData(),
+		enabled: sessionStatus === 'authenticated',
+		refetchOnWindowFocus: false,
+	});
 
 	return (
 		<Dialog open={isPremiumModalOpen} onOpenChange={(state) => setIsPremiumModalOpen(state)}>
 			<DialogTrigger asChild className="hidden md:block">
-				<Button variant="link">Premium</Button>
+				<Button variant="link">Pricing</Button>
 			</DialogTrigger>
 
 			<DialogContent className="md:max-w-4xl p-0 h-[80svh] md:h-auto">
 				<DialogHeader className="p-6 pb-0">
-					<DialogTitle>Upgrade to Premium</DialogTitle>
+					<DialogTitle>
+						{sessionData?.user.plan === 'premium'
+							? 'Premium Pricing'
+							: 'Upgrade to Premium'}
+					</DialogTitle>
 				</DialogHeader>
 
 				<ScrollArea className="w-full h-full md:max-h-[min(66svh,512px)] p-6 pt-0 ">
@@ -89,36 +78,42 @@ const PremiumModal = () => {
 								</CardContent>
 
 								<CardFooter>
-									<Button
-										className="w-full"
-										asChild={sessionStatus === 'authenticated'}
-										onClick={
-											sessionStatus === 'authenticated'
-												? undefined
-												: () => {
-														setIsPremiumModalOpen(false);
-														localStorage.setItem(
-															'stripePaymentLink',
-															plan.paymentLink || ''
-														);
-														setIsLoginModalOpen(true);
-												  }
-										}
-									>
-										{sessionStatus === 'authenticated' ? (
-											<Link
-												href={
-													plan.paymentLink
-														? `${plan.paymentLink}?prefilled_email=${userData.user.email}`
-														: '#'
-												}
-											>
-												{plan.actionLabel}
-											</Link>
+									{sessionStatus === 'authenticated' ? (
+										sessionData?.user.plan === 'premium' &&
+										subData?.period === plan.period ? (
+											<Button disabled className="w-full" variant="secondary">
+												Current Plan
+											</Button>
 										) : (
-											<>{plan.actionLabel}</>
-										)}
-									</Button>
+											<Button className="w-full" asChild disabled={true}>
+												<Link
+													href={
+														plan.paymentLink
+															? `${plan.paymentLink}?prefilled_email=${sessionData.user.email}`
+															: '#'
+													}
+												>
+													{sessionData?.user.plan === 'premium'
+														? 'Switch to this Plan'
+														: plan.actionLabel}
+												</Link>
+											</Button>
+										)
+									) : (
+										<Button
+											className="w-full"
+											onClick={() => {
+												setIsPremiumModalOpen(false);
+												localStorage.setItem(
+													'stripePaymentLink',
+													plan.paymentLink || ''
+												);
+												setIsLoginModalOpen(true);
+											}}
+										>
+											{plan.actionLabel}
+										</Button>
+									)}
 								</CardFooter>
 							</Card>
 						))}

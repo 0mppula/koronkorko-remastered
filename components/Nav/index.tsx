@@ -22,6 +22,12 @@ const Nav = async () => {
 					</Button>
 
 					<PremiumModal />
+
+					{session?.user && (
+						<Button variant="link">
+							<Link href="#">Billing Portal</Link>
+						</Button>
+					)}
 				</div>
 
 				<div className="flex items-center gap-2">

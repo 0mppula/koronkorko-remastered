@@ -30,6 +30,7 @@ export const API_URLS = [
 
 // Tanstack query keys
 export const USER_QUERY_KEY = 'user' as const;
+export const SUBSCRIPTION_QUERY_KEY = 'subscription' as const;
 export const MARKUP_CALCULATIONS_QUERY_KEY = 'markup-calculations' as const;
 export const ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY = 'annualized-return-calculations' as const;
 export const BREAK_EVEN_POINT_CALCULATIONS_QUERY_KEY = 'break-even-point-calculations' as const;

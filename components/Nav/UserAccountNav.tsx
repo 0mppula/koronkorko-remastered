@@ -72,7 +72,11 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 				</DropdownMenuItem>
 
 				<DropdownMenuItem className="md:hidden" onClick={() => setIsOpen(true)}>
-					Premium
+					Pricing
+				</DropdownMenuItem>
+
+				<DropdownMenuItem className="md:hidden" asChild>
+					<Link href="#">Billing Portal</Link>
 				</DropdownMenuItem>
 
 				<DropdownMenuSeparator />

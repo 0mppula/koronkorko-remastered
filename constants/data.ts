@@ -195,3 +195,33 @@ export const compoundFrequencies = [
 	{ value: 1, label: 'Annualy' },
 	{ value: 12, label: 'Monthly' },
 ] as const;
+
+export const plans = [
+	{
+		title: 'Weekly Plan',
+		interval: 'week',
+		period: 'weekly',
+		price: 5,
+		features: ['Unlimited calculations', 'Priority support', 'Cancel anytime'],
+		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_WEEKLY_PREMIUM_LINK,
+	},
+	{
+		title: 'Monthly Plan',
+		interval: 'month',
+		period: 'monthly',
+		price: 10,
+		features: ['Unlimited calculations', 'Priority support', 'Save 50%', 'Cancel anytime'],
+		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PREMIUM_LINK,
+	},
+	{
+		title: 'Yearly Plan',
+		interval: 'year',
+		period: 'yearly',
+		price: 90,
+		features: ['Unlimited calculations', 'Priority support', 'Save 65%', 'Cancel anytime'],
+		actionLabel: 'Get Started',
+		paymentLink: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PREMIUM_LINK,
+	},
+];
