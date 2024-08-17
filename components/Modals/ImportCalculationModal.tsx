@@ -13,6 +13,7 @@ import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
 import { cn } from '@/lib/utils';
 import { IHasFormDataAndName } from '@/types/calculations';
 import { FileDown, Trash } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { Fragment } from 'react';
 import { FieldValues } from 'react-hook-form';
 import { Button } from '../ui/button';
@@ -41,6 +42,8 @@ const ImportCalculationModal = <
 	handleImportStart,
 	closeImportModal,
 }: ImportCalculationModalProps<TCalculation>) => {
+	const session = useSession();
+
 	const handleDeleteCalculation = (id: string) => {
 		handleDelete(id);
 	};
@@ -86,7 +89,9 @@ const ImportCalculationModal = <
 					<div
 						className={cn(
 							'text-sm mb-2 text-secondary',
-							calculationCount >= FREE_PLAN_CALCULATION_LIMIT && 'text-destructive'
+							session.data?.user.plan !== 'premium' &&
+								calculationCount >= FREE_PLAN_CALCULATION_LIMIT &&
+								'text-destructive'
 						)}
 					>
 						<p>Calculations {calculationCount}</p>
