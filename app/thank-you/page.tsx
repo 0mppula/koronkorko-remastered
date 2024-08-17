@@ -16,7 +16,7 @@ const page = async () => {
 			<TypographyH1>Thank You</TypographyH1>
 
 			<p className="mb-4 text-center">
-				Congratulations! You're now a premium KoronKorko member! 🎉
+				Congratulations! You&apos;re now a premium KoronKorko member! 🎉
 			</p>
 
 			<Button asChild>
