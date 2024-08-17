@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
+import { cn } from '@/lib/utils';
 import { IHasFormDataAndName } from '@/types/calculations';
 import { FileDown, Trash } from 'lucide-react';
 import { Fragment } from 'react';
@@ -42,6 +44,8 @@ const ImportCalculationModal = <
 	const handleDeleteCalculation = (id: string) => {
 		handleDelete(id);
 	};
+
+	const calculationCount = calculations?.length ?? 0;
 
 	return (
 		<Dialog
@@ -79,6 +83,15 @@ const ImportCalculationModal = <
 				</DialogHeader>
 
 				<ScrollArea className="min-h-[min(calc(90svh-100px),272px)] max-h-[min(50svh,512px)] p-6 pt-0 rounded-md">
+					<div
+						className={cn(
+							'text-sm mb-2 text-secondary',
+							calculationCount >= FREE_PLAN_CALCULATION_LIMIT && 'text-destructive'
+						)}
+					>
+						<p>Calculations {calculationCount}</p>
+					</div>
+
 					{isLoading ? (
 						<div className="flex flex-col gap-4">
 							{Array.from({ length: 5 }).map((_, i) => (

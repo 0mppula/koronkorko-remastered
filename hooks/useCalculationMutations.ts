@@ -65,9 +65,11 @@ const useCalculationMutations = <
 			setActiveCalculation(calculation);
 			setSaveModalOpen(false);
 		},
-		onError: () => {
+		onError: (err: any) => {
 			toast.error(
-				'Something went wrong while saving your calculation. Please try again later.'
+				err?.response?.data?.error ||
+					err.message ||
+					'Something went wrong while saving your calculation.'
 			);
 		},
 		onSettled: () => {

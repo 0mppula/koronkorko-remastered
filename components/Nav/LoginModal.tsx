@@ -7,8 +7,18 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/components/ui/dialog';
-import { LogIn } from 'lucide-react';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import useLoginModal from '@/hooks/useLoginModal';
+import usePremiumModal from '@/hooks/usePremiumModal';
+import { LogIn, Menu } from 'lucide-react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { FaGithub, FaGoogle } from 'react-icons/fa';
 import { toast } from 'sonner';
@@ -18,8 +28,17 @@ import { Button } from '../ui/button';
 const LoginModal = () => {
 	const [googleIsLoading, setGoogleIsLoading] = useState(false);
 	const [githubIsLoading, setGithubIsLoading] = useState(false);
+	const { setIsOpen: setIsPremiumModalOpen } = usePremiumModal();
+	const { isOpen: isloginModalIsOpen, setIsOpen: setIsLoginModalOpen } = useLoginModal();
 
 	const socialAction = async (provider: string) => {
+		const stripePaymentLink = localStorage.getItem('stripePaymentLink');
+		const authCallbackPageUrl = stripePaymentLink
+			? `/auth/callback?callbackUrl=${encodeURIComponent(stripePaymentLink)}`
+			: '';
+
+		localStorage.removeItem('stripePaymentLink');
+
 		if (provider === 'google') {
 			setGoogleIsLoading(true);
 		}
@@ -28,7 +47,10 @@ const LoginModal = () => {
 			setGithubIsLoading(true);
 		}
 
-		await signIn(provider).then((callback) => {
+		await signIn(provider, {
+			callbackUrl: authCallbackPageUrl,
+			redirect: true,
+		}).then((callback) => {
 			if (callback?.error) {
 				toast.error('An error occurred while trying to login. Please try again.');
 			}
@@ -37,13 +59,48 @@ const LoginModal = () => {
 
 	return (
 		<>
-			<Dialog>
-				<DialogTrigger asChild>
+			<Dialog
+				open={isloginModalIsOpen}
+				onOpenChange={(openState) => setIsLoginModalOpen(openState)}
+			>
+				{/* Desktop Login button */}
+				<DialogTrigger asChild className="hidden md:flex">
 					<Button>
 						Login <LogIn className="ml-1 h-[1.125rem] w-[1.125rem]" />
 					</Button>
 				</DialogTrigger>
 
+				{/* Mobile Login button & Nav */}
+				<DropdownMenu>
+					<DropdownMenuTrigger className="flex md:hidden" asChild>
+						<Button size="icon" variant="ghost" aria-label="Open menu">
+							<Menu />
+						</Button>
+					</DropdownMenuTrigger>
+
+					<DropdownMenuContent>
+						<DropdownMenuItem asChild>
+							<Link href="/">Calculators</Link>
+						</DropdownMenuItem>
+
+						<DropdownMenuItem
+							className="md:hidden"
+							onClick={() => setIsPremiumModalOpen(true)}
+						>
+							Premium
+						</DropdownMenuItem>
+
+						<DropdownMenuSeparator />
+
+						<DialogTrigger className="w-full">
+							<DropdownMenuItem>
+								Login <LogIn className="ml-1 h-[1.125rem] w-[1.125rem]" />
+							</DropdownMenuItem>
+						</DialogTrigger>
+					</DropdownMenuContent>
+				</DropdownMenu>
+
+				{/* Login Modal */}
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Login to KoronKorko</DialogTitle>

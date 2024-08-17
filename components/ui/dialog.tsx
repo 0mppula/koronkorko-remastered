@@ -1,8 +1,8 @@
 'use client';
 
-import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -73,7 +73,7 @@ const DialogTitle = React.forwardRef<
 	<DialogPrimitive.Title
 		ref={ref}
 		className={cn(
-			'scroll-m-20 text-2xl font-bold tracking-tight transition-colors first:mt-0 border-b-2 border-primary pb-2 mb-4',
+			'scroll-m-20 text-2xl font-bold tracking-tight transition-colors first:mt-0 border-b-2 border-primary pb-2 mb-0',
 			className
 		)}
 		{...props}
@@ -95,13 +95,13 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 export {
 	Dialog,
-	DialogPortal,
-	DialogOverlay,
 	DialogClose,
-	DialogTrigger,
 	DialogContent,
-	DialogHeader,
-	DialogFooter,
-	DialogTitle,
 	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogOverlay,
+	DialogPortal,
+	DialogTitle,
+	DialogTrigger,
 };

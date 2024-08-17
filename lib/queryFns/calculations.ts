@@ -1,6 +1,8 @@
 import { API_URLS } from '@/constants/api';
+import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
 import { IHasFormData, IHasId } from '@/types/calculations';
 import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
 export interface ISaveCalculationParam<TFormData> {
 	apiUrl: (typeof API_URLS)[number];
@@ -23,11 +25,30 @@ export interface IUpdateCalculationParam<TFormData, TCalculation extends IHasFor
 	updatedCalculation: TCalculation;
 }
 
+export const checkCalculationLimit = async (
+	apiUrl: (typeof API_URLS)[number],
+	limit = FREE_PLAN_CALCULATION_LIMIT
+) => {
+	const session = await getSession();
+
+	if (session?.user.plan === 'free') {
+		const calcCount = ((await getCalculations(apiUrl)) || []).length;
+
+		if (calcCount >= limit) {
+			throw new Error(
+				'You have reached the maximum number of calculations allowed for your plan.'
+			);
+		}
+	}
+};
+
 export const saveCalculation = async <TFormData>({
 	apiUrl,
 	name,
 	formData,
 }: ISaveCalculationParam<TFormData>) => {
+	await checkCalculationLimit(apiUrl);
+
 	const response = await axios.post(`${apiUrl}`, { name, formData });
 
 	const data = await response.data;

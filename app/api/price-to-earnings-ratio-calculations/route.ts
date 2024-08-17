@@ -1,4 +1,5 @@
 import { getAuthSession } from '@/app/actions/auth';
+import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
 import db from '@/lib/db';
 import { calculationNameStringSchema, priceToEarningsRatioFormDataSchema } from '@/schemas';
 import { NextResponse } from 'next/server';
@@ -11,6 +12,23 @@ export async function POST(req: Request) {
 	try {
 		if (!session) {
 			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
+		}
+
+		if (session?.user.plan === 'free') {
+			const calcCount = await db.priceToEarningsRatioCalculation.count({
+				where: {
+					userId: session?.user.id,
+				},
+			});
+
+			if (calcCount >= FREE_PLAN_CALCULATION_LIMIT) {
+				return NextResponse.json(
+					{
+						error: 'You have reached the maximum number of calculations allowed for your plan.',
+					},
+					{ status: 400 }
+				);
+			}
 		}
 
 		const { earningsPerShare, sharePrice } = priceToEarningsRatioFormDataSchema.parse(

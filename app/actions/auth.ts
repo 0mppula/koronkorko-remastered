@@ -31,6 +31,7 @@ export const authOptions: AuthOptions = {
 
 			if (db_user) {
 				token.id = db_user.id;
+				token.plan = db_user.plan || 'free';
 			}
 
 			return token;
@@ -41,6 +42,7 @@ export const authOptions: AuthOptions = {
 				session.user.name = token.name;
 				session.user.email = token.email;
 				session.user.image = token.picture;
+				session.user.plan = token.plan;
 			}
 
 			return session;
