@@ -88,7 +88,10 @@ const PremiumModal = () => {
 											<Button className="w-full" asChild disabled={true}>
 												<Link
 													href={
-														plan.paymentLink
+														sessionData?.user.plan === 'premium'
+															? process.env
+																	.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL!
+															: plan.paymentLink
 															? `${plan.paymentLink}?prefilled_email=${sessionData.user.email}`
 															: '#'
 													}

@@ -25,7 +25,13 @@ const Nav = async () => {
 
 					{session?.user && (
 						<Button variant="link">
-							<Link href="#">Billing Portal</Link>
+							<Link
+								rel="noreferrer"
+								target="_blank"
+								href={process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL!}
+							>
+								Billing Portal
+							</Link>
 						</Button>
 					)}
 				</div>
