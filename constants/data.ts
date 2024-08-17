@@ -9,6 +9,8 @@ export const LgScreen = 1024;
 export const XlScreen = 1280;
 export const XxlScreen = 1536;
 
+export const FREE_PLAN_CALCULATION_LIMIT = 3;
+
 export const featuredApps = [
 	{
 		name: 'Money Mapper',
