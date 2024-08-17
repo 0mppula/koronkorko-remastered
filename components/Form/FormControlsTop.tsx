@@ -113,6 +113,7 @@ const FormControlsTop = <
 
 					<SaveCalculationModal
 						isOpen={isSaveModalOpen}
+						calculations={calculations}
 						handleClose={handleCloseSaveModal}
 						handleSave={handleSave}
 						handleSaveUpdateStart={handleSaveUpdateStart}

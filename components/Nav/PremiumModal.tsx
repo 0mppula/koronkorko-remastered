@@ -42,14 +42,14 @@ const PremiumModal = () => {
 
 			<DialogContent className="md:max-w-4xl p-0 h-[80svh] md:h-auto">
 				<DialogHeader className="p-6 pb-0">
-					<DialogTitle>
+					<DialogTitle className="mb-2">
 						{sessionData?.user.plan === 'premium'
 							? 'Premium Pricing'
 							: 'Upgrade to Premium'}
 					</DialogTitle>
 				</DialogHeader>
 
-				<ScrollArea className="w-full h-full md:max-h-[min(66svh,512px)] p-6 pt-0 ">
+				<ScrollArea className="w-full h-full md:max-h-[min(66svh,512px)] p-6 pt-0">
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						{plans.map((plan) => (
 							<Card key={plan.title} className="flex flex-col">

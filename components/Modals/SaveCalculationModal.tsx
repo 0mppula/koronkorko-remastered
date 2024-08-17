@@ -2,39 +2,57 @@
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
+import { cn } from '@/lib/utils';
 import { calculationNameFormDataSchema } from '@/schemas';
-import { ICalculationNameFormData } from '@/types/calculations';
+import { ICalculationNameFormData, IHasFormDataAndName } from '@/types/calculations';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import { Save } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useSession } from 'next-auth/react';
+import { FieldValues, useForm } from 'react-hook-form';
 import { ImSpinner8 } from 'react-icons/im';
 import { Form } from '../ui/form';
 
-interface SaveCalculationModalProps {
+interface SaveCalculationModalProps<TCalculation> {
 	isOpen: boolean;
+	calculations?: TCalculation[] | null;
 	handleClose: () => void;
 	handleSave: (data: ICalculationNameFormData) => void;
 	handleSaveUpdateStart: () => void;
 	saveLoading: boolean;
 }
 
-const SaveCalculationModal = ({
+const SaveCalculationModal = <
+	TFormData extends FieldValues,
+	TCalculation extends IHasFormDataAndName<TFormData>
+>({
 	isOpen,
+	calculations,
 	handleClose,
 	handleSave,
 	handleSaveUpdateStart,
 	saveLoading,
-}: SaveCalculationModalProps) => {
+}: SaveCalculationModalProps<TCalculation>) => {
+	const session = useSession();
 	const form = useForm<ICalculationNameFormData>({
 		resolver: zodResolver(calculationNameFormDataSchema),
 		defaultValues: {
 			name: '',
 		},
 	});
+
+	const calculationCount = calculations?.length ?? 0;
 
 	return (
 		<Dialog
@@ -93,6 +111,21 @@ const SaveCalculationModal = ({
 											maxLength={30}
 										/>
 									</FormControl>
+
+									{session.data?.user.plan !== 'premium' && (
+										<FormDescription
+											className={cn(
+												'text-success',
+												calculationCount >= FREE_PLAN_CALCULATION_LIMIT &&
+													'text-destructive'
+											)}
+										>
+											Saves left{' '}
+											{FREE_PLAN_CALCULATION_LIMIT - calculationCount === 0
+												? 0
+												: FREE_PLAN_CALCULATION_LIMIT - calculationCount}
+										</FormDescription>
+									)}
 									<FormMessage />
 								</FormItem>
 							)}
