@@ -79,7 +79,7 @@ const UserAccountNav = ({ user }: UserAccountNavProps) => {
 					<Link
 						rel="noreferrer"
 						target="_blank"
-						href={process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL!}
+						href={process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL! || '#'}
 					>
 						Billing Portal
 					</Link>
