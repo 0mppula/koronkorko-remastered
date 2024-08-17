@@ -90,6 +90,7 @@ const ImportCalculationModal = <
 						className={cn(
 							'text-sm mb-2 text-secondary',
 							session.data?.user.plan !== 'premium' &&
+								!isLoading &&
 								calculationCount >= FREE_PLAN_CALCULATION_LIMIT &&
 								'text-destructive'
 						)}
