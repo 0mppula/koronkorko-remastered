@@ -221,6 +221,8 @@ export async function POST(req: Request) {
 					console.error('User not found for the subscription update event.');
 					throw new Error('User not found for the subscription update event.');
 				}
+
+				break;
 			}
 
 			default:
