@@ -73,6 +73,12 @@ Calculate the average cost of an investment over a time period, given an interes
 
 ---
 
+### [Enterprise Value Calculator][10]
+
+Calculate the enterprise value of a company, given its market capitalization, total debt, and total cash.
+
+---
+
 [dev]: https://github.com/0mppula
 [site]: https://www.koronkorko.com/
 [1]: https://www.koronkorko.com/compound-interest-calculator
@@ -84,5 +90,6 @@ Calculate the average cost of an investment over a time period, given an interes
 [7]: https://www.koronkorko.com/event-probability-calculator
 [8]: https://www.koronkorko.com/price-to-earnings-ratio-calculator
 [9]: https://www.koronkorko.com/dollar-cost-average-calculator
+[10]: https://www.koronkorko.com/enterprise-value-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
