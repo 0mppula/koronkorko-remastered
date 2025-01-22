@@ -3,9 +3,15 @@ import TypographyH2 from '@/components/TypographyH2';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { calculators } from '@/constants/calculators';
-import { featuredApps } from '@/constants/data';
+import { appName, featuredApps } from '@/constants/data';
 import { ExternalLink } from 'lucide-react';
+import { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+	title: `Home - ${appName}`,
+	description: 'A finance web-application with various types of easy to use finance calculators',
+};
 
 export default function Home() {
 	return (
