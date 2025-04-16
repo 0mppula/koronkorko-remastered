@@ -4,6 +4,7 @@ import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
 	formatCurrency,
+	formatNumber,
 	formatPercentage,
 	getCurrencySymbol,
 	getDepositFrequencyShortLabel,
@@ -74,7 +75,7 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup header="Dollar Cost Average" value={formatCurrency(dollarCostAverage)} />
 
-			<ReportGroup header="Total Shares" value={totalShares.toFixed(2)} />
+			<ReportGroup header="Total Shares" value={formatNumber(totalShares, 2) || '0'} />
 
 			<ReportGroup header="Ending Share Price" value={formatCurrency(newSharePrice)} />
 

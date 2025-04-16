@@ -2,7 +2,7 @@ import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 import { EnterpriseValueReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -18,7 +18,7 @@ const Report = ({ report }: ReportProps) => {
 		<ReportSection>
 			<ReportGroup header="Share Price" value={formatCurrency(sharePrice, currency)} />
 
-			<ReportGroup header="Shares Outstanding" value={String(sharesOutstanding)} />
+			<ReportGroup header="Shares Outstanding" value={formatNumber(sharesOutstanding)} />
 
 			<ReportGroup header="Total Cash" value={formatCurrency(cash, currency)} />
 

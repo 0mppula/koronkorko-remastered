@@ -66,7 +66,10 @@ const PremiumModal = () => {
 								<CardContent className="grow">
 									<ul className="flex flex-col gap-2">
 										{plan.features.map((feature) => (
-											<li key={feature} className="flex gap-3">
+											<li
+												key={feature}
+												className="flex gap-3 text-neutral-700 dark:text-neutral-300"
+											>
 												<CircleCheck
 													aria-hidden
 													className="text-success size-5 min-w-5 min-h-5 mt-0.5"

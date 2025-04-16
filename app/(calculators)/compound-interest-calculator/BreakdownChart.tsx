@@ -80,15 +80,13 @@ const BreakdownChart = ({ report, data, breakdownInterval }: BreakdownChartProps
 	};
 
 	const tooltipLabelFormatter = (label: any) => {
-		if (breakdownInterval === 'yearly') {
-			return (
-				<span className="font-semibold">{`Year ${
-					(label + 1) % 12 === 0 ? label / 12 : label
-				}`}</span>
-			);
-		} else {
-			return <span className="font-semibold">{`Month ${label}`}</span>;
-		}
+		return (
+			<span className="text-neutral-700 dark:text-neutral-300 font-semibold">
+				{breakdownInterval === 'yearly'
+					? `Year ${(label + 1) % 12 === 0 ? label / 12 : label}`
+					: `Month ${label}`}
+			</span>
+		);
 	};
 
 	const tooltipFormatter = (value: number, _: any, props: any) => {

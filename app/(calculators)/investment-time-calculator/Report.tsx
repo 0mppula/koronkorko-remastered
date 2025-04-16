@@ -4,7 +4,7 @@ import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { formatCurrency, formatNumber, formatPercentage } from '@/lib/utils';
 import { InvestmentTimeReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -43,17 +43,17 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup
 				header="Years required"
-				value={isFinite(yearsRequired) ? yearsRequired.toFixed(2) : 'N/A'}
+				value={isFinite(yearsRequired) ? formatNumber(yearsRequired, 2) : 'N/A'}
 			/>
 
 			<ReportGroup
 				header="Months required"
-				value={isFinite(yearsRequired) ? monthsRequired.toFixed(2) : 'N/A'}
+				value={isFinite(yearsRequired) ? formatNumber(monthsRequired, 2) : 'N/A'}
 			/>
 
 			<ReportGroup
 				header="Days required"
-				value={isFinite(yearsRequired) ? daysRequired.toFixed(2) : 'N/A'}
+				value={isFinite(yearsRequired) ? formatNumber(daysRequired, 2) : 'N/A'}
 			/>
 		</ReportSection>
 	);

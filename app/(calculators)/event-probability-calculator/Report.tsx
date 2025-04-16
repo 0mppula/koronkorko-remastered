@@ -1,7 +1,7 @@
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
-import { formatPercentage } from '@/lib/utils';
+import { formatNumber, formatPercentage } from '@/lib/utils';
 import { EventProbabilityReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -29,7 +29,7 @@ const Report = ({ report }: ReportProps) => {
 				}
 			/>
 
-			<ReportGroup header="Total Attempts" value={eventTries.toString()} />
+			<ReportGroup header="Total Attempts" value={formatNumber(eventTries)} />
 
 			<ReportDivider />
 

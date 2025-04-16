@@ -4,7 +4,7 @@ import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 import { PriceToEarningsRatioReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -29,7 +29,7 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup
 				header="P/E Ratio"
-				value={isFinite(peRatio) ? peRatio.toFixed(2) : 'N/A'}
+				value={isFinite(peRatio) ? formatNumber(peRatio, 0) : 'N/A'}
 			/>
 		</ReportSection>
 	);

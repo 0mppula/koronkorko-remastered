@@ -4,6 +4,7 @@ import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
 import {
 	formatCurrency,
+	formatNumber,
 	formatPercentage,
 	getContributionFrequencyShortLabel,
 	getDurationLabel,
@@ -46,7 +47,7 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup
 				header="Duration"
-				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
+				value={`${formatNumber(duration, 2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
 
 			<ReportDivider />

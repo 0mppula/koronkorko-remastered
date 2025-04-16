@@ -31,8 +31,6 @@ const ReportSection = ({
 			) : (
 				<div className="w-full py-4 flex flex-wrap items-center gap-4">{children}</div>
 			)}
-
-			<Separator className="h-[2px] bg-primary dark:bg-primary" />
 		</section>
 	);
 };

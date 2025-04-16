@@ -14,7 +14,9 @@ const ReportGroup = ({ header, value, fullWidth = false }: ReportGroupProps) => 
 				fullWidth && 'sm:basis-full'
 			)}
 		>
-			<h3 className="text-xl font-semibold mb-2">{header}</h3>
+			<h3 className="text-xl font-semibold mb-2 text-neutral-700 dark:text-neutral-300">
+				{header}
+			</h3>
 
 			<h4 className="scroll-m-20 text-3xl font-bold transition-colors first:mt-0 sm:max-w-[672px] break-all sm:break-keep">
 				{value}

@@ -157,7 +157,6 @@ const Calculator = () => {
 												placeholder="10"
 												step="1"
 												type="number"
-												max={200}
 												min={0}
 												onBlur={(e) => {
 													ifFieldIsEmpty(e) &&

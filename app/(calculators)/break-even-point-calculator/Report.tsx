@@ -4,7 +4,7 @@ import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency, formatPercentage, getCurrencySymbol } from '@/lib/utils';
+import { formatCurrency, formatNumber, formatPercentage, getCurrencySymbol } from '@/lib/utils';
 import { BreakEvenPointReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -53,7 +53,7 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportGroup
 				header="Break Even Point (Unit)"
-				value={isFinite(breakEvenPointUnits) ? breakEvenPointUnits.toFixed(2) : 'N/A'}
+				value={isFinite(breakEvenPointUnits) ? formatNumber(breakEvenPointUnits, 2) : 'N/A'}
 			/>
 
 			<ReportGroup

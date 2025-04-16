@@ -20,7 +20,10 @@ export const formatPercentage = (value: number, fractionDigits = 2) => {
 	let formatted = '0.00%';
 
 	if (!isNaN(value)) {
-		formatted = `${Number(value).toFixed(fractionDigits)}%`;
+		formatted = `${new Intl.NumberFormat(undefined, {
+			minimumFractionDigits: fractionDigits,
+			maximumFractionDigits: fractionDigits,
+		}).format(value)}%`;
 	}
 	return formatted;
 };
@@ -115,4 +118,19 @@ export const formatCurrencyK = (
 		}).format(0);
 		return formatted;
 	}
+};
+
+export const formatNumber = (number: number, toFixedPrecision: number | null = null) => {
+	if (toFixedPrecision !== null) {
+		return new Intl.NumberFormat(undefined, {
+			minimumFractionDigits: toFixedPrecision,
+			maximumFractionDigits: toFixedPrecision,
+		}).format(isNaN(number) ? 0 : number);
+	}
+
+	if (isNaN(number)) {
+		return '0';
+	}
+
+	return new Intl.NumberFormat().format(number);
 };

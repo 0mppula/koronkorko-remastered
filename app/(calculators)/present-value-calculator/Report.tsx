@@ -4,7 +4,7 @@ import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
 import useCurrencyStore from '@/hooks/useCurrency';
-import { formatCurrency, formatPercentage, getDurationLabel } from '@/lib/utils';
+import { formatCurrency, formatNumber, formatPercentage, getDurationLabel } from '@/lib/utils';
 import { PresentValueReportProps } from '@/types/calculations';
 
 interface ReportProps {
@@ -25,7 +25,7 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup
 				fullWidth
 				header="Duration"
-				value={`${duration.toFixed(2)} ${getDurationLabel(durationMultiplier)}`}
+				value={`${formatNumber(duration, 2)} ${getDurationLabel(durationMultiplier)}`}
 			/>
 
 			<ReportDivider />
