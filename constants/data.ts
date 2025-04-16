@@ -26,7 +26,7 @@ export const featuredApps = [
 	},
 	{
 		name: 'KoronKorko (MERN)',
-		url: 'https://koronkorko.herokuapp.com/',
+		url: 'https://github.com/0mppula/KoronKorko',
 		description:
 			'An earlier version of KoronKorko built with the MERN stack. It mirrors the current functionality, enabling users to utilize various financial calculators and save their results. However, the current version boasts slight improvements.',
 	},
