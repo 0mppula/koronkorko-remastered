@@ -48,6 +48,7 @@ export default function page() {
 						target="_blank"
 					>
 						<TypographyH2 className="mb-2">{app.name}</TypographyH2>
+
 						<div className="absolute top-[26px] right-[20px]">
 							<ExternalLink className="w-[1.25rem] h-[1.25rem]" />
 						</div>
