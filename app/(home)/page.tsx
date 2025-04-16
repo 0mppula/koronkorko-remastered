@@ -13,7 +13,7 @@ import Link from 'next/link';
 // 	description: 'A finance web-application with various types of easy to use finance calculators.',
 // };
 
-export default function Home() {
+export default function page() {
 	return (
 		<>
 			<TypographyH1 className="mb-6">Choose a Calculator</TypographyH1>
