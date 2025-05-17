@@ -54,6 +54,7 @@ model User {
   DollarCostAverageCalculations    DollarCostAverageCalculation[]
   EnterpriseValueCalculations      EnterpriseValueCalculation[]
   Subscription                     Subscription?
+  LiquidationPriceCalculation      LiquidationPriceCalculation[]
 }
 
 enum Plan {
@@ -258,6 +259,22 @@ model EnterpriseValueCalculation {
   formData  EnterpriseValueCalculationFormData
   createdAt DateTime                           @default(now())
   updatedAt DateTime                           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type LiquidationPriceCalculationFormData {
+  entryPrice    Float
+  leverageRatio Float
+}
+
+model LiquidationPriceCalculation {
+  id        String                              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                              @db.ObjectId
+  name      String
+  formData  LiquidationPriceCalculationFormData
+  createdAt DateTime                            @default(now())
+  updatedAt DateTime                            @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
