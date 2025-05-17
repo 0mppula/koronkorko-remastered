@@ -146,6 +146,7 @@ export type ILiquidationPriceFormData = z.infer<typeof liquidationPriceFormDataS
 
 export interface LiquidationPriceReportProps extends ILiquidationPriceFormData {
 	liquidationPrice: number;
+	priceChangePercent: number;
 }
 
 export type CalculationType =
