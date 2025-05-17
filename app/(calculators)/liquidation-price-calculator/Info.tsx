@@ -7,9 +7,10 @@ const Info = () => {
 		<ReportSection title="What Is the Liquidation Price?">
 			<p>
 				The liquidation price is the price at which the broker forcibly closes out a
-				trader's position to prevent further losses. First, there's usually a warning in the
-				form of a margin call to deposit more funds that haven't been met. The broker
-				determines the threshold before a client begins trading in a margin account.
+				trader&apos;s position to prevent further losses. First, there&apos;s usually a
+				warning in the form of a margin call to deposit more funds that haven&apos;t been
+				met. The broker determines the threshold before a client begins trading in a margin
+				account.
 			</p>
 
 			<div className="mt-4">
