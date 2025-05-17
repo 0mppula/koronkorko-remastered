@@ -59,4 +59,10 @@ export const calculators = [
 		description:
 			'Calculate the enterprise value of a company, given its market capitalization, total debt, and total cash. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Liquidation Price Calculator',
+		url: 'liquidation-price-calculator',
+		description:
+			'Calculate the liquidation price of an asset, given its entry price and the leverage ratio of the investment. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

@@ -12,10 +12,12 @@ import {
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
 	IInvestmentTimeFormData,
+	ILiquidationPriceFormData,
 	IMarkupFormData,
 	IPresentValueFormData,
 	IPriceToEarningsRatioFormData,
 	InvestmentTimeReportProps,
+	LiquidationPriceReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
@@ -283,4 +285,16 @@ export const calculateEnterpriseValue = (
 	const enterpriseValue = marketCap + debt - cash;
 
 	return { sharePrice, sharesOutstanding, cash, debt, marketCap, enterpriseValue };
+};
+
+export const calculateLiquidationPrice = (
+	formData: ILiquidationPriceFormData
+): LiquidationPriceReportProps => {
+	const { entryPrice, leverageRatio } = formData;
+
+	//  liquidation price = entry price – (1/leverage ratio) * entry price
+	const liquidationPrice = entryPrice - (1 / leverageRatio) * entryPrice;
+	const priceChangePercent = ((liquidationPrice - entryPrice) / entryPrice) * 100;
+
+	return { entryPrice, leverageRatio, liquidationPrice, priceChangePercent };
 };

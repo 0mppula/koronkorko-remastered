@@ -162,3 +162,8 @@ export const enterpriseValueFormDataSchema = z.object({
 	cash: positiveNumberFieldSchema('Cash'),
 	debt: positiveNumberFieldSchema('Debt'),
 });
+
+export const liquidationPriceFormDataSchema = z.object({
+	entryPrice: positiveNumberFieldSchema('Entry price'),
+	leverageRatio: positiveNumberFieldSchema('Leverage'),
+});

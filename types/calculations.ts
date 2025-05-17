@@ -8,6 +8,7 @@ import {
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	investmentTimeFormDataSchema,
+	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
@@ -20,6 +21,7 @@ import {
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
 	InvestmentTimeCalculation,
+	LiquidationPriceCalculation,
 	MarkupCalculation,
 	PresentValueCalculation,
 	PriceToEarningsRatioCalculation,
@@ -139,6 +141,14 @@ export interface EnterpriseValueReportProps extends IEnterpriseValueFormData {
 	enterpriseValue: number;
 }
 
+// Liquidation Price Calculation
+export type ILiquidationPriceFormData = z.infer<typeof liquidationPriceFormDataSchema>;
+
+export interface LiquidationPriceReportProps extends ILiquidationPriceFormData {
+	liquidationPrice: number;
+	priceChangePercent: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -149,4 +159,5 @@ export type CalculationType =
 	| EventProbabilityCalculation
 	| PriceToEarningsRatioCalculation
 	| DollarCostAverageCalculation
-	| EnterpriseValueCalculation;
+	| EnterpriseValueCalculation
+	| LiquidationPriceCalculation;

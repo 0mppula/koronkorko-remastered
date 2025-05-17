@@ -14,6 +14,8 @@ export const PRICE_TO_EARNINGS_RATIO_CALCULATIONS_API_URL =
 export const DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL =
 	'/api/dollar-cost-average-calculations' as const;
 export const ENTERPRICE_VALUE_CALCULATIONS_API_URL = '/api/enterprise-value-calculations' as const;
+export const LIQUIDATION_PRICE_CALCULATIONS_API_URL =
+	'/api/liquidation-price-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -26,6 +28,7 @@ export const API_URLS = [
 	PRICE_TO_EARNINGS_RATIO_CALCULATIONS_API_URL,
 	DOLLAR_COST_AVERAGE_CALCULATIONS_API_URL,
 	ENTERPRICE_VALUE_CALCULATIONS_API_URL,
+	LIQUIDATION_PRICE_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -43,6 +46,7 @@ export const PRICE_TO_EARNINGS_RATIO_CALCULATIONS_QUERY_KEY =
 export const DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY =
 	'dollar-cost-average-calculations' as const;
 export const ENTERPRICE_VALUE_CALCULATIONS_QUERY_KEY = 'enterprise-value-calculations' as const;
+export const LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY = 'liquidation-price-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -55,4 +59,5 @@ export const QUERY_KEYS = [
 	PRICE_TO_EARNINGS_RATIO_CALCULATIONS_QUERY_KEY,
 	DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY,
 	ENTERPRICE_VALUE_CALCULATIONS_QUERY_KEY,
+	LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY,
 ] as const;
