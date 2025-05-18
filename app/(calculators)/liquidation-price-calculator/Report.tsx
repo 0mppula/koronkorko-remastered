@@ -17,7 +17,7 @@ const Report = ({ report }: ReportProps) => {
 	const { entryPrice, leverageRatio, liquidationPrice, priceChangePercent } = report;
 	return (
 		<ReportSection>
-			<ReportGroup header="Cost" value={formatCurrency(entryPrice, currency)} />
+			<ReportGroup header="Entry Price" value={formatCurrency(entryPrice, currency)} />
 
 			<ReportGroup header="Leverage Ratio" value={`${formatNumber(leverageRatio, 2)}`} />
 

@@ -6,14 +6,27 @@ import { calculators } from '@/constants/calculators';
 import { featuredApps } from '@/constants/data';
 import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import CalculatorSearch from './CalculatorSearch';
 
-export default function page() {
+export default function page({ searchParams }: { searchParams: { q?: string } }) {
+	const query = searchParams.q?.toLowerCase() || '';
+
+	const filteredCalculators = query
+		? calculators.filter(
+				(c) =>
+					c.name.toLowerCase().includes(query) ||
+					c.description.toLowerCase().includes(query)
+		  )
+		: calculators;
+
 	return (
 		<>
 			<TypographyH1 className="mb-6">Choose a Calculator</TypographyH1>
 
+			<CalculatorSearch filteredCound={filteredCalculators.length} />
+
 			<div className="grid w-full gap-4 grid-cols-1 sm:grid-cols-2">
-				{calculators.map((calculator, i) => (
+				{filteredCalculators.map((calculator, i) => (
 					<Link
 						key={`calculator-${i}`}
 						href={`/${calculator.url}`}
