@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { calculators } from '@/constants/calculators';
 import { featuredApps } from '@/constants/data';
+import { cn } from '@/lib/utils';
 import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import CalculatorSearch from './CalculatorSearch';
@@ -19,6 +20,38 @@ export default function page({ searchParams }: { searchParams: { q?: string } })
 		  )
 		: calculators;
 
+	const highlightText = (
+		content: string,
+		query: string,
+		Wrapper: React.ElementType,
+		className?: string,
+		highlightClassName?: string
+	) => {
+		const regex = new RegExp(`(${query})`, 'gi');
+
+		return (
+			<Wrapper className={className}>
+				{!query
+					? content
+					: content.split(regex).map((part, index) =>
+							part.toLowerCase() === query.toLowerCase() ? (
+								<span
+									key={part + index}
+									className={cn(
+										'bg-primary text-secondary-foreground',
+										highlightClassName
+									)}
+								>
+									{part}
+								</span>
+							) : (
+								part
+							)
+					  )}
+			</Wrapper>
+		);
+	};
+
 	return (
 		<>
 			<TypographyH1 className="mb-6">Choose a Calculator</TypographyH1>
@@ -33,13 +66,17 @@ export default function page({ searchParams }: { searchParams: { q?: string } })
 						className="p-4 hover:bg-muted focus-visible:bg-muted transition-all border-2 relative rounded-lg bg-card group"
 					>
 						<Card className="border-none group-hover:bg-muted group-focus-visible:bg-muted transition-all">
-							<TypographyH2 className="mb-2">{calculator.name}</TypographyH2>
+							{highlightText(calculator.name, query, TypographyH2, 'mb-2')}
 
 							<Separator className="h-[2px]" />
 
-							<p className="mt-4 text-neutral-700 dark:text-neutral-300">
-								{calculator.description}
-							</p>
+							{highlightText(
+								calculator.description,
+								query,
+								'p',
+								'mt-4 text-neutral-700 dark:text-neutral-300',
+								'font-semibold'
+							)}
 						</Card>
 					</Link>
 				))}

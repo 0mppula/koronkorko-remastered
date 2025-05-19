@@ -17,7 +17,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 	const [internalQuery, setInternalQuery] = useState(q);
 
 	useEffect(() => {
-		// 300ms debounce
+		// 200ms debounce
 		const timer = setTimeout(() => {
 			const params = new URLSearchParams(searchParams.toString());
 
@@ -29,7 +29,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 
 			// Update the URL query string without reloading the page
 			router.replace(`?${params.toString()}`);
-		}, 300);
+		}, 200);
 
 		return () => {
 			clearTimeout(timer);
