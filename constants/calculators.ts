@@ -65,4 +65,10 @@ export const calculators = [
 		description:
 			'Calculate the liquidation price of an asset, given its entry price and the leverage ratio of the investment. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Dividend Yield Calculator',
+		url: 'dividend-yield-calculator',
+		description:
+			'Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

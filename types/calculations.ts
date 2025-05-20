@@ -4,6 +4,7 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
@@ -17,6 +18,7 @@ import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
+	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
@@ -149,6 +151,14 @@ export interface LiquidationPriceReportProps extends ILiquidationPriceFormData {
 	priceChangePercent: number;
 }
 
+// Dividend Yield Calculation
+export type IDividendYieldFormData = z.infer<typeof dividendYieldFormDataSchema>;
+
+export interface DividendYieldReportProps extends IDividendYieldFormData {
+	annualizedDividend: number;
+	dividendYieldPercent: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -160,4 +170,5 @@ export type CalculationType =
 	| PriceToEarningsRatioCalculation
 	| DollarCostAverageCalculation
 	| EnterpriseValueCalculation
-	| LiquidationPriceCalculation;
+	| LiquidationPriceCalculation
+	| DividendYieldCalculation;

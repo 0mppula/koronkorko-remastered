@@ -54,8 +54,10 @@ export const getDurationLabel = (value: number) => {
 	return durationMultipliers.find((duration) => duration.value === value)?.label || 'Years';
 };
 
-export const getContributionFrequencyShortLabel = (value: number) => {
-	return contributionFrequencies.find((duration) => duration.value === value)?.shortLabel || 'y';
+export const getContributionFrequencyLabel = (value: number, short = false) => {
+	const key = short ? 'shortLabel' : 'label';
+
+	return contributionFrequencies.find((duration) => duration.value === value)?.[key] || 'y';
 };
 
 export const getDepositFrequencyShortLabel = (value: number) => {

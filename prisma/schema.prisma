@@ -55,6 +55,7 @@ model User {
   EnterpriseValueCalculations      EnterpriseValueCalculation[]
   Subscription                     Subscription?
   LiquidationPriceCalculation      LiquidationPriceCalculation[]
+  DividendYieldCalculation         DividendYieldCalculation[]
 }
 
 enum Plan {
@@ -275,6 +276,23 @@ model LiquidationPriceCalculation {
   formData  LiquidationPriceCalculationFormData
   createdAt DateTime                            @default(now())
   updatedAt DateTime                            @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type DividendYieldCalculationFormData {
+  dividendAmount        Float
+  distributionFrequency Float
+  sharePrice            Float
+}
+
+model DividendYieldCalculation {
+  id        String                           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                           @db.ObjectId
+  name      String
+  formData  DividendYieldCalculationFormData
+  createdAt DateTime                         @default(now())
+  updatedAt DateTime                         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

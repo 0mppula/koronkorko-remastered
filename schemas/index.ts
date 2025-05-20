@@ -167,3 +167,9 @@ export const liquidationPriceFormDataSchema = z.object({
 	entryPrice: positiveNumberFieldSchema('Entry price'),
 	leverageRatio: positiveNumberFieldSchema('Leverage'),
 });
+
+export const dividendYieldFormDataSchema = z.object({
+	dividendAmount: positiveNumberFieldSchema('Dividend amount'),
+	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
+	sharePrice: positiveNumberFieldSchema('Share price'),
+});
