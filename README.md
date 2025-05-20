@@ -79,6 +79,18 @@ Calculate the enterprise value of a company, given its market capitalization, to
 
 ---
 
+### [Liquidation Price Calculator][11]
+
+Calculate the liquidation price of an asset, given its entry price and the leverage ratio of the investment.
+
+---
+
+### [Dividend Yield Calculator][12]
+
+Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price.
+
+---
+
 [dev]: https://github.com/0mppula
 [site]: https://www.koronkorko.com/
 [1]: https://www.koronkorko.com/compound-interest-calculator
@@ -91,5 +103,7 @@ Calculate the enterprise value of a company, given its market capitalization, to
 [8]: https://www.koronkorko.com/price-to-earnings-ratio-calculator
 [9]: https://www.koronkorko.com/dollar-cost-average-calculator
 [10]: https://www.koronkorko.com/enterprise-value-calculator
+[11]: https://www.koronkorko.com/liquidation-price-calculator
+[12]: https://www.koronkorko.com/dividend-yield-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
