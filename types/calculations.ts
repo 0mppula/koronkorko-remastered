@@ -155,7 +155,8 @@ export interface LiquidationPriceReportProps extends ILiquidationPriceFormData {
 export type IDividendYieldFormData = z.infer<typeof dividendYieldFormDataSchema>;
 
 export interface DividendYieldReportProps extends IDividendYieldFormData {
-	dividendYield: number;
+	annualizedDividend: number;
+	dividendYieldPercent: number;
 }
 
 export type CalculationType =

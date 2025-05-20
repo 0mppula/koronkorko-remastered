@@ -182,6 +182,8 @@ export const durationMultipliers = [
 export const contributionFrequencies = [
 	// The value represents the contribution frequency per year in given option
 	{ value: 1, label: 'Annualy', shortLabel: 'y' },
+	{ value: 2, label: 'Bi-Annualy', shortLabel: 'h' },
+	{ value: 4, label: 'Quarterly', shortLabel: 'q' },
 	{ value: 12, label: 'Monthly', shortLabel: 'm' },
 ] as const;
 

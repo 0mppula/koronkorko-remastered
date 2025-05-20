@@ -6,7 +6,7 @@ import {
 	formatCurrency,
 	formatNumber,
 	formatPercentage,
-	getContributionFrequencyShortLabel,
+	getContributionFrequencyLabel,
 	getDurationLabel,
 } from '@/lib/utils';
 import { ReportProps } from './Calculator';
@@ -40,7 +40,7 @@ const Report = ({ report }: ReportProps) => {
 				value={`${formatCurrency(
 					contributionMultiplier * contribution,
 					currency
-				)}/${getContributionFrequencyShortLabel(contributionFrequency)}`}
+				)}/${getContributionFrequencyLabel(contributionFrequency, true)}`}
 			/>
 
 			<ReportGroup header="Annual interest rate" value={formatPercentage(interestRate)} />

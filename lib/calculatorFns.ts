@@ -2,12 +2,14 @@ import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
+	DividendYieldReportProps,
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
+	IDividendYieldFormData,
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
@@ -297,4 +299,22 @@ export const calculateLiquidationPrice = (
 	const priceChangePercent = ((liquidationPrice - entryPrice) / entryPrice) * 100;
 
 	return { entryPrice, leverageRatio, liquidationPrice, priceChangePercent };
+};
+
+export const calculateDividendYield = (
+	formData: IDividendYieldFormData
+): DividendYieldReportProps => {
+	const { distributionFrequency, dividendAmount, sharePrice } = formData;
+
+	const dividendYieldPercent = ((dividendAmount * distributionFrequency) / sharePrice) * 100;
+
+	const annualizedDividend = dividendAmount * distributionFrequency;
+
+	return {
+		distributionFrequency,
+		dividendAmount,
+		sharePrice,
+		annualizedDividend,
+		dividendYieldPercent,
+	};
 };
