@@ -28,8 +28,8 @@ Finance calculators must behave exactly as before.
 ## Out of scope
 
 - Any aviation calculator, Prisma calculation model or API route (02–05).
-- Pressure, distance, volume and mass unit preferences (added by 04 and 05; distance has no
-  preference until a calculator needs it).
+- Pressure and fuel unit preferences (added by 04 and 05). Distance has no preference until a
+  calculator needs it.
 - Angle/heading helpers (added by 02).
 - Changes to the currency toggler, theme toggler behavior, Stripe, auth, `featuredApps`, or plan
   copy in `constants/data.ts` `plans` (it says "Unlimited calculations", which is not
@@ -104,6 +104,8 @@ Finance calculators must behave exactly as before.
   existing grid/card markup for `filteredCalculators.filter((c) => c.category === category.value)`.
 - Skip a section when it has no calculators (no matches for the search, or no aviation calculators
   yet). Until 02 is merged, the page looks like today plus a "Finance" heading.
+- Search stays as it is: no category filter in v1, and it doesn't match category labels. Aviation
+  calculators are found by name and description like the others.
 - "Featured Apps" stays unchanged below the sections.
 - To avoid duplicating the divider markup three times, a small local component in `app/page.tsx` is
   fine (server component, no `'use client'`).
@@ -117,7 +119,7 @@ export const unitQuantities = [
 	{ value: 'speed', label: 'Speed' },
 	{ value: 'altitude', label: 'Altitude' },
 	{ value: 'temperature', label: 'Temperature' },
-] as const; // modal order; 04 adds 'pressure', 05 adds 'volume' and 'mass'
+] as const; // modal order; 04 adds 'pressure', 05 adds 'fuel'
 
 export const unitOptions = {
 	speed: [
@@ -141,7 +143,7 @@ export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number][
 export type UnitPreferences = { [Q in UnitQuantity]: UnitValue<Q> };
 
 export const BASE_UNITS: UnitPreferences = { speed: 'kt', altitude: 'ft', temperature: 'c' };
-export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
+export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS; // ICAO units
 
 export const toBaseUnit = (value: number, quantity: UnitQuantity, unit: string): number
 export const fromBaseUnit = (value: number, quantity: UnitQuantity, unit: string): number
@@ -153,6 +155,9 @@ export type UnitFields<TFormData> = Partial<Record<keyof TFormData, UnitQuantity
 export const formDataToBaseUnits = <T>(formData: T, unitFields: UnitFields<T>, units: UnitPreferences): T
 export const formDataFromBaseUnits = <T>(formData: T, unitFields: UnitFields<T>, units: UnitPreferences): T
 ```
+
+Speed options are decided: kt, km/h, mph, m/s. Defaults for new users and signed-out users are the
+ICAO units kt, ft and °C (no locale detection); when 04 adds pressure its default is hPa.
 
 Conversion definitions (all exact by definition; no rounding anywhere in conversion):
 
@@ -174,9 +179,12 @@ Notes:
   a helper for that.
 - `formatUnitValue` formats with `Intl.NumberFormat(undefined, { minimumFractionDigits,
 maximumFractionDigits })` like `formatNumber`/`formatPercentage` in `lib/utils.ts` and appends
-  `' ' + symbol` (e.g. `"1,250 ft"`, `"12.5 kt"`, `"15 °C"`). Default fraction digits: 0 for
-  altitude, 1 for speed and temperature (confirm, see open questions). Returns `0` formatted for
-  `NaN`, like `formatNumber`.
+  `' ' + symbol` (e.g. `"1,250 ft"`, `"12.5 kt"`, `"15.0 °C"`). Returns `0` formatted for `NaN`,
+  like `formatNumber`.
+- **Display precision (decided)**, used as `formatUnitValue`'s default per quantity: speeds 1
+  decimal, altitudes whole numbers, temperatures 1 decimal. Headings and angles are whole degrees
+  shown as three digits (e.g. `090°`); 02 adds `formatDegrees` for that. 04 and 05 set the
+  default precision for the quantities they add.
 - `withDefaultUnitPreferences` returns `DEFAULT_UNIT_PREFERENCES` overlaid with every valid value
   from the input; unknown quantities are dropped and invalid unit values fall back to the default.
   It is used for the persisted store, for `User.preferences.units` and anywhere old data may lack a
@@ -184,7 +192,9 @@ maximumFractionDigits })` like `formatNumber`/`formatPercentage` in `lib/utils.t
 - `formDataToBaseUnits`/`formDataFromBaseUnits` return a new object; only fields listed in
   `unitFields` are converted (using `units[quantity]`), other fields are copied unchanged. Field
   values may be numeric strings coming from inputs; convert with `Number(value)` and keep
-  non-numeric values unchanged so zod still reports them.
+  non-numeric values unchanged so zod still reports them. Empty values (`''`, `undefined`, `null`)
+  of optional fields (e.g. gust speed in 02, taxi fuel in 05) stay unchanged; never turn them into
+  `0`.
 
 ### `lib/units.test.ts`
 
@@ -199,12 +209,14 @@ Expected values come from the exact definitions in the table above:
 - Round trip `fromBaseUnit(toBaseUnit(x))` ≈ `x` for every option of every quantity.
 - Not rounded: `toBaseUnit(10, 'speed', 'kmh')` equals `10 / 1.852` exactly (`toBe`).
 - `getUnitSymbol('temperature', 'f')` → `'°F'`.
-- `formatUnitValue`: number + space + symbol, fraction digits respected, `NaN` handled (assert the
-  same way `lib/utils.test.ts` asserts `formatNumber`).
+- `formatUnitValue`: number + space + symbol, default precision per quantity (speed `12.5 kt`,
+  altitude `1,250 ft`, temperature `15.0 °C`), explicit fraction digits respected, `NaN` handled
+  (assert the same way `lib/utils.test.ts` asserts `formatNumber`).
 - `withDefaultUnitPreferences`: `null`/`undefined` → defaults; `{ speed: 'kmh' }` → defaults with
   `speed: 'kmh'`; `{ speed: 'furlongs' }` → default speed; extra keys dropped.
 - `formDataToBaseUnits`/`formDataFromBaseUnits`: converts mapped fields only, leaves other fields
-  untouched, does not mutate its input, accepts numeric strings.
+  untouched, does not mutate its input, accepts numeric strings, leaves empty optional values
+  (`''`, `undefined`, `null`) unchanged.
 
 ## 3. Units store: `hooks/useUnits.ts`
 
@@ -312,6 +324,7 @@ Callers (all must send `units`, since the route replaces the whole object):
   `mutate({ sessionStatus, theme: resolvedTheme || 'system', currency, units: values })` with the
   same `onMutate`/`onSuccess`/`onSettled` as the currency toggler and `onError` toast
   `'Something went wrong while saving your unit preferences. Please try again'`. Close the dialog.
+  No success toast: the dialog closing is the feedback (consistent with the currency toggler).
 - Check the Nav right group still fits on a 320px wide screen (logo + 4 buttons).
 
 ## 6. Unit-aware input and form pattern
@@ -457,11 +470,22 @@ Follow "Adding a calculator" with these differences:
 | `app/manifest.ts`            | "KoronKorko is a finance web-application with various types of easy to use finance calculators." | "KoronKorko is a web-application with easy to use finance and aviation calculators." |
 | `README.md` intro (line ~18) | "a full-stack finance web-app … KoronKorko has different types of finance calculators."          | "a full-stack web-app … KoronKorko has finance and aviation calculators."            |
 | `README.md` preferences      | "select a preferred currency in which all the monetary values are printed…"                      | Add: users can also choose units (speed, altitude, temperature) stored the same way. |
+| `README.md` calculator list  | "## Calculators of KoronKorko" lists finance calculators only                                    | Add an "Aviation Calculators" section (see below).                                   |
 | `AGENTS.md` Project          | "full-stack finance web app … with 12 finance calculators"                                       | See section 8.                                                                       |
 
 Not changed: `featuredApps` (decision), `plans` features, `app/thank-you/page.tsx`, `LoginModal`
 title, finance calculators' `Info.tsx` (they talk about finance correctly), "Choose a Calculator"
 heading.
+
+README: add an "Aviation Calculators" section after the existing calculator list, with a heading
+and a short intro (e.g. "Calculators for pilots and student pilots. Values can be entered and shown
+in the units chosen in the unit preferences."). It has no entries yet; each calculator branch adds
+its own entry in the same format as the existing list (`### [Name][n]`, a one-line description,
+`---` separator, and a link reference at the bottom).
+
+Footer: `components/Footer.tsx/index.tsx` renders `footerLinks` from `constants/data.ts`
+(Technologies, Resources, Developer, Other). It does not list calculators, so following the
+existing pattern means no footer change.
 
 ## Files to create or change
 
@@ -482,6 +506,7 @@ reset values), `constants/data.ts`, `app/layout.tsx`, `app/manifest.ts`, `README
 
 - Landing page shows a "Finance" section with all 12 calculators; no "Aviation" section until an
   aviation calculator exists; search hides empty sections; "Featured Apps" unchanged.
+- README has an "Aviation Calculators" section with heading and intro.
 - The `SlidersHorizontal` button is visible on every page (desktop and mobile), opens the modal
   with Speed, Altitude and Temperature selects showing the current values, and Save applies them.
 - Signed out: unit choice survives a reload (localStorage key `units`).
@@ -494,13 +519,4 @@ reset values), `constants/data.ts`, `app/layout.tsx`, `app/manifest.ts`, `README
 
 ## Open questions
 
-1. Speed options: kt, km/h, mph, m/s — keep all four, or drop mph/m/s?
-2. Defaults for new users: base units (kt, ft, °C)? Or derive from the browser locale (e.g. °F for
-   `en-US`)? The plan assumes base units.
-3. Default display precision: altitude 0 decimals, speed and temperature 1 decimal?
-4. Should search also match the category label (typing "aviation" lists all aviation
-   calculators)? The plan leaves search as is.
-5. Should `footerLinks` "Other" (Compound Interest Wikipedia, Investopedia) get aviation resources
-   such as the FAA Pilot's Handbook of Aeronautical Knowledge? Not in scope unless you want it.
-6. Should a success toast be shown after saving unit preferences? The currency toggler shows none;
-   the plan shows none.
+None at the moment.

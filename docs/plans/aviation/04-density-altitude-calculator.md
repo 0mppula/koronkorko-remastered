@@ -20,7 +20,8 @@ the density altitude. Adds the **pressure** unit preference.
 
 ## Out of scope
 
-- Humidity / dew point (dry air only).
+- Humidity / dew point (dry air only in v1; `Info.tsx` mentions that humidity raises density
+  altitude slightly).
 - Aircraft performance (takeoff distance, climb rate).
 - Altitudes above the ISA troposphere (11 km / 36,089 ft).
 
@@ -60,11 +61,11 @@ outsideAirTemperature: 'temperature' }`.
 - `unitQuantities`: add `{ value: 'pressure', label: 'Pressure' }`.
 - `unitOptions.pressure`: `{ value: 'hpa', label: 'Hectopascals (hPa)', symbol: 'hPa' }`
   (identity) and `{ value: 'inhg', label: 'Inches of mercury (inHg)', symbol: 'inHg' }` with
-  `hPa = inHg × 33.86389`. Source: NIST SP 811, Appendix B: inch of mercury (conventional) =
-  3.386389 × 10³ Pa. Verify the factor against NIST SP 811 before implementing.
-- `BASE_UNITS.pressure = 'hpa'`; default `'hpa'` (see open questions).
+  **`hPa = inHg × 33.8639`** (decided).
+- `BASE_UNITS.pressure = 'hpa'`; default `'hpa'` (decided, ICAO).
 - `prisma/schema.prisma` `type UnitPreferences`: add `pressure String?`. Run `npx prisma generate`.
-- Display: hPa with 0–1 decimals, inHg with 2 decimals (pass `fractionDigits` per unit).
+- Display: hPa with 0–2 decimals (no trailing zeros, so `1013.25 hPa`, `1013 hPa`), inHg with 2
+  decimals (`29.92 inHg`). Pass `fractionDigits` per unit.
 
 Temperature difference helper (add to `lib/units.ts`):
 `fromBaseTemperatureDifference(valueC, unit)` → `valueC` for °C, `valueC × 9/5` for °F (no
@@ -107,9 +108,9 @@ export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
 	z.object({
 		fieldElevation: unitNumberFieldSchema('Field elevation', 'altitude', units.altitude, {
 			min: -1500,
-			max: 15000,
+			max: 20000,
 		}),
-		qnh: unitNumberFieldSchema('QNH', 'pressure', units.pressure, { min: 870, max: 1090 }),
+		qnh: unitNumberFieldSchema('QNH', 'pressure', units.pressure, { min: 900, max: 1100 }),
 		outsideAirTemperature: unitNumberFieldSchema(
 			'Outside air temperature',
 			'temperature',
@@ -121,8 +122,9 @@ export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
 export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
 ```
 
-All limits are proposals in base units (see open questions). Messages show the user's unit, e.g.
-`"QNH cannot be lower than 25.69 inHg"`, `"Outside air temperature cannot be greater than 140 °F"`.
+Limits (decided, base units): elevation −1,500 to 20,000 ft, QNH 900–1,100 hPa, OAT −60 to +60 °C.
+Messages show the user's unit, e.g. `"QNH cannot be lower than 26.58 inHg"` (900 ÷ 33.8639),
+`"Outside air temperature cannot be greater than 140.0 °F"`.
 Every input inside the limits must give a finite result; if one doesn't, add an `it.fails` test
 named `BUG: ...`.
 
@@ -134,11 +136,12 @@ named `BUG: ...`.
   0.01), "Outside Air Temperature" (temperature symbol, `min0={false}`).
 - `Report.tsx`: inputs (elevation, QNH, OAT), `ReportDivider`, Pressure Altitude, ISA Temperature,
   ISA Deviation (signed, e.g. `"+19.9 °C"`, using the difference helper), Density Altitude,
-  `<AviationDisclaimer />`.
+  `<AviationDisclaimer />`. Altitudes as whole feet/metres, temperatures 1 decimal (01).
 - `Info.tsx`: what pressure and density altitude are, why high density altitude reduces aircraft
   performance (PHAK), that the calculator uses the exact ICAO Standard Atmosphere formulas (pressure
   altitude from QNH, then density altitude from air density), the rule of thumb of about 120 ft per
-  °C of ISA deviation as a mental check only, the disclaimer sentence, `ReportSource`
+  °C of ISA deviation as a mental check only, that the calculation assumes dry air and humidity
+  raises density altitude slightly, the disclaimer sentence, `ReportSource`
   to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
 
@@ -172,8 +175,8 @@ IDensityAltitudeFormData { pressureAltitude; isaTemperature; isaDeviation; densi
 
 Units (`lib/units.test.ts`):
 
-- `fromBaseUnit(33.86389, 'pressure', 'inhg')` → `1`; `toBaseUnit(29.92, 'pressure', 'inhg')` ≈
-  `29.92 × 33.86389` (after the factor is confirmed).
+- `fromBaseUnit(33.8639, 'pressure', 'inhg')` → `1`; `toBaseUnit(29.92, 'pressure', 'inhg')` →
+  `29.92 × 33.8639` (`toBeCloseTo`).
 - `fromBaseTemperatureDifference(10, 'f')` → `18`; `(10, 'c')` → `10`; `(0, 'f')` → `0`.
 - `withDefaultUnitPreferences({ speed: 'kmh' })` now also has `pressure: 'hpa'`.
 
@@ -187,13 +190,17 @@ Units (`lib/units.test.ts`):
 - 5000 ft ISA temperature: `15 − 0.0065 × 5000 × 0.3048 = 5.094 °C` (exact from the lapse rate).
 - With standard pressure (QNH 1013.25) PA equals the elevation for any elevation in range.
 - Higher OAT at the same PA gives higher DA; higher QNH at the same elevation gives lower PA.
-- Non-standard cases (hot day, low QNH): expected values must come from an independent source
-  chosen in the open questions (ICAO Doc 7488 tables, a PHAK worked example, or the National
-  Weather Service density altitude calculator), with the tolerance stated in the test. Don't
-  derive them by running the code.
-- Units: elevation 1524 m (= 5000 ft), QNH 29.92 inHg and OAT 41.17 °F (= 5.094 °C) give PA ≈ DA
-  ≈ 5000 ft within the precision of 29.92 inHg vs 1013.25 hPa (choose a tolerance after the factor
-  is confirmed).
+- Hot-day and non-standard cases (e.g. a high-elevation field on a hot day, a low QNH): compute the
+  expected values **independently with the exact ISA formulas above** (by hand or in a
+  spreadsheet, never by running `calculateDensityAltitude`) and **cross-check each case against an
+  established density altitude calculator**, e.g. the US National Weather Service one. That
+  calculator may ask for a dew point; use the driest input it allows and note it, since humidity
+  raises its result slightly. List the sources (title/URL, inputs entered, result shown) in a
+  comment at the top of the `describe('calculateDensityAltitude')` block, and choose a tolerance
+  that covers the cross-check's rounding (state it in the comment).
+- Units: elevation 1524 m (= 5000 ft), QNH 29.92 inHg (= 1013.21 hPa, close to standard) and OAT
+  41.17 °F (= 5.094 °C) give PA ≈ DA ≈ 5000 ft; the tolerance must allow for 29.92 × 33.8639 not
+  being exactly 1013.25 (about 1 ft).
 
 Schema: valid input passes; missing fields; elevation and OAT may be negative; each limit accepted
 at the boundary and rejected beyond it; messages in inHg/°F/m when those units are used; numeric
@@ -205,6 +212,9 @@ strings coerced.
   `pressure` get the default without losing other unit choices.
 - `/density-altitude-calculator` appears in the Aviation section and in search.
 - Results match the test cases; ISA deviation in °F is a difference (10 °C → 18 °F, not 50 °F).
+- The test file lists the cross-check sources for the hot-day cases.
+- Info mentions the rule of thumb (about 120 ft per °C) and that humidity raises density altitude
+  slightly.
 - Switching altitude, pressure or temperature units converts the form and report without changing
   physical values; storage is ft/hPa/°C.
 - Save, rename, update, import, delete and free-plan limit work. Disclaimer present.
@@ -212,11 +222,4 @@ strings coerced.
 
 ## Open questions
 
-1. **Reference values.** Which source provides the non-standard expected values for tests (ICAO Doc
-   7488 table, PHAK worked example, NWS calculator), and what tolerance?
-2. **inHg factor.** Confirm 1 inHg = 33.86389 hPa (NIST SP 811, conventional inch of mercury).
-3. **Default pressure unit.** hPa (ICAO) for everyone, or inHg when other preferences suggest US
-   units?
-4. **Limits.** Elevation −1,500 to 15,000 ft, QNH 870–1,090 hPa, OAT −60 to +60 °C?
-5. **Humidity.** Dew point input for moist-air density altitude? Out of scope for now.
-6. **Precision.** PA and DA to the nearest foot (or 10/100 ft), temperatures to 1 decimal?
+None at the moment.

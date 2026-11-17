@@ -31,14 +31,17 @@ limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator.
    stays unchanged. A new Nav button with the lucide `SlidersHorizontal` icon, shown on every page
    and screen size, opens a unit preferences modal (existing `components/ui/dialog.tsx` and
    `components/ui/select.tsx` styling) with a Save button. It starts with **speed, altitude and
-   temperature**. Other unit preferences (pressure, fuel volume, mass) are added only by the
-   calculator that first needs them.
+   temperature**. Other unit preferences (pressure, fuel) are added only by the calculator that
+   first needs them. Defaults follow ICAO: kt, ft, °C, and hPa once pressure exists.
 6. **Preference storage.** Unit preferences are stored in `User.preferences` next to `theme` and
    `currency`, synced the same way as currency (`UserPreferencesProvider`, `updateUserPreferences`),
    with defaults for users who have none. Locally they live in a persisted Zustand store.
 7. **Disclaimer.** A reusable, subtle disclaimer: a small muted line under each aviation report
    ("For training and educational use only. Not for flight planning or navigation.") plus a
    sentence in each aviation `Info.tsx`.
+8. **README.** The foundation adds an "Aviation Calculators" section to `README.md` (heading and
+   a short intro). Each calculator branch adds its own entry there, in the same format as the
+   existing calculator list.
 
 ## Feature order and status
 
@@ -53,7 +56,7 @@ Each feature has its own plan file and branch. Update this checklist in the feat
 - [ ] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
       `feature/density-altitude-calculator` (adds the pressure unit)
 - [ ] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
-      `feature/fuel-planning-calculator` (adds fuel volume and mass units)
+      `feature/fuel-planning-calculator` (adds the fuel unit: L, US gal, kg, lb)
 
 01 must be merged first. 02–05 depend on 01; 03 reuses angle helpers added in 02. 04 and 05 are
 independent of each other but each extends the units system, so merge one before starting the
@@ -94,5 +97,4 @@ collections are created on first insert and the new models have no unique indexe
 
 ## Open questions
 
-1. Should the README list aviation calculators in a separate "Aviation Calculators" section (each
-   calculator PR adds its entry)? The plans assume yes.
+None at the moment.
