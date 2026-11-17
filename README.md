@@ -9,11 +9,11 @@
     </a>
 </div>
 
+## What is KoronKorko?
+
 [KoronKorko][site] was previously created using the MERN stack with vanilla JavaScript & CSS. However, this implementation is a remastered version of the previous one and is developed using Next.js, NextAuth, MongoDB with Prisma, TypeScript and Tailwind CSS.
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
-
-## What is KoronKorko?
 
 [KoronKorko][site] is a full-stack finance web-app developed by [Omar Kraidié][dev]. KoronKorko has different types of finance calculators. All the available calculators are listed below in this `README.md` file.
 
