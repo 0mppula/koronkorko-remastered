@@ -46,7 +46,8 @@ synced to `User.preferences` for signed-in users.
 `DATABASE_URL`, `NEXTAUTH_SECRET`, `GITHUB_ID`, `GITHUB_SECRET`, `GOOGLE_CLIENT_ID`,
 `GOOGLE_CLIENT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `STRIPE_{WEEKLY,MONTHLY,YEARLY}_PREMIUM_PRICE_ID`, `NEXT_PUBLIC_STRIPE_{WEEKLY,MONTHLY,YEARLY}_PREMIUM_LINK`,
-`NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL`. (`NEXTAUTH_URL` is not referenced in code.)
+`NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL`. `NEXTAUTH_URL` is read automatically by NextAuth:
+`http://localhost:3000` for local development, not needed on Vercel.
 
 ## Adding a calculator (mirror `dividend-yield-calculator`)
 

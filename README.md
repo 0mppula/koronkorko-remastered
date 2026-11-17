@@ -129,6 +129,7 @@ cp .env.example .env
 ```bash
 DATABASE_URL=                            # MongoDB connection string
 NEXTAUTH_SECRET=                         # Random secret used to sign NextAuth JWTs
+NEXTAUTH_URL=http://localhost:3000       # App URL for NextAuth (local development only, not needed on Vercel)
 GITHUB_ID=                               # GitHub OAuth app client ID
 GITHUB_SECRET=                           # GitHub OAuth app client secret
 GOOGLE_CLIENT_ID=                        # Google OAuth client ID
