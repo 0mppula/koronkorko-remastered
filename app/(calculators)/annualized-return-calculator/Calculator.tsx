@@ -41,9 +41,9 @@ import Info from './Info';
 import Report from './Report';
 
 const defaultValues: IAnnualizedReturnFormData = {
-	startingBalance: 0,
+	startingBalance: 1,
 	endingBalance: 0,
-	duration: 0,
+	duration: 1,
 	durationMultiplier: 12,
 };
 

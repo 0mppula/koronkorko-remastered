@@ -46,7 +46,7 @@ export interface ReportProps {
 
 const defaultValues: IDollarCostAverageFormData = {
 	initialInvestment: 0,
-	sharePrice: 0,
+	sharePrice: 1,
 	deposit: 0,
 	depositFrequency: 30.416666666666666666666666666667,
 	interestRate: 0,

@@ -32,8 +32,8 @@ import Info from './Info';
 import Report from './Report';
 
 const defaultValues: ILiquidationPriceFormData = {
-	entryPrice: 0,
-	leverageRatio: 0,
+	entryPrice: 1,
+	leverageRatio: 1,
 };
 
 const Calculator = () => {

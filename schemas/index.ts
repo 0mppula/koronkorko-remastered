@@ -18,10 +18,14 @@ export const calculationNameFormDataSchema = z.object({
 });
 
 const numberFieldSchema = (fieldName = 'Number') => {
-	return z.coerce.number({
-		required_error: `${fieldName} is required`,
-		invalid_type_error: `${fieldName} has to be a number`,
-	});
+	return z.coerce
+		.number({
+			required_error: `${fieldName} is required`,
+			invalid_type_error: `${fieldName} has to be a number`,
+		})
+		.finite({
+			message: `${fieldName} has to be a finite number`,
+		});
 };
 
 const positiveNumberFieldSchema = (fieldName = 'Number') => {
@@ -29,6 +33,9 @@ const positiveNumberFieldSchema = (fieldName = 'Number') => {
 		.number({
 			required_error: `${fieldName} is required`,
 			invalid_type_error: `${fieldName} has to be a number`,
+		})
+		.finite({
+			message: `${fieldName} has to be a finite number`,
 		})
 		.min(0, {
 			message: `${fieldName} cannot be negative`,
@@ -47,6 +54,12 @@ const positiveIntegerFieldSchema = (fieldName = 'Number') => {
 		});
 };
 
+const greaterThanZeroNumberFieldSchema = (fieldName = 'Number') => {
+	return numberFieldSchema(fieldName).gt(0, {
+		message: `${fieldName} must be greater than 0`,
+	});
+};
+
 const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => {
 	return positiveNumberFieldSchema(fieldName).max(max, {
 		message: `${fieldName} cannot be greater than ${max}`,
@@ -58,11 +71,21 @@ export const markupFormDataSchema = z.object({
 	salesPrice: positiveNumberFieldSchema('Sales price'),
 });
 
-export const breakEvenPointFormDataSchema = z.object({
-	fixedCosts: positiveNumberFieldSchema('Fixed costs'),
-	variableCostPerUnit: positiveNumberFieldSchema('Variable cost per unit'),
-	pricePerUnit: positiveNumberFieldSchema('Price per unit'),
-});
+export const breakEvenPointFormDataSchema = z
+	.object({
+		fixedCosts: positiveNumberFieldSchema('Fixed costs'),
+		variableCostPerUnit: positiveNumberFieldSchema('Variable cost per unit'),
+		pricePerUnit: positiveNumberFieldSchema('Price per unit'),
+	})
+	.superRefine((data, ctx) => {
+		if (data.pricePerUnit <= data.variableCostPerUnit) {
+			ctx.addIssue({
+				message: 'Price per unit must be greater than variable cost per unit',
+				code: z.ZodIssueCode.custom,
+				path: ['pricePerUnit'],
+			});
+		}
+	});
 
 export const investmentTimeFormDataSchema = z
 	.object({
@@ -97,10 +120,12 @@ export const presentValueFormDataSchema = z.object({
 });
 
 export const annualizedReturnFormDataSchema = z.object({
-	startingBalance: positiveNumberFieldSchema('Initial value'),
+	startingBalance: greaterThanZeroNumberFieldSchema('Initial value'),
 	endingBalance: positiveNumberFieldSchema('Ending value'),
-	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
-	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
+	duration: greaterThanZeroNumberFieldSchema('Duration').max(200, {
+		message: 'Duration cannot be greater than 200',
+	}),
+	durationMultiplier: greaterThanZeroNumberFieldSchema('Duration multiplier'),
 });
 
 export const compoundInterestFormDataSchema = z.object({
@@ -111,24 +136,12 @@ export const compoundInterestFormDataSchema = z.object({
 			required_error: 'Contribution multiplier is required',
 			invalid_type_error: 'Contribution multiplier has to be a number',
 		})
-		.min(-1, {
-			message: `Contribution multiplier must be either -1 or 1`,
-		})
-		.max(1, {
-			message: `Contribution multiplier must be either -1 or 1`,
-		})
-		.superRefine((value, ctx) => {
-			if (value === 0) {
-				ctx.addIssue({
-					message: 'Contribution multiplier must be either -1 or 1',
-					code: z.ZodIssueCode.custom,
-					path: ['contributionMultiplier'],
-				});
-			}
+		.refine((value) => value === -1 || value === 1, {
+			message: 'Contribution multiplier must be either -1 or 1',
 		}),
 	contributionFrequency: positiveNumberFieldSchema('Contribution frequency'),
 	interestRate: positiveNumberFieldSchema('Interest rate'),
-	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
+	compoundFrequency: greaterThanZeroNumberFieldSchema('Compound frequency'),
 	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });
@@ -147,12 +160,12 @@ export const priceToEarningsRatioFormDataSchema = z.object({
 
 export const dollarCostAverageFormDataSchema = z.object({
 	initialInvestment: positiveNumberFieldSchema('Initial investment'),
-	sharePrice: positiveNumberFieldSchema('Share price'),
+	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
 	deposit: positiveNumberFieldSchema('Deposit'),
-	depositFrequency: positiveNumberFieldSchema('Deposit frequency'),
+	depositFrequency: greaterThanZeroNumberFieldSchema('Deposit frequency'),
 	interestRate: positiveNumberFieldSchema('Interest rate'),
-	compoundFrequency: positiveNumberFieldSchema('Compound frequency'),
-	duration: positiveNumberFieldSchema('Duration'),
+	compoundFrequency: greaterThanZeroNumberFieldSchema('Compound frequency'),
+	duration: positiveNumberFieldSchemaWithMax('Duration', 200),
 	durationMultiplier: positiveNumberFieldSchema('Duration multiplier'),
 });
 
@@ -164,12 +177,14 @@ export const enterpriseValueFormDataSchema = z.object({
 });
 
 export const liquidationPriceFormDataSchema = z.object({
-	entryPrice: positiveNumberFieldSchema('Entry price'),
-	leverageRatio: positiveNumberFieldSchema('Leverage'),
+	entryPrice: greaterThanZeroNumberFieldSchema('Entry price'),
+	leverageRatio: numberFieldSchema('Leverage').min(1, {
+		message: 'Leverage cannot be less than 1',
+	}),
 });
 
 export const dividendYieldFormDataSchema = z.object({
 	dividendAmount: positiveNumberFieldSchema('Dividend amount'),
 	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
-	sharePrice: positiveNumberFieldSchema('Share price'),
+	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
 });

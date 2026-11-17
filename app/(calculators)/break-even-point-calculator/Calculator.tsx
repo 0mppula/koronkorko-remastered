@@ -33,7 +33,7 @@ import Report from './Report';
 const defaultValues: IBreakEvenPointFormData = {
 	fixedCosts: 0,
 	variableCostPerUnit: 0,
-	pricePerUnit: 0,
+	pricePerUnit: 1,
 };
 
 const Calculator = () => {

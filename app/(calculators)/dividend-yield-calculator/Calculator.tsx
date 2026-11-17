@@ -42,7 +42,7 @@ import Info from './Info';
 const defaultValues: IDividendYieldFormData = {
 	distributionFrequency: 1,
 	dividendAmount: 0,
-	sharePrice: 0,
+	sharePrice: 1,
 };
 
 const Calculator = () => {
