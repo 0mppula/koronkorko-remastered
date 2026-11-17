@@ -57,13 +57,15 @@ synced to `User.preferences` for signed-in users.
 4. `lib/calculatorFns.ts`: `calculate<X>(formData): <X>ReportProps`.
 5. `lib/calculatorFns.test.ts`: add a `describe` block with normal and edge cases. Expected values
    must come from standard formulas or worked examples, not from running the code.
-6. `constants/api.ts`: `<X>_CALCULATIONS_API_URL` + `_QUERY_KEY`, added to `API_URLS` / `QUERY_KEYS`.
-7. `constants/calculators.ts`: `{ name, url, description }` (drives home page, search, metadata).
-8. `app/api/<x>-calculations/route.ts` (`POST` with session + free-plan limit check, `GET`) and
+6. `schemas/index.test.ts`: add a `describe` block for `<x>FormDataSchema` (valid input, missing,
+   negative and out-of-range values, coercion, and `BUG:` cases for inputs with no valid result).
+7. `constants/api.ts`: `<X>_CALCULATIONS_API_URL` + `_QUERY_KEY`, added to `API_URLS` / `QUERY_KEYS`.
+8. `constants/calculators.ts`: `{ name, url, description }` (drives home page, search, metadata).
+9. `app/api/<x>-calculations/route.ts` (`POST` with session + free-plan limit check, `GET`) and
    `[id]/route.ts` (`PUT`, `DELETE`, scoped by `userId`). Parse bodies with the zod schemas.
-9. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
-   `Calculator.tsx` (form + `useCalculator` + `useQuery(getCalculations)` + `FormControlsTop`),
-   `Report.tsx` (`ReportSection`/`ReportGroup`), `Info.tsx` (static explanation + `ReportSource`).
+10. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
+    `Calculator.tsx` (form + `useCalculator` + `useQuery(getCalculations)` + `FormControlsTop`),
+    `Report.tsx` (`ReportSection`/`ReportGroup`), `Info.tsx` (static explanation + `ReportSource`).
 
 ## Conventions
 
@@ -98,6 +100,8 @@ synced to `User.preferences` for signed-in users.
 - The folder `components/Footer.tsx/` has `.tsx` in its name.
 - Existing `react-hooks/exhaustive-deps` lint warnings. Don't fix them unless asked; changing hook
   dependencies can change behavior. New code shouldn't add new warnings.
+- Renaming sends the stored `formData` to the `PUT` route, which re-validates it. Tightening a
+  schema can block renaming (and updating) calculations already saved with now-invalid values.
 
 ## Rules for the agent
 
