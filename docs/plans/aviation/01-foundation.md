@@ -352,8 +352,15 @@ given, behavior is identical to today (finance calculators don't change). When i
   `JSON.stringify(formDataFromBaseUnits(activeCalculation.formData, ...))` vs
   `JSON.stringify(form.getValues())` (deterministic, avoids float noise from converting back), and
   sends `formDataToBaseUnits(form.getValues(), ...)` as `formData`.
-- `handleImport` → `form.reset(formDataFromBaseUnits(formData, ...))`, then `form.trigger()` as
-  today, then `calcFn(formData)` (stored data is already base units).
+- `handleImport` → `form.reset(formDataFromBaseUnits(formData, ...))`, then `await form.trigger()`
+  (validates the converted values with the current units' schema):
+    - If it passes: `setReport(calcFn(formData))` (stored data is already base units) and the
+      success toast `` `${name} imported` ``.
+    - If it fails: keep today's behavior: error toast
+      `` `${name} has invalid values. Fix them and calculate again.` ``, `setReport(null)`, and the
+      field errors stay visible in the form. `calcFn` is not called.
+    - In both cases the calculation becomes the active calculation and the import modal closes, as
+      today.
 - When `units` change while the calculator is open (user saves the units modal), convert the
   current form values from the previous units to the new ones
   (`formDataFromBaseUnits(formDataToBaseUnits(values, fields, prevUnits), fields, units)`, previous
