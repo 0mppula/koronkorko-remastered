@@ -26,7 +26,7 @@ synced to `User.preferences` for signed-in users.
 - Lint `npm run lint` (`next/core-web-vitals`) · Typecheck `npm run typecheck`
 - Format `npm run format` · Check formatting `npm run format:check` (Prettier)
 - Prisma client `npx prisma generate` · Schema sync (no migrations) `npx prisma db push`
-- Tests: none configured
+- Test `npm test` (Vitest, single run) · Watch `npm run test:watch`
 
 ## Structure
 
@@ -55,11 +55,13 @@ synced to `User.preferences` for signed-in users.
 2. `schemas/index.ts`: `<x>FormDataSchema` (use helpers like `positiveNumberFieldSchema`).
 3. `types/calculations.ts`: `I<X>FormData = z.infer<...>`, `<X>ReportProps`, add to `CalculationType`.
 4. `lib/calculatorFns.ts`: `calculate<X>(formData): <X>ReportProps`.
-5. `constants/api.ts`: `<X>_CALCULATIONS_API_URL` + `_QUERY_KEY`, added to `API_URLS` / `QUERY_KEYS`.
-6. `constants/calculators.ts`: `{ name, url, description }` (drives home page, search, metadata).
-7. `app/api/<x>-calculations/route.ts` (`POST` with session + free-plan limit check, `GET`) and
+5. `lib/calculatorFns.test.ts`: add a `describe` block with normal and edge cases. Expected values
+   must come from standard formulas or worked examples, not from running the code.
+6. `constants/api.ts`: `<X>_CALCULATIONS_API_URL` + `_QUERY_KEY`, added to `API_URLS` / `QUERY_KEYS`.
+7. `constants/calculators.ts`: `{ name, url, description }` (drives home page, search, metadata).
+8. `app/api/<x>-calculations/route.ts` (`POST` with session + free-plan limit check, `GET`) and
    `[id]/route.ts` (`PUT`, `DELETE`, scoped by `userId`). Parse bodies with the zod schemas.
-8. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
+9. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
    `Calculator.tsx` (form + `useCalculator` + `useQuery(getCalculations)` + `FormControlsTop`),
    `Report.tsx` (`ReportSection`/`ReportGroup`), `Info.tsx` (static explanation + `ReportSource`).
 
@@ -101,13 +103,15 @@ synced to `User.preferences` for signed-in users.
 
 - Match the style and patterns of the surrounding code. Don't refactor, rename or restyle code
   outside the scope of the task.
-- Run `npm run lint`, `npm run typecheck` and `npm run format:check` after changes; fix
-  errors before finishing.
+- Run `npm run lint`, `npm run typecheck`, `npm run format:check` and `npm test` after
+  changes; fix errors before finishing.
 - Don't add new dependencies without asking. Keep changes small and focused.
 - Never edit or print `.env*` files or secrets (`.env.example` holds names only and may be edited).
 - After changing `prisma/schema.prisma`, run `npx prisma generate`. Never run
   `prisma db push` without asking, since it changes the real database.
 - Don't change Stripe or auth logic unless the task is explicitly about it.
+- Stripe (checkout, webhook, customer portal) and auth flows are intentionally not tested. Don't
+  add tests for them unless asked; mock subscription status where needed.
 - Reuse existing shadcn/ui and `components/Form`/`Report` components before creating new ones.
 
 ## Git
