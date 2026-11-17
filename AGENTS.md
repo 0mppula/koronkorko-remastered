@@ -75,7 +75,26 @@ synced to `User.preferences` for signed-in users.
 - Keep the free-plan limit checks: client-side (`checkCalculationLimit` in `lib/queryFns`) and
   server-side in every `POST` route.
 - Use the `@/` import alias.
-- Route handlers must `return` their error responses in `catch` blocks.
+- Route handlers must `return` their error responses in `catch` blocks: `400` with the first zod
+  issue message for a `ZodError`, `500` with `"Something went wrong"` for other errors.
+
+## Testing
+
+- New or changed logic in `lib/`, `schemas/`, `hooks/` or `lib/queryFns/` gets unit tests in the
+  same task. Tests live next to the source as `*.test.ts`.
+- Bug fixes: first write a test that fails because of the bug, then fix the code so it passes.
+- Expected values come from the spec, formulas or worked examples, never from running the
+  current code.
+- Vitest runs in a Node environment. Don't add React component tests or new test dependencies
+  (jsdom, Testing Library, Playwright) without asking.
+- Mock external calls the way `lib/queryFns/calculations.test.ts` mocks axios. Never call the
+  real database, Stripe or auth providers in tests.
+- Stripe (checkout, webhook, customer portal) and auth flows are intentionally not tested. Don't
+  add tests for them unless asked; mock subscription status where needed.
+- If you find a bug you aren't fixing in the current task, add an `it.fails` test named
+  `BUG: ...` instead of changing the code.
+- Known bugs are `it.fails` tests named `BUG: ...`. When fixing a bug, change its `it.fails` to
+  `it` and remove the `BUG: ` prefix.
 
 ## Code style
 
@@ -101,8 +120,6 @@ synced to `User.preferences` for signed-in users.
 - The folder `components/Footer.tsx/` has `.tsx` in its name.
 - Existing `react-hooks/exhaustive-deps` lint warnings. Don't fix them unless asked; changing hook
   dependencies can change behavior. New code shouldn't add new warnings.
-- Renaming sends the stored `formData` to the `PUT` route, which re-validates it. Tightening a
-  schema can block renaming (and updating) calculations already saved with now-invalid values.
 
 ## Rules for the agent
 
@@ -117,10 +134,6 @@ synced to `User.preferences` for signed-in users.
 - After changing `prisma/schema.prisma`, run `npx prisma generate`. Never run
   `prisma db push` without asking, since it changes the real database.
 - Don't change Stripe or auth logic unless the task is explicitly about it.
-- Stripe (checkout, webhook, customer portal) and auth flows are intentionally not tested. Don't
-  add tests for them unless asked; mock subscription status where needed.
-- Known bugs are `it.fails` tests named `BUG: ...`. When fixing a bug, change its `it.fails` to
-  `it` and remove the `BUG: ` prefix.
 - Reuse existing shadcn/ui and `components/Form`/`Report` components before creating new ones.
 
 ## Git
@@ -136,3 +149,8 @@ synced to `User.preferences` for signed-in users.
   always fine.
 - Commit messages: short, imperative mood, no trailing period (e.g. "Add dividend yield
   calculator").
+- Branch names: `<type>/<short-kebab-case-description>`, e.g. `feature/savings-goal-calculator`.
+  Types: `feature/` (new functionality), `fix/` (bug fixes), `chore/` (tooling, config,
+  dependencies), `docs/` (documentation only), `test/` (tests only).
+- When I ask you to start work on a branch without naming it, propose a name following this rule.
+- Always create new branches from an up-to-date `master`.
