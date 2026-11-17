@@ -105,6 +105,8 @@ synced to `User.preferences` for signed-in users.
   outside the scope of the task.
 - Run `npm run lint`, `npm run typecheck`, `npm run format:check` and `npm test` after
   changes; fix errors before finishing.
+- CI (`.github/workflows/ci.yml`) runs `npx prisma generate`, lint, typecheck, format check and
+  tests on every PR and push to `master`. It doesn't build; Vercel builds every push.
 - Don't add new dependencies without asking. Keep changes small and focused.
 - Never edit or print `.env*` files or secrets (`.env.example` holds names only and may be edited).
 - After changing `prisma/schema.prisma`, run `npx prisma generate`. Never run
