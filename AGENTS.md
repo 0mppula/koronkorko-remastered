@@ -151,6 +151,9 @@ synced to `User.preferences` for signed-in users.
   calculator").
 - Branch names: `<type>/<short-kebab-case-description>`, e.g. `feature/savings-goal-calculator`.
   Types: `feature/` (new functionality), `fix/` (bug fixes), `chore/` (tooling, config,
-  dependencies), `docs/` (documentation only), `test/` (tests only).
+  dependencies), `docs/` (documentation only), `test/` (tests only), `epic/` (long-lived
+  integration branch for a larger feature set).
 - When I ask you to start work on a branch without naming it, propose a name following this rule.
-- Always create new branches from an up-to-date `master`.
+- Always create new branches from an up-to-date `master`, except feature branches that belong
+  to an epic: create them from the up-to-date `epic/` branch, and target their PRs at the epic,
+  not `master`.
