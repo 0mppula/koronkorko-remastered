@@ -81,7 +81,7 @@ export const formatCurrency = (
 				formatted = '£0.00';
 				break;
 			case 'jpy':
-				formatted = '¥0.00';
+				formatted = '¥0';
 				break;
 			case 'inr':
 				formatted = '₹0.00';

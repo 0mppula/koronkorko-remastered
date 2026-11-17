@@ -62,22 +62,28 @@ const Report = ({ report }: ReportProps) => {
 
 			<ReportDivider />
 
-			<ReportGroup header="Total Invested" value={formatCurrency(totalInvested)} />
+			<ReportGroup header="Total Invested" value={formatCurrency(totalInvested, currency)} />
 
-			<ReportGroup header="Ending Value" value={formatCurrency(endingValue)} />
+			<ReportGroup header="Ending Value" value={formatCurrency(endingValue, currency)} />
 
 			<ReportGroup
 				header={`Total Return ${getCurrencySymbol(currency)}`}
-				value={formatCurrency(totalReturn)}
+				value={formatCurrency(totalReturn, currency)}
 			/>
 
 			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
-			<ReportGroup header="Dollar Cost Average" value={formatCurrency(dollarCostAverage)} />
+			<ReportGroup
+				header="Dollar Cost Average"
+				value={formatCurrency(dollarCostAverage, currency)}
+			/>
 
 			<ReportGroup header="Total Shares" value={formatNumber(totalShares, 2) || '0'} />
 
-			<ReportGroup header="Ending Share Price" value={formatCurrency(newSharePrice)} />
+			<ReportGroup
+				header="Ending Share Price"
+				value={formatCurrency(newSharePrice, currency)}
+			/>
 
 			<ReportGroup header="Price Change %" value={formatPercentage(AbosluteReturnPercent)} />
 		</ReportSection>

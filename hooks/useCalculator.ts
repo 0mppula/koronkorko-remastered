@@ -156,15 +156,22 @@ const useCalculator = <
 	);
 
 	const handleImport = useCallback(
-		(calculation: TCalculation) => {
+		async (calculation: TCalculation) => {
 			const { formData, name } = calculation;
 
 			setActiveCalculation(calculation);
-			toast.success(`${name} imported`);
 			setImportModalOpen(false);
-			setReport(calcFn(formData));
-
 			form.reset(formData);
+
+			// Stored values may be invalid (e.g. saved before stricter validation), so only
+			// calculate if they pass the form schema. Otherwise show the field errors to fix.
+			if (await form.trigger()) {
+				toast.success(`${name} imported`);
+				setReport(calcFn(formData));
+			} else {
+				toast.error(`${name} has invalid values. Fix them and calculate again.`);
+				setReport(null);
+			}
 		},
 		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form]
 	);

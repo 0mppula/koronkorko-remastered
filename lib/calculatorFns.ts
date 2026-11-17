@@ -157,10 +157,11 @@ export const calcualteCoumpoundInterest = (
 		contributionMultiplier * contribution * contributionFrequency * t;
 
 	const totalContribution = additionalContributions + P;
-	const totalProfit = T - totalContribution;
 
 	// If no rate is provides show the future future value of investment
 	const noRateT = additionalContributions + P;
+
+	const totalProfit = (r !== 0 ? T : noRateT) - totalContribution;
 
 	const totalReturnPercent =
 		(totalProfit / (Math.abs(depositting ? additionalContributions : 0) + startingBalance)) *
@@ -204,7 +205,7 @@ export const calculateEventProbability = (
 	const P = eventProbabilityPercent / 100;
 
 	const AOP = 1 - (1 - P) ** T;
-	const EOP = T * P * (1 - P) ** (T - 1);
+	const EOP = T === 0 ? 0 : T * P * (1 - P) ** (T - 1);
 	const MOP = AOP - EOP;
 
 	return {
@@ -260,7 +261,7 @@ export const calculateDollarCostAverage = (
 
 		totalShares += deposit / newSharePrice;
 		dollarCostAverage = (initialInvestment + deposit * (i + 1)) / totalShares;
-		totalInvested = initialInvestment + deposit * i;
+		totalInvested = initialInvestment + deposit * (i + 1);
 		endingValue = newSharePrice * totalShares;
 	}
 

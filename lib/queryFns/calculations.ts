@@ -1,6 +1,6 @@
 import { API_URLS } from '@/constants/api';
 import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
-import { IHasFormData, IHasId } from '@/types/calculations';
+import { IHasFormData, IHasId, IHasName } from '@/types/calculations';
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
@@ -15,7 +15,7 @@ export interface IDeleteCalculationParam {
 	id: string;
 }
 
-export interface IRenameCalculationParam<TCalculation extends IHasId> {
+export interface IRenameCalculationParam<TCalculation extends IHasId & IHasName> {
 	apiUrl: (typeof API_URLS)[number];
 	updatedCalculation: TCalculation;
 }
@@ -72,11 +72,13 @@ export const deleteCalculation = async ({ apiUrl, id }: IDeleteCalculationParam)
 	return data;
 };
 
-export const renameCalculation = async <TCalculation extends IHasId>({
+export const renameCalculation = async <TCalculation extends IHasId & IHasName>({
 	apiUrl,
 	updatedCalculation,
 }: IRenameCalculationParam<TCalculation>) => {
-	const response = await axios.put(`${apiUrl}/${updatedCalculation.id}`, updatedCalculation);
+	const response = await axios.put(`${apiUrl}/${updatedCalculation.id}`, {
+		name: updatedCalculation.name,
+	});
 
 	const data = await response.data;
 

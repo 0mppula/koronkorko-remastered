@@ -126,7 +126,7 @@ describe('positiveNumberFieldSchema (markup cost)', () => {
 	});
 
 	// FINDING: there is no .finite(), so 'Infinity' coerces to Infinity and passes min(0)
-	it.fails('BUG: rejects Infinity', () => {
+	it('rejects Infinity', () => {
 		expect(cost.safeParse('Infinity').success).toBe(false);
 	});
 });
@@ -227,7 +227,7 @@ describe('breakEvenPointFormDataSchema', () => {
 	itRejectsNegativeFields(breakEvenPointFormDataSchema, base, Object.keys(base));
 
 	// FINDING: a price below variable cost gives a negative break-even point
-	it.fails('BUG: rejects a price below variable cost', () => {
+	it('rejects a price below variable cost', () => {
 		const result = breakEvenPointFormDataSchema.safeParse({
 			...base,
 			variableCostPerUnit: 60,
@@ -238,7 +238,7 @@ describe('breakEvenPointFormDataSchema', () => {
 	});
 
 	// FINDING: a price equal to variable cost divides by zero (Infinity units)
-	it.fails('BUG: rejects a price equal to variable cost', () => {
+	it('rejects a price equal to variable cost', () => {
 		const result = breakEvenPointFormDataSchema.safeParse({
 			...base,
 			variableCostPerUnit: 50,
@@ -249,7 +249,7 @@ describe('breakEvenPointFormDataSchema', () => {
 	});
 
 	// FINDING: a zero price and zero variable cost give NaN
-	it.fails('BUG: rejects a zero price', () => {
+	it('rejects a zero price', () => {
 		const result = breakEvenPointFormDataSchema.safeParse({
 			...base,
 			variableCostPerUnit: 0,
@@ -360,21 +360,21 @@ describe('annualizedReturnFormDataSchema', () => {
 	itRejectsNegativeFields(annualizedReturnFormDataSchema, base, Object.keys(base));
 
 	// FINDING: a zero starting value divides by zero (Infinity return)
-	it.fails('BUG: rejects a zero starting value', () => {
+	it('rejects a zero starting value', () => {
 		expect(
 			annualizedReturnFormDataSchema.safeParse({ ...base, startingBalance: 0 }).success
 		).toBe(false);
 	});
 
 	// FINDING: a zero duration makes the exponent 1/0
-	it.fails('BUG: rejects a zero duration', () => {
+	it('rejects a zero duration', () => {
 		expect(annualizedReturnFormDataSchema.safeParse({ ...base, duration: 0 }).success).toBe(
 			false
 		);
 	});
 
 	// FINDING: a zero duration multiplier makes the exponent 1/0
-	it.fails('BUG: rejects a zero duration multiplier', () => {
+	it('rejects a zero duration multiplier', () => {
 		expect(
 			annualizedReturnFormDataSchema.safeParse({ ...base, durationMultiplier: 0 }).success
 		).toBe(false);
@@ -414,17 +414,14 @@ describe('compoundInterestFormDataSchema', () => {
 	});
 
 	// FINDING: only 0 is excluded inside [-1, 1], so fractions pass despite the error message
-	it.fails.each([0.5, -0.5])(
-		'BUG: rejects the contribution multiplier %j',
-		(contributionMultiplier) => {
-			const result = compoundInterestFormDataSchema.safeParse({
-				...base,
-				contributionMultiplier,
-			});
+	it.each([0.5, -0.5])('rejects the contribution multiplier %j', (contributionMultiplier) => {
+		const result = compoundInterestFormDataSchema.safeParse({
+			...base,
+			contributionMultiplier,
+		});
 
-			expect(result.success).toBe(false);
-		}
-	);
+		expect(result.success).toBe(false);
+	});
 
 	it.each([
 		['contributionFrequency', 0],
@@ -450,7 +447,7 @@ describe('compoundInterestFormDataSchema', () => {
 	);
 
 	// FINDING: a zero compound frequency divides the rate by zero
-	it.fails('BUG: rejects a zero compound frequency', () => {
+	it('rejects a zero compound frequency', () => {
 		expect(
 			compoundInterestFormDataSchema.safeParse({ ...base, compoundFrequency: 0 }).success
 		).toBe(false);
@@ -557,28 +554,28 @@ describe('dollarCostAverageFormDataSchema', () => {
 	itRejectsNegativeFields(dollarCostAverageFormDataSchema, base, Object.keys(base));
 
 	// FINDING: a zero deposit frequency makes the deposit count Infinity and hangs the browser
-	it.fails('BUG: rejects a zero deposit frequency', () => {
+	it('rejects a zero deposit frequency', () => {
 		expect(
 			dollarCostAverageFormDataSchema.safeParse({ ...base, depositFrequency: 0 }).success
 		).toBe(false);
 	});
 
 	// FINDING: a zero share price divides by zero (Infinity shares, NaN results)
-	it.fails('BUG: rejects a zero share price', () => {
+	it('rejects a zero share price', () => {
 		expect(dollarCostAverageFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
 	});
 
 	// FINDING: a zero compound frequency silently ignores the price growth
-	it.fails('BUG: rejects a zero compound frequency', () => {
+	it('rejects a zero compound frequency', () => {
 		expect(
 			dollarCostAverageFormDataSchema.safeParse({ ...base, compoundFrequency: 0 }).success
 		).toBe(false);
 	});
 
 	// FINDING: unlike the other calculators, the duration has no max of 200
-	it.fails('BUG: rejects a duration above 200', () => {
+	it('rejects a duration above 200', () => {
 		expect(dollarCostAverageFormDataSchema.safeParse({ ...base, duration: 201 }).success).toBe(
 			false
 		);
@@ -636,21 +633,21 @@ describe('liquidationPriceFormDataSchema', () => {
 	itRejectsNegativeFields(liquidationPriceFormDataSchema, base, Object.keys(base));
 
 	// FINDING: a zero leverage divides by zero (-Infinity liquidation price)
-	it.fails('BUG: rejects a zero leverage', () => {
+	it('rejects a zero leverage', () => {
 		expect(
 			liquidationPriceFormDataSchema.safeParse({ ...base, leverageRatio: 0 }).success
 		).toBe(false);
 	});
 
 	// FINDING: a leverage below 1 gives a negative liquidation price
-	it.fails('BUG: rejects a leverage below 1', () => {
+	it('rejects a leverage below 1', () => {
 		expect(
 			liquidationPriceFormDataSchema.safeParse({ ...base, leverageRatio: 0.5 }).success
 		).toBe(false);
 	});
 
 	// FINDING: a zero entry price gives a NaN price change percent
-	it.fails('BUG: rejects a zero entry price', () => {
+	it('rejects a zero entry price', () => {
 		expect(liquidationPriceFormDataSchema.safeParse({ ...base, entryPrice: 0 }).success).toBe(
 			false
 		);
@@ -684,7 +681,7 @@ describe('dividendYieldFormDataSchema', () => {
 	itRejectsNegativeFields(dividendYieldFormDataSchema, base, Object.keys(base));
 
 	// FINDING: a zero share price divides by zero (Infinity or NaN yield)
-	it.fails('BUG: rejects a zero share price', () => {
+	it('rejects a zero share price', () => {
 		expect(dividendYieldFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
