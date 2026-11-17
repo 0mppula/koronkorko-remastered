@@ -35,7 +35,7 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 
 		return NextResponse.json(calculation);
 	} catch (error) {
-		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 };
 
@@ -57,6 +57,6 @@ export const DELETE = async (_: Request, { params }: { params: { id: string } })
 
 		return NextResponse.json(calculation);
 	} catch (error) {
-		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 };

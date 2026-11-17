@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: error.issues }, { status: 400 });
 		}
 
-		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 }
 
@@ -75,6 +75,6 @@ export async function GET() {
 
 		return NextResponse.json(calculations);
 	} catch (error) {
-		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 }

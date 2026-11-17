@@ -18,6 +18,6 @@ export async function PUT(req: Request) {
 
 		return NextResponse.json({ data: db_user });
 	} catch (error) {
-		NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 }
