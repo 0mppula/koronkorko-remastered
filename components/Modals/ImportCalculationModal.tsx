@@ -32,7 +32,7 @@ interface ImportCalculationModalProps<TCalculation> {
 
 const ImportCalculationModal = <
 	TFormData extends FieldValues,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 >({
 	isOpen,
 	calculations,

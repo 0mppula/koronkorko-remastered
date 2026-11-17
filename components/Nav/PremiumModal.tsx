@@ -95,8 +95,8 @@ const PremiumModal = () => {
 															? process.env
 																	.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL!
 															: plan.paymentLink
-															? `${plan.paymentLink}?prefilled_email=${sessionData.user.email}`
-															: '#'
+																? `${plan.paymentLink}?prefilled_email=${sessionData.user.email}`
+																: '#'
 													}
 												>
 													{sessionData?.user.plan === 'premium'

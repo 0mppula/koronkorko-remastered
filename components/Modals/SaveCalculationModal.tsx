@@ -35,7 +35,7 @@ interface SaveCalculationModalProps<TCalculation> {
 
 const SaveCalculationModal = <
 	TFormData extends FieldValues,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 >({
 	isOpen,
 	calculations,

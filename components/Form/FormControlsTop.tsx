@@ -35,7 +35,7 @@ interface FormControlsTopProps<TCalculation> {
 
 const FormControlsTop = <
 	TFormData extends FieldValues,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 >({
 	reset,
 	handleSaveUpdateStart,

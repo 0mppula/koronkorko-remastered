@@ -17,7 +17,7 @@ export default function page({ searchParams }: { searchParams: { q?: string } })
 				(c) =>
 					c.name.toLowerCase().includes(query) ||
 					c.description.toLowerCase().includes(query)
-		  )
+			)
 		: calculators;
 
 	const highlightText = (
@@ -47,7 +47,7 @@ export default function page({ searchParams }: { searchParams: { q?: string } })
 							) : (
 								part
 							)
-					  )}
+						)}
 			</Wrapper>
 		);
 	};

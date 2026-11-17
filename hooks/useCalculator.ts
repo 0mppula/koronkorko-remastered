@@ -23,7 +23,7 @@ interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 const useCalculator = <
 	TFormData extends FieldValues,
 	TReportProps,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 >({
 	calcFn,
 	defaultValues,

@@ -15,7 +15,7 @@ import useLoadingStore from './useLoadingStore';
 interface IUseCalculationMutations<
 	TFormData extends FieldValues,
 	TReportProps,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 > {
 	queryKey: (typeof QUERY_KEYS)[number];
 	activeCalculation: TCalculation | null;
@@ -37,7 +37,7 @@ interface IUseCalculationMutations<
 const useCalculationMutations = <
 	TFormData extends FieldValues,
 	TReportProps,
-	TCalculation extends IHasFormDataAndName<TFormData>
+	TCalculation extends IHasFormDataAndName<TFormData>,
 >({
 	queryKey,
 	activeCalculation,
