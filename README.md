@@ -1,6 +1,6 @@
 # KoronKorko Remastered
 
-[KoronKorko][site] was previously created using the MERN stack with vanilla JavaScript & CSS. However, this implementation is a remastered version of the previous one and is developed using Next.js, NextAuth, MondoDB, TypeScript and Tailwind CSS.
+[KoronKorko][site] was previously created using the MERN stack with vanilla JavaScript & CSS. However, this implementation is a remastered version of the previous one and is developed using Next.js, NextAuth, MongoDB with Prisma, TypeScript and Tailwind CSS.
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
 
@@ -12,10 +12,10 @@ The users of KoronKorko can select a preferred currency in which all the monetar
 
 Authenticated users can:
 
--   create new and save new calculations
--   edit existing calculations
--   import previously saved calculations
--   delete previously saved calculations
+- create new and save new calculations
+- edit existing calculations
+- import previously saved calculations
+- delete previously saved calculations
 
 ## Calculators of KoronKorko
 
@@ -90,6 +90,22 @@ Calculate the liquidation price of an asset, given its entry price and the lever
 Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price.
 
 ---
+
+## Development
+
+```bash
+npm install
+cp .env.example .env   # then fill in the values
+npm run dev
+```
+
+Before committing, run:
+
+```bash
+npm run lint
+npm run typecheck
+npm run format:check   # or `npm run format` to fix formatting
+```
 
 [dev]: https://github.com/0mppula
 [site]: https://www.koronkorko.com/
