@@ -70,6 +70,7 @@ synced to `User.preferences` for signed-in users.
 - Keep the free-plan limit checks: client-side (`checkCalculationLimit` in `lib/queryFns`) and
   server-side in every `POST` route.
 - Use the `@/` import alias.
+- Route handlers must `return` their error responses in `catch` blocks.
 
 ## Code style
 
@@ -89,8 +90,6 @@ synced to `User.preferences` for signed-in users.
 
 ## Known issues (don't copy these patterns)
 
-- Catch blocks in `app/api` route handlers create the 500 response without returning it. New
-  code must `return` it.
 - In `getUsersSubscriptionData`, the not-signed-in check has a no-op `null;` instead of returning.
 - Misspelled names: `ENTERPRICE_VALUE_*` constants and `lib/createCounpoundInterestChartData.ts`.
   Use correct spelling in new code; don't rename existing ones unless asked.
