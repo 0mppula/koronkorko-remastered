@@ -94,9 +94,11 @@ and all fuel amounts use it. Stored values are always litres (the base volume), 
 getFuelDensity(data.fuelType) })`.
 - If the user changes the fuel type while using a mass unit, the entered numbers stay as typed;
   they are converted to litres with the new density when calculating or saving.
-- Other-kind pairing for the report: L ↔ kg and US gal ↔ lb (a volume unit shows the total mass in
-  its paired mass unit and vice versa). Add `getPairedFuelUnit(unit)` to `lib/units.ts`.
-- Defaults: `fuel: 'l'` (see open questions). Display precision: 1 decimal (see open questions).
+- Other-kind pairing for the report (decided): L ↔ kg and US gal ↔ lb (a volume unit shows the
+  total mass in its paired mass unit and vice versa). Add `getPairedFuelUnit(unit)` to
+  `lib/units.ts`.
+- Defaults (decided): `fuel: 'l'`. Display precision: 1 decimal for fuel amounts and rates, as
+  `formatUnitValue`'s default for `fuel`.
 - `prisma/schema.prisma` `type UnitPreferences`: add `fuel String?`. Run `npx prisma generate`.
 
 ## Fuel types and densities
@@ -153,20 +155,22 @@ export const createFuelPlanningFormDataSchema = (units: UnitPreferences) =>
 				errorMap: () => ({ message: 'Fuel type must be AVGAS or Jet A' }),
 			}),
 		})
-		.superRefine((data, ctx) => { ... }); // burn-rate max in base units, see below
+		.superRefine((data, ctx) => { ... }); // fuel maxima in base units, see below
 
 export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_UNITS);
 ```
 
-- Limits (decided): burn rate > 0 and ≤ 10,000 per hour, flight time ≤ 24 h (1,440 min), reserve
-  ≤ 180 min. Times are minutes in every unit setting.
-- The burn-rate maximum is 10,000 L/h in base units. With a mass unit the conversion depends on
-  the fuel type, so it can't use `unitNumberFieldSchema`; check it in `superRefine`: convert
-  `fuelBurnRate` to L/h with `toBaseUnit(value, 'fuel', units.fuel, { fuelDensityKgPerL:
-getFuelDensity(data.fuelType) })` and, if above 10,000 (with the 01 tolerance), add an issue on
-  `fuelBurnRate` showing the limit in the user's unit, e.g. `"Fuel burn rate cannot be greater
-than 2,641.7 US gal/h"`. Skip the check if `fuelType` is invalid (its own issue is reported).
-- Taxi and extra fuel: optional (empty = none), not negative. No maximum (see open questions).
+- Limits (decided): burn rate > 0 and ≤ 10,000 L/h, flight time ≤ 24 h (1,440 min), reserve
+  ≤ 180 min, taxi fuel and extra fuel each ≤ 10,000 L. Fuel limits are in base units; times are
+  minutes in every unit setting.
+- With a mass unit the conversion to litres depends on the fuel type, so the fuel maxima can't use
+  `unitNumberFieldSchema`; check them in `superRefine`: convert `fuelBurnRate`, `taxiFuel` and
+  `extraFuel` (when given) to base with `toBaseUnit(value, 'fuel', units.fuel, {
+fuelDensityKgPerL: getFuelDensity(data.fuelType) })` and, if above 10,000 (with the 01
+  tolerance), add an issue on that field showing the limit in the user's unit, e.g. `"Fuel burn rate
+cannot be greater than 2,641.7 US gal/h"`, `"Taxi fuel cannot be greater than 2,641.7 US gal"`.
+  Skip these checks if `fuelType` is invalid (its own issue is reported).
+- Taxi and extra fuel: optional (empty = none), not negative, at most 10,000 L.
 - `fuelType` enum values come from `fuelTypes`.
 
 ## UI
@@ -267,7 +271,8 @@ Unit round trips (form values converted with `formDataToBaseUnits`, results with
 - Inputs are returned unchanged in the report; missing taxi/extra fuel count as 0.
 
 Schema: valid input passes; missing required fields; taxi/extra missing or `''` pass, negative
-rejected; burn rate 0 rejected; flight time 1,440 accepted, 1,441 rejected; reserve 180 accepted,
+rejected, 10,000 L accepted, 10,001 L rejected (message in US gal with `fuel: 'usgal'`); burn rate
+0 rejected; flight time 1,440 accepted, 1,441 rejected; reserve 180 accepted,
 181 rejected; burn rate 10,000 L/h accepted, 10,001 rejected, and with `fuel: 'usgal'` the message
 shows the limit in US gal/h; with `fuel: 'kg'` the limit depends on the fuel type; unknown fuel
 type rejected with the message; numeric strings coerced.
@@ -287,9 +292,4 @@ type rejected with the message; numeric strings coerced.
 
 ## Open questions
 
-1. **Burn-rate limit unit.** The plan reads "at most 10,000 per hour" as 10,000 L/h in base units
-   (like the 200 kt wind limit), shown in the user's unit (e.g. ≈ 2,641.7 US gal/h). Or should it
-   be 10,000 in whatever fuel unit is selected?
-2. **Taxi and extra fuel maximum.** No maximum is planned (only ≥ 0). Add one?
-3. **Fuel unit default and precision.** Default `L` and 1 decimal for fuel amounts?
-4. **Paired unit.** The "other kind" total uses L ↔ kg and US gal ↔ lb. OK?
+None at the moment.

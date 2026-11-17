@@ -121,7 +121,7 @@ export const crosswindFormDataSchema = createCrosswindFormDataSchema(BASE_UNITS)
   is exported for reuse by 03.
 - Wind speed: 0 to 200 kt (limit in base units); messages in the user's unit, e.g.
   `"Wind speed cannot be greater than 370.4 km/h"`.
-- Gust speed: optional (empty input = no gust); same 200 kt limit; when given it must be greater
+- Gust speed (decided): optional (empty input = no gust); same 200 kt limit; when given it must be greater
   than the wind speed, issue on `gustSpeed`: `"Gust speed must be greater than wind speed"`.
 - Every valid input has a result.
 
@@ -268,5 +268,4 @@ rejected with a message containing `km/h`.
 
 ## Open questions
 
-1. **Gust validation.** The plan requires a given gust speed to be greater than the wind speed
-   (gusts are reported above the mean wind). Keep that rule, or only check the 200 kt limit?
+None at the moment.
