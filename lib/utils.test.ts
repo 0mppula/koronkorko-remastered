@@ -39,7 +39,7 @@ describe('formatCurrency', () => {
 	});
 
 	// FINDING: zero yen is hardcoded as '¥0.00', but JPY has no minor unit (ISO 4217)
-	it.fails('formats zero yen without decimals', () => {
+	it.fails('BUG: formats zero yen without decimals', () => {
 		expect(formatCurrency(0, 'jpy')).toBe('¥0');
 	});
 

@@ -112,6 +112,8 @@ synced to `User.preferences` for signed-in users.
 - Don't change Stripe or auth logic unless the task is explicitly about it.
 - Stripe (checkout, webhook, customer portal) and auth flows are intentionally not tested. Don't
   add tests for them unless asked; mock subscription status where needed.
+- Known bugs are `it.fails` tests named `BUG: ...`. When fixing a bug, change its `it.fails` to
+  `it` and remove the `BUG: ` prefix.
 - Reuse existing shadcn/ui and `components/Form`/`Report` components before creating new ones.
 
 ## Git

@@ -318,7 +318,7 @@ describe('calcualteCoumpoundInterest', () => {
 	});
 
 	// FINDING: with a 0% rate the annuity term is 0/0, so totalProfit is NaN instead of 0
-	it.fails('has zero profit with a zero interest rate', () => {
+	it.fails('BUG: has zero profit with a zero interest rate', () => {
 		const result = calcualteCoumpoundInterest({
 			...base,
 			startingBalance: 1000,
@@ -331,7 +331,7 @@ describe('calcualteCoumpoundInterest', () => {
 	});
 
 	// FINDING: with a 0% rate totalReturnPercent is NaN instead of 0
-	it.fails('has a zero return percent with a zero interest rate', () => {
+	it.fails('BUG: has a zero return percent with a zero interest rate', () => {
 		const result = calcualteCoumpoundInterest({
 			...base,
 			startingBalance: 1000,
@@ -406,7 +406,7 @@ describe('calculateEventProbability', () => {
 	});
 
 	// FINDING: T * p * (1 - p)^(T - 1) is 0 * 0^-1 = NaN for p = 100%, T = 0
-	it.fails('has a zero exactly-once probability with 100% and zero tries', () => {
+	it.fails('BUG: has a zero exactly-once probability with 100% and zero tries', () => {
 		const result = calc({ eventProbabilityPercent: 100, eventTries: 0 });
 
 		expect(result.exactlyOnceProbabilityPercent).toBe(0);
@@ -472,7 +472,7 @@ describe('calculateDollarCostAverage', () => {
 	});
 
 	// FINDING: totalInvested adds deposit * i instead of deposit * (i + 1), missing the last deposit
-	it.fails('includes every deposit in the total invested', () => {
+	it.fails('BUG: includes every deposit in the total invested', () => {
 		expect(calculateDollarCostAverage(base).totalInvested).toBe(1200);
 	});
 
@@ -487,7 +487,7 @@ describe('calculateDollarCostAverage', () => {
 	});
 
 	// FINDING: the totalInvested off-by-one makes totalReturn 320 instead of 220
-	it.fails('calculates the total return with a 10% yearly price increase', () => {
+	it.fails('BUG: calculates the total return with a 10% yearly price increase', () => {
 		const result = calculateDollarCostAverage({ ...base, interestRate: 10 });
 
 		expect(result.totalReturn).toBeCloseTo(220, 8);
