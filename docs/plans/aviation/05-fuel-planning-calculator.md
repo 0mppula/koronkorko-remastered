@@ -16,14 +16,15 @@ unit preferences.
   update, import, delete, free-plan limit, tests.
 - Volume (L, US gal) and mass (kg, lb) unit preferences in `lib/units.ts`, Prisma
   `UnitPreferences`, units modal (automatic via `unitQuantities`).
-- Fuel types with fixed densities.
+- Fuel types with fixed standard densities (not user-adjustable in v1).
 
 ## Out of scope
 
 - Taxi fuel, contingency percentage, alternate fuel, unusable fuel (see open questions).
 - Burn rate entered as mass per hour (jets often use kg/h or lb/h).
 - Weight and balance, tank capacity checks, distance/groundspeed based flight time.
-- Temperature-corrected fuel density.
+- Temperature-corrected or user-adjustable fuel density.
+- Reserve presets or any encoded regulation (reserve is a plain minutes input).
 
 ## Foundation you rely on (from 01)
 
@@ -83,21 +84,18 @@ Add to `constants/data.ts` (mirrors `contributionFrequencies`):
 
 ```ts
 export const fuelTypes = [
-	{ value: 'avgas', label: 'AVGAS', densityKgPerL: ... },
-	{ value: 'jetA', label: 'Jet A', densityKgPerL: ... },
+	{ value: 'avgas', label: 'AVGAS', densityKgPerL: (6.0 * 0.45359237) / 3.785411784 },
+	{ value: 'jetA', label: 'Jet A', densityKgPerL: (6.7 * 0.45359237) / 3.785411784 },
 ] as const;
 ```
 
-Density values are an open question. Candidates:
+**Decided:** fixed standard densities in v1, not user-adjustable:
 
-- FAA standard weights, Aircraft Weight and Balance Handbook (FAA-H-8083-1): AVGAS 6.0 lb/US gal,
-  Jet A 6.7 lb/US gal. In kg/L: `6.0 × 0.45359237 / 3.785411784` (≈ 0.71896) and
-  `6.7 × 0.45359237 / 3.785411784` (≈ 0.80284). Define them with that expression so lb/US gal
-  results come out exact. Verify the values in the handbook before using them.
-- Specification ranges (e.g. ASTM D1655 for Jet A, ASTM D910 for AVGAS) give a range at 15 °C
-  rather than one value; confirm the numbers from the standards if you prefer this source.
-
-The plan proposes fixed FAA standard weights, not user-adjustable.
+- AVGAS **6.0 lb/US gal** (≈ 0.71896 kg/L) and Jet A **6.7 lb/US gal** (≈ 0.80284 kg/L).
+- Source: FAA standard fuel weights, FAA Aircraft Weight and Balance Handbook (FAA-H-8083-1).
+  Cite it in a one-line comment next to `fuelTypes` and in `Info.tsx`.
+- Define them with the expressions above (lb/US gal × kg per lb ÷ L per US gal) so results in
+  lb and US gal come out exact.
 
 ## Formulas
 
@@ -107,9 +105,8 @@ The plan proposes fixed FAA standard weights, not user-adjustable.
 - `<x>Mass = <x>Fuel × fuelDensity`
 
 Source: basic fuel planning (fuel = burn rate × time) as in the PHAK flight planning section and
-E6B fuel computations; densities from the source chosen above. Reserve times are regulatory inputs
-the pilot enters; possible presets (to verify before use): 14 CFR 91.151 VFR day 30 min, VFR night
-45 min; 14 CFR 91.167 IFR 45 min.
+E6B fuel computations; densities from FAA-H-8083-1 (above). Reserve time is a plain input in
+minutes; the calculator doesn't encode or validate against any regulation.
 
 ## Zod schema rules (`schemas/index.ts`)
 
@@ -145,9 +142,12 @@ export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_
 - `Report.tsx`: inputs (burn rate, fuel type, flight time, reserve time), `ReportDivider`, Trip
   Fuel, Reserve Fuel, Total Fuel — each `ReportGroup` showing volume and mass, e.g.
   `"90 L · 64.7 kg"` (or separate groups, your choice), then `<AviationDisclaimer />`.
-- `Info.tsx`: trip vs reserve fuel, why density matters (fuel is loaded by volume, weight and
-  balance uses mass), that density varies with temperature and the calculator uses a fixed
-  standard value, the disclaimer sentence, `ReportSource` to the FAA handbook page
+- `Info.tsx`: trip vs reserve fuel; typical reserve values (e.g. 30 min for VFR by day, 45 min at
+  night or under IFR) and that pilots must check the rules that apply to them (country, type of
+  operation, aircraft); why density matters (fuel is loaded by volume, weight and balance uses
+  mass); that density varies with temperature and the calculator uses fixed FAA standard weights
+  (AVGAS 6.0 lb/US gal, Jet A 6.7 lb/US gal, FAA-H-8083-1); the disclaimer sentence; `ReportSource`
+  to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
 
 ## Files to create or change
@@ -196,9 +196,9 @@ Units (`lib/units.test.ts`), exact definitions:
 | 30 L/h | 0 min  | 30 min  | AVGAS | 0 L  | 15 L    | 15 L  | `15 × densityKgPerL(avgas)` |
 | 30 L/h | 60 min | 0 min   | AVGAS | 30 L | 0 L     | 30 L  | `30 × densityKgPerL(avgas)` |
 
-- If FAA standard weights are chosen: burn 10 US gal/h, 120 min, 30 min reserve (form values
-  converted with `formDataToBaseUnits`) → total 25 US gal; AVGAS total mass converted back to lb
-  is 150 lb (25 × 6.0) and Jet A 167.5 lb (25 × 6.7), `toBeCloseTo(x, 6)`.
+- Burn 10 US gal/h, 120 min, 30 min reserve (form values converted with `formDataToBaseUnits`) →
+  total 25 US gal; AVGAS total mass converted back to lb is 150 lb (25 × 6.0) and Jet A 167.5 lb
+  (25 × 6.7), `toBeCloseTo(x, 6)`.
 - Inputs are returned unchanged in the report.
 
 Schema: valid input passes; missing fields; burn rate 0 rejected, negative times rejected; limits
@@ -211,18 +211,14 @@ messages in US gal when that unit is used; numeric strings coerced.
   without them get defaults without losing other choices.
 - `/fuel-planning-calculator` appears in the Aviation section and in search.
 - Results match the test cases in every unit combination; storage is L/h and minutes.
+- Info shows typical reserve values with the note to check applicable rules, and the density
+  values with their source.
 - Save, rename, update, import, delete and free-plan limit work. Disclaimer present.
 - Lint, typecheck, format check and tests pass.
 
 ## Open questions
 
-1. **Fuel densities.** Use FAA standard weights (AVGAS 6.0 lb/US gal, Jet A 6.7 lb/US gal, from
-   FAA-H-8083-1) or values from ASTM specifications? Please confirm the source and numbers.
-2. **Fixed or adjustable density.** Fixed per fuel type (plan) or an optional density override
-   input (would need a field in the Prisma form data)?
-3. **Time input.** Minutes (plan) or hours + minutes fields? Store as minutes either way?
-4. **Extra fuel items.** Add taxi fuel, contingency % or alternate fuel? Out of scope for now.
-5. **Reserve presets.** Offer presets (VFR day 30 min, VFR night 45 min, IFR 45 min under 14 CFR
-   91.151/91.167, to be verified) or EASA equivalents, or keep a free input?
-6. **Units.** Include imperial gallons? Allow burn rate in mass per hour (kg/h, lb/h)?
-7. **Limits.** Burn rate up to 10,000 L/h, flight time up to 24 h, reserve up to 5 h?
+1. **Time input.** Minutes (plan) or hours + minutes fields? Store as minutes either way?
+2. **Extra fuel items.** Add taxi fuel, contingency % or alternate fuel? Out of scope for now.
+3. **Units.** Include imperial gallons? Allow burn rate in mass per hour (kg/h, lb/h)?
+4. **Limits.** Burn rate up to 10,000 L/h, flight time up to 24 h, reserve up to 5 h?

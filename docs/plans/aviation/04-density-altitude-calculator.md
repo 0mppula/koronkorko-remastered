@@ -72,10 +72,10 @@ offset). Use it for `isaDeviation`; never use `fromBaseUnit` on a difference.
 
 ## Formulas
 
-Two candidate methods. **Which one to implement is an open question**; tests must follow the
-chosen method.
+**Decided:** calculate everything with the exact ISA formulas below, including pressure altitude
+from QNH. The rule of thumb is only explained in `Info.tsx`, never used for results.
 
-### A. Exact ISA (ICAO Standard Atmosphere, troposphere)
+### Exact ISA (ICAO Standard Atmosphere, troposphere)
 
 ICAO Doc 7488/3 (Manual of the ICAO Standard Atmosphere) constants: `T0 = 288.15 K`,
 `P0 = 1013.25 hPa`, lapse rate `L = 0.0065 K/m`, `g0 = 9.80665 m/s²`, `R = 287.05287 J/(kg·K)`,
@@ -94,17 +94,11 @@ Work in metres, convert to feet with `ft = m / 0.3048`:
 Steps 2 and 6 are the ISA pressure–altitude and density–altitude relations solved for altitude.
 Verify each equation and constant against ICAO Doc 7488 before implementing.
 
-### B. Rule of thumb
+### Rule of thumb (`Info.tsx` only)
 
-- `PA = elevation + (1013.25 − qnh) × k` with `k` ft/hPa (commonly 27 or 30; US practice uses
-  `(29.92 − altimeter inHg) × 1000`).
-- `T_isa = 15 − 2 × PA / 1000` (or the exact lapse 1.9812 °C per 1000 ft).
-- `DA = PA + 120 × (OAT − T_isa)`.
-
-The constants differ between sources; do not implement B until you confirm `k`, the lapse value and
-the 120 ft/°C factor with a source (e.g. the PHAK Aircraft Performance chapter).
-
-Recommendation: implement A for the result and mention B in `Info.tsx` as the mental-math rule.
+`Info.tsx` explains that density altitude rises by about 120 ft for every 1 °C the temperature is
+above ISA (and falls when below), as a quick mental check. It must say that the calculator uses the
+exact ISA formulas, not this rule, so results differ slightly from the rule of thumb.
 
 ## Zod schema rules (`schemas/index.ts`)
 
@@ -142,7 +136,9 @@ named `BUG: ...`.
   ISA Deviation (signed, e.g. `"+19.9 °C"`, using the difference helper), Density Altitude,
   `<AviationDisclaimer />`.
 - `Info.tsx`: what pressure and density altitude are, why high density altitude reduces aircraft
-  performance (PHAK), the method used, the rule of thumb, the disclaimer sentence, `ReportSource`
+  performance (PHAK), that the calculator uses the exact ICAO Standard Atmosphere formulas (pressure
+  altitude from QNH, then density altitude from air density), the rule of thumb of about 120 ft per
+  °C of ISA deviation as a mental check only, the disclaimer sentence, `ReportSource`
   to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
 
@@ -181,8 +177,7 @@ Units (`lib/units.test.ts`):
 - `fromBaseTemperatureDifference(10, 'f')` → `18`; `(10, 'c')` → `10`; `(0, 'f')` → `0`.
 - `withDefaultUnitPreferences({ speed: 'kmh' })` now also has `pressure: 'hpa'`.
 
-`calculateDensityAltitude` — cases that follow from the ISA definition and hold for method A (and
-for B if it uses the exact lapse rate):
+`calculateDensityAltitude` — cases that follow from the ISA definition:
 
 | Elevation | QNH     | OAT                    | PA      | ISA temp | Deviation | DA      |
 | --------- | ------- | ---------------------- | ------- | -------- | --------- | ------- |
@@ -217,14 +212,11 @@ strings coerced.
 
 ## Open questions
 
-1. **Method.** Exact ISA formula (A) or rule of thumb (B)? The plan recommends A for the result
-   and B only as explanation in `Info.tsx`. If B: which constants (27 or 30 ft/hPa, 2 or 1.98 °C
-   per 1000 ft, 120 ft/°C), from which source?
-2. **Reference values.** Which source provides the non-standard expected values for tests (ICAO Doc
+1. **Reference values.** Which source provides the non-standard expected values for tests (ICAO Doc
    7488 table, PHAK worked example, NWS calculator), and what tolerance?
-3. **inHg factor.** Confirm 1 inHg = 33.86389 hPa (NIST SP 811, conventional inch of mercury).
-4. **Default pressure unit.** hPa (ICAO) for everyone, or inHg when other preferences suggest US
+2. **inHg factor.** Confirm 1 inHg = 33.86389 hPa (NIST SP 811, conventional inch of mercury).
+3. **Default pressure unit.** hPa (ICAO) for everyone, or inHg when other preferences suggest US
    units?
-5. **Limits.** Elevation −1,500 to 15,000 ft, QNH 870–1,090 hPa, OAT −60 to +60 °C?
-6. **Humidity.** Dew point input for moist-air density altitude? Out of scope for now.
-7. **Precision.** PA and DA to the nearest foot (or 10/100 ft), temperatures to 1 decimal?
+4. **Limits.** Elevation −1,500 to 15,000 ft, QNH 870–1,090 hPa, OAT −60 to +60 °C?
+5. **Humidity.** Dew point input for moist-air density altitude? Out of scope for now.
+6. **Precision.** PA and DA to the nearest foot (or 10/100 ft), temperatures to 1 decimal?

@@ -18,7 +18,7 @@ which side it comes from) and the headwind or tailwind component.
 ## Out of scope
 
 - Gust component, variable winds (VRB), wind shear.
-- Magnetic variation input (see open questions).
+- Magnetic variation input. Users convert METAR (true) winds themselves; `Info.tsx` explains how.
 - Comparing against an aircraft's maximum demonstrated crosswind.
 - Runway selection among several runways.
 
@@ -42,14 +42,19 @@ If any name differs in the merged code, follow the code.
 
 | Field                   | Base unit | Preference | Notes                                                       |
 | ----------------------- | --------- | ---------- | ----------------------------------------------------------- |
-| `runwayHeading` (input) | degrees   | none       | 0–360                                                       |
-| `windDirection` (input) | degrees   | none       | direction the wind blows **from**, 0–360                    |
+| `runwayHeading` (input) | degrees   | none       | magnetic, 0–360                                             |
+| `windDirection` (input) | degrees   | none       | magnetic, direction the wind blows **from**, 0–360          |
 | `windSpeed` (input)     | kt        | speed      | ≥ 0                                                         |
 | `windAngle` (output)    | degrees   | none       | signed, (−180, 180]; positive = wind from the right         |
 | `crosswind` (output)    | kt        | speed      | signed; positive = from the right, negative = from the left |
 | `headwind` (output)     | kt        | speed      | signed; positive = headwind, negative = tailwind            |
 
 `<x>UnitFields`: `{ windSpeed: 'speed' }`.
+
+**Wind reference (decided).** Wind direction and runway heading must use the same reference:
+magnetic, as given by the tower or ATIS and as runway headings are published. There is no
+variation input. METAR winds are true and must be converted to magnetic with the local variation
+before entering them; `Info.tsx` explains this.
 
 ## Formulas
 
@@ -102,9 +107,10 @@ Uses speed (from 01). Adds none.
   `defaultValues` (base units): `{ runwayHeading: 360, windDirection: 360, windSpeed: 0 }` (proposal).
   Schema via `useMemo(() => createCrosswindFormDataSchema(units), [units])`. Pass
   `unitFields: crosswindUnitFields` to `useCalculator`. Inputs:
-    - `FormGroup`: "Runway Heading" (`iconType="unit" unitSymbol="°"`), "Wind Direction" (`°`).
+    - `FormGroup`: "Runway Heading (magnetic)" (`iconType="unit" unitSymbol="°"`), "Wind
+      Direction (magnetic, from)" (`°`). Use `DynamicFormLabel` with short labels ("Runway",
+      "Wind Direction") if the long ones don't fit on small screens.
     - `FormGroup`: "Wind Speed" (`unitSymbol={getUnitSymbol('speed', units.speed)}`).
-    - Labels per the true/magnetic open question (proposal: "Wind Direction (from)").
 - `Report.tsx` (`'use client'`): `ReportSection` with
     - `ReportGroup` "Runway Heading" → `formatDegrees(runwayHeading)`.
     - `ReportGroup` "Wind" → `` `${formatDegrees(windDirection)} at ${formatUnitValue(windSpeed, 'speed', units.speed)}` ``.
@@ -115,8 +121,10 @@ Uses speed (from 01). Adds none.
       rounded to display precision so a −0.0 never shows as "Tailwind".
     - `<AviationDisclaimer />` last.
 - `Info.tsx` (server component): what crosswind/headwind components are, why they matter (aircraft
-  crosswind limits, tailwind effect on takeoff/landing distance), the formula, the disclaimer
-  sentence, `ReportSource` to the FAA handbook page
+  crosswind limits, tailwind effect on takeoff/landing distance), the formula; that wind direction
+  is where the wind blows from and that both inputs must be magnetic (tower/ATIS winds and runway
+  headings are magnetic, METAR winds are true and must first be converted with the local magnetic
+  variation); the disclaimer sentence, `ReportSource` to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`, text
   `"FAA Pilot's Handbook of Aeronautical Knowledge"`).
 
@@ -199,6 +207,7 @@ speed: 'kmh' })`: 370.4 accepted, 371 rejected with a message containing `km/h`.
 
 - `/crosswind-calculator` appears in the Aviation section of the landing page and in search.
 - Calculations match the test table; left/right and headwind/tailwind labels are correct.
+- Both direction inputs are labelled magnetic; Info explains converting METAR (true) winds.
 - Switching speed units converts the wind speed in the form and the report without changing the
   physical value; saved calculations store kt (check in the API response) and import correctly in
   any unit.
@@ -209,18 +218,11 @@ speed: 'kmh' })`: 370.4 accepted, 371 rejected with a message containing `km/h`.
 
 ## Open questions
 
-1. **Wind direction reference.** Wind direction is where the wind blows **from**. METAR/TAF winds
-   are reported relative to **true** north; ATIS and tower-reported winds and runway headings are
-   **magnetic**. The calculation is only correct if both inputs use the same reference. Options:
-   (a) label "Wind Direction (from)" with a hint "Use the same reference as the runway heading
-   (ATIS/tower winds are magnetic; METAR winds are true)"; (b) add a magnetic variation input to
-   convert METAR winds. The plan proposes (a). Please confirm, and confirm the true/magnetic
-   statements against the AIM before they go into `Info.tsx`.
-2. **Runway input.** Exact runway heading in degrees (e.g. 063°), or runway number (e.g. 06 →
+1. **Runway input.** Exact runway heading in degrees (e.g. 063°), or runway number (e.g. 06 →
    060°)? The plan proposes degrees.
-3. **Gusts.** Add an optional gust speed and show the gust crosswind component? Out of scope for
+2. **Gusts.** Add an optional gust speed and show the gust crosswind component? Out of scope for
    now.
-4. **Maximum wind speed** for validation: 200 kt proposed.
-5. **Display precision**: whole knots (as in ATIS/METAR) or 1 decimal?
-6. **North display**: show runway/wind north as `360°` (aviation convention) rather than `000°`?
+3. **Maximum wind speed** for validation: 200 kt proposed.
+4. **Display precision**: whole knots (as in ATIS/METAR) or 1 decimal?
+5. **North display**: show runway/wind north as `360°` (aviation convention) rather than `000°`?
    Should `0` be accepted as input for a calm wind direction?

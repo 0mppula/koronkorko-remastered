@@ -84,11 +84,15 @@ other to avoid conflicts in `lib/units.ts`, `prisma/schema.prisma` and the units
     - Finance calculators behave exactly as before.
 - Final PR from the epic into `master` is open.
 
+## Preview database
+
+The owner is checking the preview database setup (which `DATABASE_URL` the epic's Vercel preview
+uses) before the first feature that saves data is tested on the preview. That is 01, which writes
+`User.preferences.units`. Don't test saving on the preview until this is confirmed. New MongoDB
+collections are created on first insert and the new models have no unique indexes, so
+`prisma db push` should not be needed; never run it without asking.
+
 ## Open questions
 
-1. Does the epic's Vercel preview use the production `DATABASE_URL`? If so, test saves on the
-   preview write to the real database. New MongoDB collections are created on first insert, and
-   the new models have no unique indexes, so `prisma db push` should not be needed. Confirm before
-   anyone runs it.
-2. Should the README list aviation calculators in a separate "Aviation Calculators" section (each
+1. Should the README list aviation calculators in a separate "Aviation Calculators" section (each
    calculator PR adds its entry)? The plans assume yes.

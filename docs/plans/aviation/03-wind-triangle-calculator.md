@@ -17,7 +17,7 @@ computation.
 
 ## Out of scope
 
-- Magnetic heading (variation/deviation), compass heading.
+- Magnetic heading (no magnetic variation input), deviation, compass heading.
 - Distance, time en route and fuel (no distance preference yet).
 - Calculating the wind from heading/groundspeed (reverse problem).
 - TAS from indicated airspeed.
@@ -51,6 +51,10 @@ If any name differs in the merged code, follow the code.
 | `groundspeed` (output)         | kt        | speed      | > 0 for valid input                                           |
 
 `windTriangleUnitFields`: `{ trueAirspeed: 'speed', windSpeed: 'speed' }`.
+
+**Direction reference (decided).** Everything is true: true course (from charts), true wind
+direction (as in winds-aloft forecasts) and the output labelled **true heading**. There is no
+magnetic variation input.
 
 ## Formulas
 
@@ -111,8 +115,10 @@ Uses speed (from 01). Adds none.
   `ReportDivider`, Wind Correction Angle (absolute value + `"right"`/`"left"`, no side when it
   displays as 0), True Heading (`formatDegrees`), Groundspeed (`formatUnitValue`), then
   `<AviationDisclaimer />`.
-- `Info.tsx`: what the wind triangle is (course vs heading, TAS vs groundspeed, WCA), that wind
-  direction is "from" and must be true to match a true course (winds aloft forecasts are true),
+- `Info.tsx`: what the wind triangle is (course vs heading, TAS vs groundspeed, WCA); that all
+  directions are true: the true course comes from the chart and the wind from winds-aloft
+  forecasts, which are true, so the result is a true heading (converting it to a magnetic heading
+  with the local variation is up to the pilot); that wind direction is where the wind blows from;
   the formula, the disclaimer sentence, `ReportSource` to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
 
@@ -172,6 +178,8 @@ strings coerced. Unsolvable winds rejected on `windSpeed`: TC 360, TAS 100, wind
 
 - `/wind-triangle-calculator` appears in the Aviation section and in search.
 - Results match the test table; WCA side labels correct; heading always 3 digits with `°`.
+- Inputs are labelled "True Course" and "Wind Direction (true, from)"; the output is labelled
+  "True Heading".
 - Unsolvable wind/TAS combinations show the field error instead of a NaN report, including on
   import of a saved calculation.
 - Switching speed units converts both speed inputs and the groundspeed without changing physical
@@ -181,17 +189,11 @@ strings coerced. Unsolvable winds rejected on `windSpeed`: TC 360, TAS 100, wind
 
 ## Open questions
 
-1. **Wind direction reference.** Wind direction is where the wind blows **from**. Winds aloft
-   forecasts and METARs are true; ATIS/tower winds are magnetic. The wind triangle works with a
-   **true** course, so the plan labels the input "Wind Direction (true, from)". Confirm the label
-   and the true/magnetic statements (against the AIM) before they go into `Info.tsx`.
-2. **Magnetic heading.** Add a magnetic variation input (east/west) to also show magnetic heading?
-   Out of scope for now.
-3. **Worked example.** Which E6B or PHAK worked example should be the reference test? Please
+1. **Worked example.** Which E6B or PHAK worked example should be the reference test? Please
    provide the values (course, TAS, wind, expected heading and groundspeed) from the source; the
    plan does not quote one to avoid guessing.
-4. **Formula verification.** Confirm the closed-form formula above against Ed Williams' Aviation
+2. **Formula verification.** Confirm the closed-form formula above against Ed Williams' Aviation
    Formulary (or another source you prefer) before implementation.
-5. **Limits.** TAS max 600 kt and wind max 200 kt?
-6. **Precision.** Heading in whole degrees (E6B practice) and WCA to 1 decimal? Groundspeed whole
+3. **Limits.** TAS max 600 kt and wind max 200 kt?
+4. **Precision.** Heading in whole degrees (E6B practice) and WCA to 1 decimal? Groundspeed whole
    knots or 1 decimal?
