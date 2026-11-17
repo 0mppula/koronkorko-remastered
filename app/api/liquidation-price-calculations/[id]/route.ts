@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import { calculationNameStringSchema, liquidationPriceFormDataSchema } from '@/schemas';
 import { ICalculationNameString, ILiquidationPriceFormData } from '@/types/calculations';
 import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
 
 export const PUT = async (req: Request, { params }: { params: { id: string } }) => {
 	const session = await getAuthSession();
@@ -35,6 +36,10 @@ export const PUT = async (req: Request, { params }: { params: { id: string } }) 
 
 		return NextResponse.json(calculation);
 	} catch (error) {
+		if (error instanceof ZodError) {
+			return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
+		}
+
 		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 	}
 };

@@ -7,6 +7,7 @@ import {
 } from '@/lib/queryFns/calculations';
 import { IHasFormDataAndName } from '@/types/calculations';
 import { MutationFunction, useMutation, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { Dispatch, SetStateAction } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -140,7 +141,9 @@ const useCalculationMutations = <
 		},
 		onError: (err, _, context) => {
 			toast.error(
-				'Something went wrong while renaming your calculation. Please try again later.'
+				isAxiosError(err) && err.response?.status === 400
+					? err.response.data.error
+					: 'Something went wrong while renaming your calculation. Please try again later.'
 			);
 
 			setActiveCalculation(context?.uneditedCalculation || null);
@@ -180,7 +183,9 @@ const useCalculationMutations = <
 		},
 		onError: (err, _, context) => {
 			toast.error(
-				'Something went wrong while saving your calculation. Please try again later.'
+				isAxiosError(err) && err.response?.status === 400
+					? err.response.data.error
+					: 'Something went wrong while saving your calculation. Please try again later.'
 			);
 
 			setActiveCalculation(context?.uneditedCalculation || null);
