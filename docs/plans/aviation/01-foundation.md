@@ -91,9 +91,13 @@ Finance calculators must behave exactly as before.
     	{ value: 'finance', label: 'Finance' },
     	{ value: 'aviation', label: 'Aviation' },
     ] as const;
+
+    export type CalculatorCategory = (typeof calculatorCategories)[number]['value'];
     ```
 - Each aviation calculator PR adds its entry with `category: 'aviation'`. Order inside the array is
   display order within a section.
+- The file stays free of React and `lucide-react` imports (it is also used by `lib/utils.ts`).
+  Category icons are mapped in the UI code, not here.
 
 `app/page.tsx`:
 
@@ -102,8 +106,34 @@ Finance calculators must behave exactly as before.
 - Replace the single grid with one section per `calculatorCategories` entry: a heading using the
   same divider markup as "Featured Apps" (bars + `TypographyH2` with the category label), then the
   existing grid/card markup for `filteredCalculators.filter((c) => c.category === category.value)`.
-- Skip a section when it has no calculators (no matches for the search, or no aviation calculators
-  yet). Until 02 is merged, the page looks like today plus a "Finance" heading.
+- A section, including its heading, only renders when it has calculators (no matches for the
+  search, or no aviation calculators yet, means no heading). Until 02 is merged, the page looks like
+  today plus a "Finance" heading.
+- When the search matches nothing, keep today's empty-result behavior: no category headings, no
+  new "no results" message, `CalculatorSearch` shows `0`, and "Featured Apps" still renders.
+- Category icon on each calculator card:
+    - In `app/page.tsx`, map category → icon:
+        ```ts
+        import { Coins, ExternalLink, Plane, type LucideIcon } from 'lucide-react';
+        import { type CalculatorCategory } from '@/constants/calculators';
+
+        const categoryIcons: Record<CalculatorCategory, LucideIcon> = {
+        	finance: Coins,
+        	aviation: Plane,
+        };
+        ```
+        The `Record` type makes a new category without an icon a type error.
+    - Render it inside the card `Link` (already `relative`) with the same position, size and
+      styling as the `ExternalLink` icon on the Featured Apps cards:
+        ```tsx
+        <div className="absolute top-[26px] right-[20px]">
+        	<Icon className="w-[1.25rem] h-[1.25rem]" aria-hidden="true" />
+        	<span className="sr-only">{category.label} calculator</span>
+        </div>
+        ```
+        where `Icon = categoryIcons[calculator.category]`. The sr-only label reads e.g. "Finance
+        calculator" / "Aviation calculator", using the label from `calculatorCategories`.
+    - Don't change the Featured Apps cards.
 - Search stays as it is: no category filter in v1, and it doesn't match category labels. Aviation
   calculators are found by name and description like the others.
 - "Featured Apps" stays unchanged below the sections.
@@ -513,6 +543,13 @@ reset values), `constants/data.ts`, `app/layout.tsx`, `app/manifest.ts`, `README
 
 - Landing page shows a "Finance" section with all 12 calculators; no "Aviation" section until an
   aviation calculator exists; search hides empty sections; "Featured Apps" unchanged.
+- A section heading only renders when its section has calculators. A search that matches nothing
+  behaves as today: no category headings, no new message, count `0`, "Featured Apps" still shown.
+- Each calculator card shows its category icon (Finance: `Coins`, Aviation: `Plane`, from
+  `lucide-react`) in the same position, size and styling as the `ExternalLink` icon on the Featured
+  Apps cards, with `aria-hidden` on the icon and an sr-only label like "Finance calculator". The
+  mapping is a `Record<CalculatorCategory, LucideIcon>` in the UI code; `constants/calculators.ts`
+  has no React or `lucide-react` imports.
 - README has an "Aviation Calculators" section with heading and intro.
 - The `SlidersHorizontal` button is visible on every page (desktop and mobile), opens the modal
   with Speed, Altitude and Temperature selects showing the current values, and Save applies them.
