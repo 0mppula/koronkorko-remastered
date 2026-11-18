@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { BASE_UNITS, formDataFromBaseUnits, fromBaseUnit, toBaseUnit } from '@/lib/units';
 import {
 	annualizedReturnFormDataSchema,
 	breakEvenPointFormDataSchema,
@@ -16,6 +17,9 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	unitPreferencesSchema,
+	unitNumberFieldSchema,
+	userPreferencesSchema,
 } from '@/schemas';
 
 // Expected behavior is based on what each calculator needs for a meaningful result.
@@ -685,5 +689,153 @@ describe('dividendYieldFormDataSchema', () => {
 		expect(dividendYieldFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
+	});
+});
+
+describe('unitPreferencesSchema', () => {
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f' };
+
+	it('accepts valid input', () => {
+		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('rejects an unknown unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, speed: 'furlongs' });
+
+		expect(issueFields(result)).toEqual(['speed']);
+		expect(issueMessages(result)).toEqual(['Invalid speed unit']);
+	});
+
+	itRejectsMissingFields(unitPreferencesSchema, base);
+});
+
+describe('userPreferencesSchema', () => {
+	const base = {
+		theme: 'dark',
+		currency: 'eur',
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c' },
+	};
+
+	it('accepts valid input', () => {
+		expect(userPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('drops unknown keys', () => {
+		expect(userPreferencesSchema.parse({ ...base, isAdmin: true })).toEqual(base);
+	});
+
+	it('rejects missing units', () => {
+		const result = userPreferencesSchema.safeParse({ theme: 'dark', currency: 'eur' });
+
+		expect(issueMessages(result)).toEqual(['Unit preferences are required']);
+	});
+
+	it('rejects an unknown unit value', () => {
+		const result = userPreferencesSchema.safeParse({
+			...base,
+			units: { ...base.units, temperature: 'k' },
+		});
+
+		expect(issueMessages(result)).toEqual(['Invalid temperature unit']);
+	});
+
+	it('rejects an unknown currency', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, currency: 'btc' });
+
+		expect(issueMessages(result)).toEqual(['Invalid currency']);
+	});
+
+	it('rejects an unknown theme', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, theme: 'neon' });
+
+		expect(issueMessages(result)).toEqual(['Invalid theme']);
+	});
+});
+
+// Speed limits in kt: 200 kt = 370.4 km/h (1 NM = 1852 m) ≈ 230.156 mph (1 mi = 1609.344 m).
+describe('unitNumberFieldSchema', () => {
+	const windSpeed = (unit: string) =>
+		unitNumberFieldSchema('Wind speed', 'speed', unit, { min: 0, max: 200 });
+
+	it('accepts values within the limits in base units', () => {
+		expect(windSpeed('kt').parse(200)).toBe(200);
+		expect(windSpeed('kt').parse(0)).toBe(0);
+	});
+
+	it('accepts the limit in a non-base unit', () => {
+		expect(windSpeed('kmh').parse(370.4)).toBe(370.4);
+	});
+
+	it('rejects values above the limit with the limit in the user unit', () => {
+		const result = windSpeed('kmh').safeParse(370.5);
+
+		expect(result.success).toBe(false);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.4 km/h']);
+	});
+
+	it('rounds a shown maximum down in the user unit', () => {
+		// 230.2 mph ≈ 200.03 kt is above the limit, so the shown limit is 230.1 mph.
+		expect(issueMessages(windSpeed('mph').safeParse(230.2))).toEqual([
+			'Wind speed cannot be greater than 230.1 mph',
+		]);
+	});
+
+	it('accepts the shown maximum in the user unit and in base units', () => {
+		expect(windSpeed('mph').safeParse(230.1).success).toBe(true);
+		expect(windSpeed('kt').safeParse(toBaseUnit(230.1, 'speed', 'mph')).success).toBe(true);
+	});
+
+	it('accepts a value saved at the limit after converting it to the user unit', () => {
+		expect(windSpeed('mph').safeParse(fromBaseUnit(200, 'speed', 'mph')).success).toBe(true);
+
+		const { windSpeed: imported } = formDataFromBaseUnits(
+			{ windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			{ ...BASE_UNITS, speed: 'mph' }
+		);
+
+		expect(windSpeed('mph').safeParse(imported).success).toBe(true);
+	});
+
+	it('rounds a shown minimum up in the user unit', () => {
+		// 10 kt ≈ 11.508 mph, so the shown minimum is 11.6 mph.
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'mph', { min: 10 });
+
+		expect(issueMessages(trueAirspeed.safeParse(11.5))).toEqual([
+			'True airspeed cannot be lower than 11.6 mph',
+		]);
+		expect(trueAirspeed.safeParse(11.6).success).toBe(true);
+	});
+
+	it('rejects values below an inclusive minimum', () => {
+		// -60 °C = -76 °F
+		const temperature = unitNumberFieldSchema('Temperature', 'temperature', 'f', { min: -60 });
+
+		expect(temperature.parse(-76)).toBe(-76);
+		expect(issueMessages(temperature.safeParse(-76.1))).toEqual([
+			'Temperature cannot be lower than -76.0 °F',
+		]);
+	});
+
+	it('rejects the minimum when it is exclusive', () => {
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'kt', {
+			min: 0,
+			minExclusive: true,
+		});
+
+		expect(trueAirspeed.parse(0.1)).toBe(0.1);
+		expect(issueMessages(trueAirspeed.safeParse(0))).toEqual([
+			'True airspeed must be greater than 0.0 kt',
+		]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(windSpeed('kmh').parse('18.52')).toBe(18.52);
+	});
+
+	it('keeps the number field messages', () => {
+		expect(issueMessages(windSpeed('kt').safeParse('abc'))).toEqual([
+			'Wind speed has to be a number',
+		]);
 	});
 });

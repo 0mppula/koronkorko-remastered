@@ -37,7 +37,9 @@ const PremiumModal = () => {
 	return (
 		<Dialog open={isPremiumModalOpen} onOpenChange={(state) => setIsPremiumModalOpen(state)}>
 			<DialogTrigger asChild className="hidden md:block">
-				<Button variant="link">Pricing</Button>
+				<Button variant="link" className="px-2 lg:px-4">
+					Pricing
+				</Button>
 			</DialogTrigger>
 
 			<DialogContent className="md:max-w-4xl p-0 h-[80svh] md:h-auto">

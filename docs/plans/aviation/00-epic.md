@@ -47,7 +47,7 @@ limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator.
 
 Each feature has its own plan file and branch. Update this checklist in the feature's PR.
 
-- [ ] **01 Foundation** – `01-foundation.md` – `feature/aviation-foundation`
+- [x] **01 Foundation** – `01-foundation.md` – `feature/aviation-foundation`
       (categories + landing sections, units store/modal/sync, `lib/units.ts`, unit-aware input,
       disclaimer, AGENTS.md checklist, copy)
 - [ ] **02 Crosswind Calculator** – `02-crosswind-calculator.md` – `feature/crosswind-calculator`

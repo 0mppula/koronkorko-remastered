@@ -1,10 +1,12 @@
 'use client';
 
 import { USER_QUERY_KEY } from '@/constants/api';
-import { currencies } from '@/constants/data';
+import { currencies, themes } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
+import useUnitsStore from '@/hooks/useUnits';
 import { getUser, updateUserPreferences } from '@/lib/queryFns/auth';
+import { withDefaultUnitPreferences } from '@/lib/units';
 import { User } from '@prisma/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
@@ -13,10 +15,17 @@ import { PropsWithChildren, useEffect } from 'react';
 import { toast } from 'sonner';
 import LargeSpinner from '../Spinners/LargeSpinner';
 
+const isValidTheme = (value?: string | null): value is (typeof themes)[number] =>
+	themes.some((t) => t === value);
+
+const isValidCurrency = (value?: string | null): value is (typeof currencies)[number]['value'] =>
+	currencies.some((c) => c.value === value);
+
 const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 	const { theme, setTheme } = useTheme();
 	const { status: sessionStatus } = useSession();
 	const { currency, setCurrency } = useCurrencyStore();
+	const { units, setUnits } = useUnitsStore();
 	const { isGlobalLoading, setIsGlobalLoading } = useLoadingStore();
 	const queryClient = useQueryClient();
 
@@ -43,25 +52,36 @@ const UserPreferencesProvider = ({ children }: PropsWithChildren) => {
 		},
 	});
 
-	// If the user doesnt have preferences yet, set them to match the current theme and currency.
+	// Fill in missing preferences, keeping valid stored values and falling back to local ones.
 	useEffect(() => {
-		if (data?.preferences?.currency && data?.preferences?.theme) return;
+		const storedTheme = data?.preferences?.theme;
+		const storedCurrency = data?.preferences?.currency;
+
+		if (storedCurrency && storedTheme && data?.preferences?.units) return;
 
 		mutate({
 			sessionStatus,
-			theme: theme || 'system',
-			currency,
+			theme: isValidTheme(storedTheme) ? storedTheme : theme || 'system',
+			currency: isValidCurrency(storedCurrency) ? storedCurrency : currency,
+			units,
 		});
 	}, [data?.preferences]);
 
-	// Override the theme and currency with the user's preferences.
+	// Override the local preferences with the user's valid stored preferences.
 	useEffect(() => {
-		if (data?.preferences?.theme) {
-			setTheme(data.preferences.theme);
+		const storedTheme = data?.preferences?.theme;
+		const storedCurrency = data?.preferences?.currency;
+
+		if (isValidTheme(storedTheme)) {
+			setTheme(storedTheme);
 		}
 
-		if (data?.preferences?.currency) {
-			setCurrency(data.preferences.currency as (typeof currencies)[number]['value']);
+		if (isValidCurrency(storedCurrency)) {
+			setCurrency(storedCurrency);
+		}
+
+		if (data?.preferences?.units) {
+			setUnits(withDefaultUnitPreferences(data.preferences.units));
 		}
 	}, [data?.preferences]);
 

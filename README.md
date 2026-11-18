@@ -15,9 +15,11 @@
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
 
-[KoronKorko][site] is a full-stack finance web-app developed by [Omar Kraidié][dev]. KoronKorko has different types of finance calculators. All the available calculators are listed below in this `README.md` file.
+[KoronKorko][site] is a full-stack web-app developed by [Omar Kraidié][dev]. KoronKorko has finance and aviation calculators. All the available calculators are listed below in this `README.md` file.
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
+
+Users can also choose their preferred units (speed, altitude and temperature) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 
@@ -97,6 +99,12 @@ Calculate the liquidation price of an asset, given its entry price and the lever
 ### [Dividend Yield Calculator][12]
 
 Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price.
+
+---
+
+## Aviation Calculators
+
+Calculators for pilots and student pilots. Values can be entered and shown in the units chosen in the unit preferences.
 
 ---
 

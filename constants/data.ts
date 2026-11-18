@@ -11,6 +11,11 @@ export const XxlScreen = 1536;
 
 export const FREE_PLAN_CALCULATION_LIMIT = 3;
 
+export const themes = ['light', 'dark', 'system'] as const;
+
+export const AVIATION_DISCLAIMER =
+	'For training and educational use only. Not for flight planning or navigation.';
+
 export const featuredApps = [
 	{
 		name: 'Money Mapper',

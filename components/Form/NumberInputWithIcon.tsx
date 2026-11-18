@@ -6,16 +6,24 @@ import CurrencyIcon from '../CurrencyIcon';
 import { InputProps } from '../ui/input';
 
 interface NumberInputWithIconProps extends InputProps {
-	iconType?: 'currency' | 'percentage';
+	iconType?: 'currency' | 'percentage' | 'unit';
+	unitSymbol?: string;
 	min0?: boolean;
 }
 
 const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIconProps>(
-	({ className, type, min0 = true, iconType = 'currency', ...props }, ref) => {
+	({ className, type, min0 = true, iconType = 'currency', unitSymbol, ...props }, ref) => {
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {
-			if (iconType === 'percentage') {
+			if (iconType === 'unit') {
+				return (
+					<>
+						<span aria-hidden>{unitSymbol}</span>
+						<span className="sr-only">{unitSymbol}</span>
+					</>
+				);
+			} else if (iconType === 'percentage') {
 				return (
 					<>
 						<Percent className="h-4 w-4" aria-hidden />
@@ -32,11 +40,15 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 				<input
 					className={cn(
 						'text-base flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-base file:font-medium placeholder:text-neutral-700 dark:placeholder:text-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+						iconType === 'unit' && 'pr-14',
 						className
 					)}
 					type="number"
-					step="0.01"
-					placeholder={iconType === 'percentage' ? '10' : '1000'}
+					// Converted unit values can have more than two decimals.
+					step={iconType === 'unit' ? 'any' : '0.01'}
+					placeholder={
+						iconType === 'unit' ? '0' : iconType === 'percentage' ? '10' : '1000'
+					}
 					ref={ref}
 					{...(min0 ? { min: 0 } : {})}
 					{...props}

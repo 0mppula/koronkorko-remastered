@@ -1,3 +1,14 @@
+import { currencies, themes } from '@/constants/data';
+import {
+	formatUnitValue,
+	fromBaseUnit,
+	getUnitOptions,
+	toBaseUnit,
+	unitFractionDigits,
+	UnitPreferences,
+	UnitQuantity,
+	UnitValue,
+} from '@/lib/units';
 import { z } from 'zod';
 
 export const calculationNameStringSchema = z
@@ -64,6 +75,65 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 	return positiveNumberFieldSchema(fieldName).max(max, {
 		message: `${fieldName} cannot be greater than ${max}`,
 	});
+};
+
+const UNIT_LIMIT_TOLERANCE = 1e-9;
+
+// Limits are in base units and checked in base units, so the form and the API agree.
+export const unitNumberFieldSchema = (
+	fieldName: string,
+	quantity: UnitQuantity,
+	unit: string,
+	limits: { min?: number; max?: number; minExclusive?: boolean }
+) => {
+	const { min, max, minExclusive } = limits;
+	const digits = unitFractionDigits[quantity];
+	const step = 10 ** -digits;
+
+	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
+	const tolerance = (limit: number) => UNIT_LIMIT_TOLERANCE * Math.max(1, Math.abs(limit));
+	const toBase = (value: number) => toBaseUnit(value, quantity, unit);
+	const isAtLeast = (limit: number) => (value: number) =>
+		toBase(value) >= limit - tolerance(limit);
+	const isAtMost = (limit: number) => (value: number) =>
+		toBase(value) <= limit + tolerance(limit);
+	const round = (value: number) => Number(value.toFixed(digits)) || 0;
+
+	// Shown limits are rounded inwards, so every value up to the shown limit passes.
+	const formatShownLimit = (
+		limit: number,
+		isWithinLimit: (value: number) => boolean,
+		inward: number
+	) => {
+		const nearest = round(fromBaseUnit(limit, quantity, unit));
+		const shown = isWithinLimit(nearest) ? nearest : round(nearest + inward);
+
+		return formatUnitValue(shown, quantity, unit);
+	};
+
+	let schema: z.ZodType<number, z.ZodTypeDef, number> = numberFieldSchema(fieldName);
+
+	if (min !== undefined) {
+		const shownMin = formatShownLimit(min, isAtLeast(min), step);
+
+		schema = minExclusive
+			? schema.refine((value) => toBase(value) > min + tolerance(min), {
+					message: `${fieldName} must be greater than ${shownMin}`,
+				})
+			: schema.refine(isAtLeast(min), {
+					message: `${fieldName} cannot be lower than ${shownMin}`,
+				});
+	}
+
+	if (max !== undefined) {
+		const shownMax = formatShownLimit(max, isAtMost(max), -step);
+
+		schema = schema.refine(isAtMost(max), {
+			message: `${fieldName} cannot be greater than ${shownMax}`,
+		});
+	}
+
+	return schema;
 };
 
 export const markupFormDataSchema = z.object({
@@ -187,4 +257,31 @@ export const dividendYieldFormDataSchema = z.object({
 	dividendAmount: positiveNumberFieldSchema('Dividend amount'),
 	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
 	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
+});
+
+const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
+	const values = getUnitOptions(quantity).map((o) => o.value);
+
+	return z.enum(values as unknown as [UnitValue<Q>, ...UnitValue<Q>[]], {
+		errorMap: () => ({ message: `Invalid ${quantity} unit` }),
+	});
+};
+
+export const unitPreferencesSchema = z.object(
+	{
+		speed: unitValueSchema('speed'),
+		altitude: unitValueSchema('altitude'),
+		temperature: unitValueSchema('temperature'),
+	},
+	{ required_error: 'Unit preferences are required' }
+) satisfies z.ZodType<UnitPreferences>;
+
+type CurrencyValue = (typeof currencies)[number]['value'];
+
+export const userPreferencesSchema = z.object({
+	theme: z.enum(themes, { errorMap: () => ({ message: 'Invalid theme' }) }),
+	currency: z.enum(currencies.map((c) => c.value) as [CurrencyValue, ...CurrencyValue[]], {
+		errorMap: () => ({ message: 'Invalid currency' }),
+	}),
+	units: unitPreferencesSchema,
 });
