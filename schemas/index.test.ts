@@ -16,6 +16,8 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	unitPreferencesSchema,
+	userPreferencesSchema,
 } from '@/schemas';
 
 // Expected behavior is based on what each calculator needs for a meaningful result.
@@ -685,5 +687,65 @@ describe('dividendYieldFormDataSchema', () => {
 		expect(dividendYieldFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
+	});
+});
+
+describe('unitPreferencesSchema', () => {
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f' };
+
+	it('accepts valid input', () => {
+		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('rejects an unknown unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, speed: 'furlongs' });
+
+		expect(issueFields(result)).toEqual(['speed']);
+		expect(issueMessages(result)).toEqual(['Invalid speed unit']);
+	});
+
+	itRejectsMissingFields(unitPreferencesSchema, base);
+});
+
+describe('userPreferencesSchema', () => {
+	const base = {
+		theme: 'dark',
+		currency: 'eur',
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c' },
+	};
+
+	it('accepts valid input', () => {
+		expect(userPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('drops unknown keys', () => {
+		expect(userPreferencesSchema.parse({ ...base, isAdmin: true })).toEqual(base);
+	});
+
+	it('rejects missing units', () => {
+		const result = userPreferencesSchema.safeParse({ theme: 'dark', currency: 'eur' });
+
+		expect(issueMessages(result)).toEqual(['Unit preferences are required']);
+	});
+
+	it('rejects an unknown unit value', () => {
+		const result = userPreferencesSchema.safeParse({
+			...base,
+			units: { ...base.units, temperature: 'k' },
+		});
+
+		expect(issueMessages(result)).toEqual(['Invalid temperature unit']);
+	});
+
+	it('rejects an unknown currency', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, currency: 'btc' });
+
+		expect(issueMessages(result)).toEqual(['Invalid currency']);
+	});
+
+	it('rejects an unknown theme', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, theme: 'neon' });
+
+		expect(issueMessages(result)).toEqual(['Invalid theme']);
 	});
 });

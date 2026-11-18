@@ -1,3 +1,5 @@
+import { currencies, themes } from '@/constants/data';
+import { getUnitOptions, UnitPreferences, UnitQuantity, UnitValue } from '@/lib/units';
 import { z } from 'zod';
 
 export const calculationNameStringSchema = z
@@ -187,4 +189,31 @@ export const dividendYieldFormDataSchema = z.object({
 	dividendAmount: positiveNumberFieldSchema('Dividend amount'),
 	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
 	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
+});
+
+const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
+	const values = getUnitOptions(quantity).map((o) => o.value);
+
+	return z.enum(values as unknown as [UnitValue<Q>, ...UnitValue<Q>[]], {
+		errorMap: () => ({ message: `Invalid ${quantity} unit` }),
+	});
+};
+
+export const unitPreferencesSchema = z.object(
+	{
+		speed: unitValueSchema('speed'),
+		altitude: unitValueSchema('altitude'),
+		temperature: unitValueSchema('temperature'),
+	},
+	{ required_error: 'Unit preferences are required' }
+) satisfies z.ZodType<UnitPreferences>;
+
+type CurrencyValue = (typeof currencies)[number]['value'];
+
+export const userPreferencesSchema = z.object({
+	theme: z.enum(themes, { errorMap: () => ({ message: 'Invalid theme' }) }),
+	currency: z.enum(currencies.map((c) => c.value) as [CurrencyValue, ...CurrencyValue[]], {
+		errorMap: () => ({ message: 'Invalid currency' }),
+	}),
+	units: unitPreferencesSchema,
 });

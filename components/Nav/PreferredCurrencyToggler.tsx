@@ -11,6 +11,7 @@ import { USER_QUERY_KEY } from '@/constants/api';
 import { currencies } from '@/constants/data';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
+import useUnitsStore from '@/hooks/useUnits';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
@@ -20,6 +21,7 @@ import CurrencyIcon from '../CurrencyIcon';
 
 const PreferredCurrencyToggler = () => {
 	const { currency, setCurrency } = useCurrencyStore();
+	const { units } = useUnitsStore();
 	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 	const { resolvedTheme } = useTheme();
@@ -49,7 +51,12 @@ const PreferredCurrencyToggler = () => {
 		setCurrency(currencyParam);
 
 		if (sessionStatus === 'authenticated') {
-			mutate({ sessionStatus, theme: resolvedTheme || 'system', currency: currencyParam });
+			mutate({
+				sessionStatus,
+				theme: resolvedTheme || 'system',
+				currency: currencyParam,
+				units,
+			});
 		}
 	};
 

@@ -26,9 +26,16 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+type unitPreferences {
+  speed       String?
+  altitude    String?
+  temperature String?
+}
+
 type preferences {
   theme    String
   currency String
+  units    unitPreferences?
 }
 
 model User {

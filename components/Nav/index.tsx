@@ -6,6 +6,7 @@ import Logo from './Logo';
 import PreferredCurrencyToggler from './PreferredCurrencyToggler';
 import PremiumModal from './PremiumModal';
 import ThemeToggler from './ThemeToggler';
+import UnitPreferencesModal from './UnitPreferencesModal';
 import UserAccountNav from './UserAccountNav';
 
 const Nav = async () => {
@@ -37,6 +38,8 @@ const Nav = async () => {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<UnitPreferencesModal />
+
 					<PreferredCurrencyToggler />
 
 					<ThemeToggler />
