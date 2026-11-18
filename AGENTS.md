@@ -2,13 +2,14 @@
 
 ## Project
 
-KoronKorko is a full-stack finance web app (www.koronkorko.com) with 12 finance calculators
-(compound interest, annualized return/CAGR, present value, investment time, break-even point,
-markup, event probability, P/E ratio, dollar cost average, enterprise value, liquidation price,
-dividend yield). Anyone can use them; signed-in users can save, rename, update, import and delete
+KoronKorko is a full-stack web app (www.koronkorko.com) with finance and aviation calculators.
+Finance (12): compound interest, annualized return/CAGR, present value, investment time,
+break-even point, markup, event probability, P/E ratio, dollar cost average, enterprise value,
+liquidation price, dividend yield. Aviation calculators are listed in `constants/calculators.ts`
+(`category: 'aviation'`). Anyone can use them; signed-in users can save, rename, update, import and delete
 calculations. Free-plan users are limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator;
-premium is bought via Stripe. Currency is kept in a persisted Zustand store (localStorage) and
-synced to `User.preferences` for signed-in users.
+premium is bought via Stripe. Currency and unit preferences (speed, altitude, temperature) are kept
+in persisted Zustand stores (localStorage) and synced to `User.preferences` for signed-in users.
 
 ## Stack
 
@@ -34,12 +35,14 @@ synced to `User.preferences` for signed-in users.
 - `app/api/<name>-calculations/` – calculation CRUD; `app/api/auth/` – user + preferences
 - `app/actions/` – `auth.ts` (`authOptions`, `getAuthSession`), `subscription.ts` (server action)
 - `components/` – shared components by area (`Form/`, `Report/`, `Modals/`, `Nav/`, `providers/`);
-  shadcn/ui in `components/ui/`
-- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list), `data.ts` (currencies, limits)
-- `hooks/` – `useCalculator`, `useCalculationMutations`, Zustand stores, misc hooks
-- `lib/` – `calculatorFns.ts`, `utils.ts` (formatting, `cn`), `db.ts`, `stripe.ts`, `queryFns/`
+  shadcn/ui in `components/ui/`. `Nav/UnitPreferencesModal.tsx` (units button + modal),
+  `Report/AviationDisclaimer.tsx`
+- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list + categories), `data.ts` (currencies, limits, disclaimer)
+- `hooks/` – `useCalculator`, `useCalculationMutations`, Zustand stores (`useUnits` for unit preferences), misc hooks
+- `lib/` – `calculatorFns.ts`, `utils.ts` (formatting, `cn`), `units.ts` (unit definitions and
+  conversions), `db.ts`, `stripe.ts`, `queryFns/`
 - `schemas/index.ts` – all zod schemas · `types/calculations.ts` – form/report/calculation types
-- `prisma/schema.prisma` · `public/assets/images/`
+- `prisma/schema.prisma` · `public/assets/images/` · `docs/plans/` (plan files)
 
 ## Environment (names only)
 
@@ -61,17 +64,53 @@ synced to `User.preferences` for signed-in users.
 6. `schemas/index.test.ts`: add a `describe` block for `<x>FormDataSchema` (valid input, missing,
    negative and out-of-range values, coercion, and `BUG:` cases for inputs with no valid result).
 7. `constants/api.ts`: `<X>_CALCULATIONS_API_URL` + `_QUERY_KEY`, added to `API_URLS` / `QUERY_KEYS`.
-8. `constants/calculators.ts`: `{ name, url, description }` (drives home page, search, metadata).
+8. `constants/calculators.ts`: `{ name, url, category, description }` (drives home page sections,
+   search, metadata).
 9. `app/api/<x>-calculations/route.ts` (`POST` with session + free-plan limit check, `GET`) and
    `[id]/route.ts` (`PUT`, `DELETE`, scoped by `userId`). Parse bodies with the zod schemas.
 10. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
     `Calculator.tsx` (form + `useCalculator` + `useQuery(getCalculations)` + `FormControlsTop`),
     `Report.tsx` (`ReportSection`/`ReportGroup`), `Info.tsx` (static explanation + `ReportSource`).
 
+## Adding an aviation calculator
+
+Follow "Adding a calculator" with these differences:
+
+1. Base units everywhere except the form: kt, ft, NM, hPa, °C, kg, L, degrees. Prisma formData,
+   API bodies, `calculate<X>` input/output and stored values use base units and are never rounded.
+2. `lib/units.ts`: if the calculator needs a quantity that has no preference yet, add it to
+   `unitQuantities`/`unitOptions` (exact conversion factors, cited) and `unitFractionDigits`, as
+   an optional field on the Prisma `unitPreferences` type, to `unitPreferencesSchema`, and test it
+   in `lib/units.test.ts`. The units modal picks it up automatically.
+3. `schemas/index.ts`: `create<X>FormDataSchema(units)` using `unitNumberFieldSchema` with limits
+   in base units, plus `<x>FormDataSchema = create<X>FormDataSchema(BASE_UNITS)` for the API.
+   Infer `I<X>FormData` from `<x>FormDataSchema`. Limits are enforced as displayed in the user's
+   unit (rounded to `unitFractionDigits`).
+4. `lib/calculatorFns.ts`: `calculate<X>` takes and returns base units. Cite the formula source in
+   a one-line comment.
+5. `Calculator.tsx`: export a module-level `<x>UnitFields` map (`UnitFields<I<X>FormData>`, must
+   be a stable reference), base-unit `defaultValues`, schema via
+   `useMemo(() => create<X>FormDataSchema(units), [units])`, pass `unitFields` to `useCalculator`,
+   and use `NumberInputWithIcon iconType="unit"` with `getUnitSymbol(...)` (`unitSymbol="°"` for
+   directions; `min0={false}` for inputs that may be negative).
+6. `Report.tsx`: format with `formatUnitValue` in the user's units; end with
+   `<AviationDisclaimer />`.
+7. `Info.tsx`: explain the formula and sources, include the disclaimer sentence, end with
+   `ReportSource`.
+8. `constants/calculators.ts`: `category: 'aviation'`. Add the calculator to README's aviation
+   section.
+9. Tests: formula tests with expected values from ICAO/FAA/E6B worked examples or exact
+   derivations; schema tests in base units and in at least one non-base unit (message shows the
+   user's unit).
+
 ## Conventions
 
 - Format money with `formatCurrency(value, currency)` from `lib/utils` (locale comes from the
   currency); `currency` from `useCurrencyStore`.
+- Format aviation values with `formatUnitValue(value, quantity, units[quantity])` from `lib/units`;
+  `units` from `useUnitsStore`.
+- `PUT /api/auth/preferences` replaces the whole preferences object: every
+  `updateUserPreferences` call sends `theme`, `currency` and `units`.
 - Keep the free-plan limit checks: client-side (`checkCalculationLimit` in `lib/queryFns`) and
   server-side in every `POST` route.
 - Use the `@/` import alias.
@@ -110,7 +149,7 @@ synced to `User.preferences` for signed-in users.
   `useCalculator` → `useCalculationMutations` (toasts + query invalidation). Route handlers do
   the DB work via `db` from `lib/db`. Server actions are rare (`getUsersSubscriptionData`).
 - Zustand: one store per file in `hooks/` (`useCurrency`, `useLoadingStore`, `useLoginModal`,
-  `usePremiumModal`), `create<Interface>()((set) => ...)`, default-exported; `persist` only for currency.
+  `usePremiumModal`), `create<Interface>()((set) => ...)`, default-exported; `persist` only for currency and units.
 
 ## Known issues (don't copy these patterns)
 

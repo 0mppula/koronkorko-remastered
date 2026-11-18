@@ -18,7 +18,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
 	title: `Home - ${appName}`,
-	description: 'A finance web-application with various types of easy to use finance calculators.',
+	description: 'A web-application with easy to use finance and aviation calculators.',
 };
 
 export default function RootLayout({
