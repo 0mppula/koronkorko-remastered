@@ -3,6 +3,7 @@ import {
 	formatUnitValue,
 	fromBaseUnit,
 	getUnitOptions,
+	toBaseUnit,
 	unitFractionDigits,
 	UnitPreferences,
 	UnitQuantity,
@@ -78,37 +79,57 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 
 const UNIT_LIMIT_TOLERANCE = 1e-9;
 
-// Limits are given in base units and enforced as shown in the user's unit (rounded for display).
+// Limits are in base units and checked in base units, so the form and the API agree.
 export const unitNumberFieldSchema = (
 	fieldName: string,
 	quantity: UnitQuantity,
 	unit: string,
 	limits: { min?: number; max?: number; minExclusive?: boolean }
 ) => {
-	const toDisplayedLimit = (limit: number) =>
-		Number(fromBaseUnit(limit, quantity, unit).toFixed(unitFractionDigits[quantity]));
+	const { min, max, minExclusive } = limits;
+	const digits = unitFractionDigits[quantity];
+	const step = 10 ** -digits;
 
-	const format = (limit: number) => formatUnitValue(limit, quantity, unit);
+	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
+	const tolerance = (limit: number) => UNIT_LIMIT_TOLERANCE * Math.max(1, Math.abs(limit));
+	const toBase = (value: number) => toBaseUnit(value, quantity, unit);
+	const isAtLeast = (limit: number) => (value: number) =>
+		toBase(value) >= limit - tolerance(limit);
+	const isAtMost = (limit: number) => (value: number) =>
+		toBase(value) <= limit + tolerance(limit);
+	const round = (value: number) => Number(value.toFixed(digits)) || 0;
 
-	let schema = numberFieldSchema(fieldName);
+	// Shown limits are rounded inwards, so every value up to the shown limit passes.
+	const formatShownLimit = (
+		limit: number,
+		isWithinLimit: (value: number) => boolean,
+		inward: number
+	) => {
+		const nearest = round(fromBaseUnit(limit, quantity, unit));
+		const shown = isWithinLimit(nearest) ? nearest : round(nearest + inward);
 
-	if (limits.min !== undefined) {
-		const min = toDisplayedLimit(limits.min);
+		return formatUnitValue(shown, quantity, unit);
+	};
 
-		schema = limits.minExclusive
-			? schema.gt(min + UNIT_LIMIT_TOLERANCE, {
-					message: `${fieldName} must be greater than ${format(min)}`,
+	let schema: z.ZodType<number, z.ZodTypeDef, number> = numberFieldSchema(fieldName);
+
+	if (min !== undefined) {
+		const shownMin = formatShownLimit(min, isAtLeast(min), step);
+
+		schema = minExclusive
+			? schema.refine((value) => toBase(value) > min + tolerance(min), {
+					message: `${fieldName} must be greater than ${shownMin}`,
 				})
-			: schema.gte(min - UNIT_LIMIT_TOLERANCE, {
-					message: `${fieldName} cannot be lower than ${format(min)}`,
+			: schema.refine(isAtLeast(min), {
+					message: `${fieldName} cannot be lower than ${shownMin}`,
 				});
 	}
 
-	if (limits.max !== undefined) {
-		const max = toDisplayedLimit(limits.max);
+	if (max !== undefined) {
+		const shownMax = formatShownLimit(max, isAtMost(max), -step);
 
-		schema = schema.lte(max + UNIT_LIMIT_TOLERANCE, {
-			message: `${fieldName} cannot be greater than ${format(max)}`,
+		schema = schema.refine(isAtMost(max), {
+			message: `${fieldName} cannot be greater than ${shownMax}`,
 		});
 	}
 

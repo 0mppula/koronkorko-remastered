@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { BASE_UNITS, formDataFromBaseUnits, fromBaseUnit, toBaseUnit } from '@/lib/units';
 import {
 	annualizedReturnFormDataSchema,
 	breakEvenPointFormDataSchema,
@@ -765,18 +766,45 @@ describe('unitNumberFieldSchema', () => {
 		expect(windSpeed('kmh').parse(370.4)).toBe(370.4);
 	});
 
-	it('accepts the displayed (rounded) limit', () => {
-		expect(windSpeed('mph').parse(230.2)).toBe(230.2);
-	});
-
 	it('rejects values above the limit with the limit in the user unit', () => {
 		const result = windSpeed('kmh').safeParse(370.5);
 
 		expect(result.success).toBe(false);
 		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.4 km/h']);
-		expect(issueMessages(windSpeed('mph').safeParse(230.3))).toEqual([
-			'Wind speed cannot be greater than 230.2 mph',
+	});
+
+	it('rounds a shown maximum down in the user unit', () => {
+		// 230.2 mph ≈ 200.03 kt is above the limit, so the shown limit is 230.1 mph.
+		expect(issueMessages(windSpeed('mph').safeParse(230.2))).toEqual([
+			'Wind speed cannot be greater than 230.1 mph',
 		]);
+	});
+
+	it('accepts the shown maximum in the user unit and in base units', () => {
+		expect(windSpeed('mph').safeParse(230.1).success).toBe(true);
+		expect(windSpeed('kt').safeParse(toBaseUnit(230.1, 'speed', 'mph')).success).toBe(true);
+	});
+
+	it('accepts a value saved at the limit after converting it to the user unit', () => {
+		expect(windSpeed('mph').safeParse(fromBaseUnit(200, 'speed', 'mph')).success).toBe(true);
+
+		const { windSpeed: imported } = formDataFromBaseUnits(
+			{ windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			{ ...BASE_UNITS, speed: 'mph' }
+		);
+
+		expect(windSpeed('mph').safeParse(imported).success).toBe(true);
+	});
+
+	it('rounds a shown minimum up in the user unit', () => {
+		// 10 kt ≈ 11.508 mph, so the shown minimum is 11.6 mph.
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'mph', { min: 10 });
+
+		expect(issueMessages(trueAirspeed.safeParse(11.5))).toEqual([
+			'True airspeed cannot be lower than 11.6 mph',
+		]);
+		expect(trueAirspeed.safeParse(11.6).success).toBe(true);
 	});
 
 	it('rejects values below an inclusive minimum', () => {

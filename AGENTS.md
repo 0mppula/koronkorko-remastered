@@ -84,8 +84,8 @@ Follow "Adding a calculator" with these differences:
    in `lib/units.test.ts`. The units modal picks it up automatically.
 3. `schemas/index.ts`: `create<X>FormDataSchema(units)` using `unitNumberFieldSchema` with limits
    in base units, plus `<x>FormDataSchema = create<X>FormDataSchema(BASE_UNITS)` for the API.
-   Infer `I<X>FormData` from `<x>FormDataSchema`. Limits are enforced as displayed in the user's
-   unit (rounded to `unitFractionDigits`).
+   Infer `I<X>FormData` from `<x>FormDataSchema`. Limits are checked in base units (same on client
+   and API); messages show them rounded inwards in the user's unit.
 4. `lib/calculatorFns.ts`: `calculate<X>` takes and returns base units. Cite the formula source in
    a one-line comment.
 5. `Calculator.tsx`: export a module-level `<x>UnitFields` map (`UnitFields<I<X>FormData>`, must
