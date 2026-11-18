@@ -1,5 +1,13 @@
 import { currencies, themes } from '@/constants/data';
-import { getUnitOptions, UnitPreferences, UnitQuantity, UnitValue } from '@/lib/units';
+import {
+	formatUnitValue,
+	fromBaseUnit,
+	getUnitOptions,
+	unitFractionDigits,
+	UnitPreferences,
+	UnitQuantity,
+	UnitValue,
+} from '@/lib/units';
 import { z } from 'zod';
 
 export const calculationNameStringSchema = z
@@ -66,6 +74,45 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 	return positiveNumberFieldSchema(fieldName).max(max, {
 		message: `${fieldName} cannot be greater than ${max}`,
 	});
+};
+
+const UNIT_LIMIT_TOLERANCE = 1e-9;
+
+// Limits are given in base units and enforced as shown in the user's unit (rounded for display).
+export const unitNumberFieldSchema = (
+	fieldName: string,
+	quantity: UnitQuantity,
+	unit: string,
+	limits: { min?: number; max?: number; minExclusive?: boolean }
+) => {
+	const toDisplayedLimit = (limit: number) =>
+		Number(fromBaseUnit(limit, quantity, unit).toFixed(unitFractionDigits[quantity]));
+
+	const format = (limit: number) => formatUnitValue(limit, quantity, unit);
+
+	let schema = numberFieldSchema(fieldName);
+
+	if (limits.min !== undefined) {
+		const min = toDisplayedLimit(limits.min);
+
+		schema = limits.minExclusive
+			? schema.gt(min + UNIT_LIMIT_TOLERANCE, {
+					message: `${fieldName} must be greater than ${format(min)}`,
+				})
+			: schema.gte(min - UNIT_LIMIT_TOLERANCE, {
+					message: `${fieldName} cannot be lower than ${format(min)}`,
+				});
+	}
+
+	if (limits.max !== undefined) {
+		const max = toDisplayedLimit(limits.max);
+
+		schema = schema.lte(max + UNIT_LIMIT_TOLERANCE, {
+			message: `${fieldName} cannot be greater than ${format(max)}`,
+		});
+	}
+
+	return schema;
 };
 
 export const markupFormDataSchema = z.object({

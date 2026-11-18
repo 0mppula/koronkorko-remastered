@@ -17,6 +17,7 @@ import {
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
 	unitPreferencesSchema,
+	unitNumberFieldSchema,
 	userPreferencesSchema,
 } from '@/schemas';
 
@@ -747,5 +748,66 @@ describe('userPreferencesSchema', () => {
 		const result = userPreferencesSchema.safeParse({ ...base, theme: 'neon' });
 
 		expect(issueMessages(result)).toEqual(['Invalid theme']);
+	});
+});
+
+// Speed limits in kt: 200 kt = 370.4 km/h (1 NM = 1852 m) ≈ 230.156 mph (1 mi = 1609.344 m).
+describe('unitNumberFieldSchema', () => {
+	const windSpeed = (unit: string) =>
+		unitNumberFieldSchema('Wind speed', 'speed', unit, { min: 0, max: 200 });
+
+	it('accepts values within the limits in base units', () => {
+		expect(windSpeed('kt').parse(200)).toBe(200);
+		expect(windSpeed('kt').parse(0)).toBe(0);
+	});
+
+	it('accepts the limit in a non-base unit', () => {
+		expect(windSpeed('kmh').parse(370.4)).toBe(370.4);
+	});
+
+	it('accepts the displayed (rounded) limit', () => {
+		expect(windSpeed('mph').parse(230.2)).toBe(230.2);
+	});
+
+	it('rejects values above the limit with the limit in the user unit', () => {
+		const result = windSpeed('kmh').safeParse(370.5);
+
+		expect(result.success).toBe(false);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.4 km/h']);
+		expect(issueMessages(windSpeed('mph').safeParse(230.3))).toEqual([
+			'Wind speed cannot be greater than 230.2 mph',
+		]);
+	});
+
+	it('rejects values below an inclusive minimum', () => {
+		// -60 °C = -76 °F
+		const temperature = unitNumberFieldSchema('Temperature', 'temperature', 'f', { min: -60 });
+
+		expect(temperature.parse(-76)).toBe(-76);
+		expect(issueMessages(temperature.safeParse(-76.1))).toEqual([
+			'Temperature cannot be lower than -76.0 °F',
+		]);
+	});
+
+	it('rejects the minimum when it is exclusive', () => {
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'kt', {
+			min: 0,
+			minExclusive: true,
+		});
+
+		expect(trueAirspeed.parse(0.1)).toBe(0.1);
+		expect(issueMessages(trueAirspeed.safeParse(0))).toEqual([
+			'True airspeed must be greater than 0.0 kt',
+		]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(windSpeed('kmh').parse('18.52')).toBe(18.52);
+	});
+
+	it('keeps the number field messages', () => {
+		expect(issueMessages(windSpeed('kt').safeParse('abc'))).toEqual([
+			'Wind speed has to be a number',
+		]);
 	});
 });

@@ -75,7 +75,7 @@ export type UnitPreferences = { [Q in UnitQuantity]: UnitValue<Q> };
 export const BASE_UNITS: UnitPreferences = { speed: 'kt', altitude: 'ft', temperature: 'c' };
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
-const defaultFractionDigits: Record<UnitQuantity, number> = {
+export const unitFractionDigits: Record<UnitQuantity, number> = {
 	speed: 1,
 	altitude: 0,
 	temperature: 1,
@@ -108,7 +108,7 @@ export const formatUnitValue = (
 	value: number,
 	quantity: UnitQuantity,
 	unit: string,
-	fractionDigits: number = defaultFractionDigits[quantity]
+	fractionDigits: number = unitFractionDigits[quantity]
 ): string => {
 	const formatted = new Intl.NumberFormat(undefined, {
 		minimumFractionDigits: fractionDigits,
