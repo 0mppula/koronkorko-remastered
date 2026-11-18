@@ -18,14 +18,14 @@ const Nav = async () => {
 				<Logo />
 
 				<div className="gap-2 hidden md:flex">
-					<Button variant="link">
+					<Button variant="link" className="px-2 lg:px-4">
 						<Link href="/">Calculators</Link>
 					</Button>
 
 					<PremiumModal />
 
 					{session?.user && (
-						<Button variant="link">
+						<Button variant="link" className="px-2 lg:px-4">
 							<Link
 								rel="noreferrer"
 								target="_blank"
