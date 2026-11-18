@@ -37,7 +37,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 	}, [internalQuery, searchParams, q]);
 
 	return (
-		<div className="w-full flex gap-4 mb-4 justify-between items-center">
+		<div className="w-full flex gap-4 justify-between items-center">
 			<div className="relative w-full grow-1">
 				<Input
 					className="pl-10 w-full"
