@@ -126,17 +126,31 @@ Finance calculators must behave exactly as before.
     - Render it inside the card `Link` (already `relative`) with the same position, size and
       styling as the `ExternalLink` icon on the Featured Apps cards:
         ```tsx
-        <div className="absolute top-[26px] right-[20px]">
+        <div className="absolute top-[20px] right-[20px]">
         	<Icon className="w-[1.25rem] h-[1.25rem]" aria-hidden="true" />
         	<span className="sr-only">{category.label} calculator</span>
         </div>
         ```
         where `Icon = categoryIcons[calculator.category]`. The sr-only label reads e.g. "Finance
         calculator" / "Aviation calculator", using the label from `calculatorCategories`.
-    - Don't change the Featured Apps cards.
+- Icon position on both card types: change the Featured Apps `ExternalLink` wrapper from
+  `absolute top-[26px] right-[20px]` to `absolute top-[20px] right-[20px]`, so the category icon and
+  the `ExternalLink` icon sit in the same place. Its icon size and styling stay the same.
+- Title padding on both card types, so a title never runs under the icon:
+    - Space the icon needs from the card's right edge: icon right offset `20px` + icon width
+      `1.25rem` (`20px`) + gap `1rem` (`16px`) = `56px`.
+    - The title already sits inside the card's `p-4` right padding (`16px`): the calculator `Link`
+      and the Featured Apps `<a>` both use `p-4`, and the inner calculator `Card` adds no padding
+      (`border-none`, no `p-*`). Both the padding and the icon's `right-[20px]` are measured from
+      inside the `border-2`, so the border doesn't change the result.
+    - Extra right padding on the title: `56px − 16px = 40px` = `2.5rem` = **`pr-10`**.
+    - Calculator cards: `highlightText(calculator.name, query, TypographyH2, 'mb-2 pr-10')`.
+    - Featured Apps cards: `<TypographyH2 className="mb-2 pr-10">{app.name}</TypographyH2>`.
+    - Only the title gets `pr-10`. The separator and description keep the full width.
 - Search stays as it is: no category filter in v1, and it doesn't match category labels. Aviation
   calculators are found by name and description like the others.
-- "Featured Apps" stays unchanged below the sections.
+- "Featured Apps" stays below the sections. Its only markup changes are the icon `top-[20px]` and
+  the title `pr-10` above. `featuredApps` data in `constants/data.ts` is unchanged.
 - To avoid duplicating the divider markup three times, a small local component in `app/page.tsx` is
   fine (server component, no `'use client'`).
 
@@ -542,7 +556,8 @@ reset values), `constants/data.ts`, `app/layout.tsx`, `app/manifest.ts`, `README
 ## Acceptance criteria
 
 - Landing page shows a "Finance" section with all 12 calculators; no "Aviation" section until an
-  aviation calculator exists; search hides empty sections; "Featured Apps" unchanged.
+  aviation calculator exists; search hides empty sections; "Featured Apps" content unchanged (only
+  the icon position and title padding below change).
 - A section heading only renders when its section has calculators. A search that matches nothing
   behaves as today: no category headings, no new message, count `0`, "Featured Apps" still shown.
 - Each calculator card shows its category icon (Finance: `Coins`, Aviation: `Plane`, from
@@ -550,6 +565,10 @@ reset values), `constants/data.ts`, `app/layout.tsx`, `app/manifest.ts`, `README
   Apps cards, with `aria-hidden` on the icon and an sr-only label like "Finance calculator". The
   mapping is a `Record<CalculatorCategory, LucideIcon>` in the UI code; `constants/calculators.ts`
   has no React or `lucide-react` imports.
+- The category icon and the Featured Apps `ExternalLink` icon are in the same position on both card
+  types (`absolute top-[20px] right-[20px]`, `w-[1.25rem] h-[1.25rem]`).
+- At a 320px viewport, long titles on both card types (e.g. the longest calculator name and the
+  longest Featured App name) wrap before the icon and never run under it; both titles have `pr-10`.
 - README has an "Aviation Calculators" section with heading and intro.
 - The `SlidersHorizontal` button is visible on every page (desktop and mobile), opens the modal
   with Speed, Altitude and Temperature selects showing the current values, and Save applies them.
