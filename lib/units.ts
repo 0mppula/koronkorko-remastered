@@ -217,8 +217,27 @@ export const unitFormValuesFromBase = <T extends object>(
 	baseFormData,
 });
 
-// Unedited fields convert from their exact base value; converting the rounded form value again
-// would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
+// Unedited fields (still equal to the values set from base units) use their exact base value;
+// converting the rounded form value would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
+export const formDataToExactBaseUnits = <T extends object>(
+	formData: T,
+	unitFields: UnitFields<T>,
+	units: UnitPreferences,
+	values: UnitFormValues<T> | null
+): T => {
+	const baseFormData = formDataToBaseUnits(formData, unitFields, units);
+
+	if (values) {
+		for (const field of Object.keys(unitFields) as (keyof T)[]) {
+			if (formData[field] === values.formData[field]) {
+				baseFormData[field] = values.baseFormData[field];
+			}
+		}
+	}
+
+	return baseFormData;
+};
+
 export const changeFormDataUnits = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
@@ -226,15 +245,9 @@ export const changeFormDataUnits = <T extends object>(
 	units: UnitPreferences,
 	prevValues: UnitFormValues<T> | null
 ): UnitFormValues<T> => {
-	const baseFormData = formDataToBaseUnits(formData, unitFields, prevUnits);
-
-	if (prevValues) {
-		for (const field of Object.keys(unitFields) as (keyof T)[]) {
-			if (formData[field] === prevValues.formData[field]) {
-				baseFormData[field] = prevValues.baseFormData[field];
-			}
-		}
-	}
-
-	return unitFormValuesFromBase(baseFormData, unitFields, units);
+	return unitFormValuesFromBase(
+		formDataToExactBaseUnits(formData, unitFields, prevUnits, prevValues),
+		unitFields,
+		units
+	);
 };

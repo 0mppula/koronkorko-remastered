@@ -9,6 +9,7 @@ import {
 	formatUnitValue,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
+	formDataToExactBaseUnits,
 	fromBaseUnit,
 	getUnitSymbol,
 	normalizeDegrees,
@@ -438,5 +439,60 @@ describe('changeFormDataUnits', () => {
 		expect(
 			changeFormDataUnits(imported, unitFields, BASE_UNITS, withSpeed('kmh'), null).formData
 		).toEqual({ windSpeed: 37.04, gustSpeed: 55.56, runway: 27 });
+	});
+});
+
+describe('formDataToExactBaseUnits', () => {
+	interface FormData {
+		windSpeed: number | string;
+		gustSpeed: number | string | null;
+		runway: number;
+	}
+
+	const unitFields: UnitFields<FormData> = { windSpeed: 'speed', gustSpeed: 'speed' };
+	const mph: UnitPreferences = { ...BASE_UNITS, speed: 'mph' };
+	const saved: FormData = { windSpeed: 20, gustSpeed: 30, runway: 27 };
+	const inMph = unitFormValuesFromBase(saved, unitFields, mph);
+
+	it('uses the exact base value of untouched fields while another field is edited', () => {
+		const edited: FormData = { ...inMph.formData, gustSpeed: '40' };
+
+		// Converting the rounded mph value back is not exactly 20 kt.
+		expect(formDataToBaseUnits(edited, unitFields, mph).windSpeed).not.toBe(20);
+		expect(formDataToExactBaseUnits(edited, unitFields, mph, inMph).windSpeed).toBe(20);
+	});
+
+	it('converts edited fields from the typed value', () => {
+		// 40 mph = 40 × 1609.344 / 1852 kt
+		const expected = (40 * 1609.344) / 1852;
+
+		for (const gustSpeed of ['40', 40]) {
+			expect(
+				formDataToExactBaseUnits({ ...inMph.formData, gustSpeed }, unitFields, mph, inMph)
+					.gustSpeed
+			).toBeCloseTo(expected, 12);
+		}
+	});
+
+	it('keeps all exact base values when nothing is edited', () => {
+		expect(formDataToExactBaseUnits(inMph.formData, unitFields, mph, inMph)).toEqual(saved);
+	});
+
+	it('keeps a cleared optional field empty', () => {
+		expect(
+			formDataToExactBaseUnits({ ...inMph.formData, gustSpeed: '' }, unitFields, mph, inMph)
+				.gustSpeed
+		).toBe('');
+	});
+
+	it('converts from the form values without previous values', () => {
+		expect(
+			formDataToExactBaseUnits(
+				{ windSpeed: 37.04, gustSpeed: null, runway: 27 },
+				unitFields,
+				{ ...BASE_UNITS, speed: 'kmh' },
+				null
+			).windSpeed
+		).toBe(37.04 / 1.852);
 	});
 });

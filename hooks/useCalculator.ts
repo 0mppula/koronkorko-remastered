@@ -9,7 +9,7 @@ import {
 	BASE_UNITS,
 	changeFormDataUnits,
 	formDataFromBaseUnits,
-	formDataToBaseUnits,
+	formDataToExactBaseUnits,
 	UnitFields,
 	UnitFormValues,
 	unitFormValuesFromBase,
@@ -57,9 +57,14 @@ const useCalculator = <
 
 	const isAuthenticated = sessionStatus === 'authenticated';
 
+	// The form values last set from base units, with the exact base values behind them.
+	const unitFormValuesRef = useRef<UnitFormValues<TFormData> | null>(null);
+
 	const toBaseUnits = useCallback(
 		(formData: TFormData) =>
-			unitFields ? formDataToBaseUnits(formData, unitFields, units) : formData,
+			unitFields
+				? formDataToExactBaseUnits(formData, unitFields, units, unitFormValuesRef.current)
+				: formData,
 		[unitFields, units]
 	);
 
@@ -76,7 +81,6 @@ const useCalculator = <
 
 	// Starts at base units so the base-unit defaults are converted on mount.
 	const prevUnitsRef = useRef<UnitPreferences>(BASE_UNITS);
-	const unitFormValuesRef = useRef<UnitFormValues<TFormData> | null>(null);
 
 	const resetFormFromBase = useCallback(
 		(baseFormData: TFormData) => {
