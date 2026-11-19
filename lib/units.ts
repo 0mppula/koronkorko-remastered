@@ -118,6 +118,29 @@ export const formatUnitValue = (
 	return `${formatted} ${getUnitSymbol(quantity, unit)}`;
 };
 
+export const formatBaseValue = (baseValue: number, quantity: UnitQuantity, unit: string): string =>
+	formatUnitValue(fromBaseUnit(baseValue, quantity, unit), quantity, unit);
+
+export const normalizeDegrees = (value: number): number => ((value % 360) + 360) % 360;
+
+// a − b in (−180, 180]; positive when a is clockwise of b.
+export const signedAngleDifference = (a: number, b: number): number => {
+	const difference = normalizeDegrees(a - b);
+
+	return difference > 180 ? difference - 360 : difference;
+};
+
+export const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
+
+// Headings show north as 360°; angles show their absolute value.
+export const formatDegrees = (value: number, { heading = false }: { heading?: boolean } = {}) => {
+	let degrees = heading ? Math.round(normalizeDegrees(value)) : Math.round(Math.abs(value));
+
+	if (heading && degrees % 360 === 0) degrees = 360;
+
+	return `${String(degrees).padStart(3, '0')}°`;
+};
+
 export const withDefaultUnitPreferences = (
 	units?: Partial<Record<UnitQuantity, string | null>> | null
 ): UnitPreferences => {

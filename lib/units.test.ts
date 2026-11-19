@@ -3,12 +3,17 @@ import { describe, expect, it } from 'vitest';
 import {
 	BASE_UNITS,
 	DEFAULT_UNIT_PREFERENCES,
+	formatBaseValue,
+	formatDegrees,
 	formatUnitValue,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
 	fromBaseUnit,
 	getUnitSymbol,
+	normalizeDegrees,
+	signedAngleDifference,
 	toBaseUnit,
+	toRadians,
 	unitOptions,
 	unitQuantities,
 	withDefaultUnitPreferences,
@@ -110,6 +115,68 @@ describe('formatUnitValue', () => {
 	it('falls back to zero for NaN', () => {
 		expect(normalize(formatUnitValue(NaN, 'speed', 'kt'))).toBe('0.0 kt');
 		expect(normalize(formatUnitValue(NaN, 'altitude', 'ft'))).toBe('0 ft');
+	});
+});
+
+describe('formatBaseValue', () => {
+	it('formats base values unchanged in base units', () => {
+		expect(normalize(formatBaseValue(12.54, 'speed', 'kt'))).toBe('12.5 kt');
+	});
+
+	it('converts base values to the given unit before formatting', () => {
+		// 10 kt × 1.852 = 18.52 km/h
+		expect(normalize(formatBaseValue(10, 'speed', 'kmh'))).toBe('18.5 km/h');
+		// 1000 ft × 0.3048 = 304.8 m
+		expect(normalize(formatBaseValue(1000, 'altitude', 'm'))).toBe('305 m');
+		expect(normalize(formatBaseValue(15, 'temperature', 'f'))).toBe('59.0 °F');
+	});
+});
+
+describe('normalizeDegrees', () => {
+	it('normalizes to [0, 360)', () => {
+		expect(normalizeDegrees(370)).toBe(10);
+		expect(normalizeDegrees(-10)).toBe(350);
+		expect(normalizeDegrees(360)).toBe(0);
+		expect(normalizeDegrees(0)).toBe(0);
+		expect(normalizeDegrees(-720)).toBe(0);
+	});
+});
+
+describe('signedAngleDifference', () => {
+	it('returns a − b in (−180, 180]', () => {
+		expect(signedAngleDifference(10, 350)).toBe(20);
+		expect(signedAngleDifference(350, 10)).toBe(-20);
+		expect(signedAngleDifference(240, 60)).toBe(180);
+		expect(signedAngleDifference(60, 240)).toBe(180);
+		expect(signedAngleDifference(90, 90)).toBe(0);
+	});
+});
+
+describe('toRadians', () => {
+	it('converts degrees to radians', () => {
+		expect(toRadians(180)).toBe(Math.PI);
+		expect(toRadians(90)).toBe(Math.PI / 2);
+		expect(toRadians(-45)).toBe(-Math.PI / 4);
+	});
+});
+
+describe('formatDegrees', () => {
+	it('shows whole degrees with three digits', () => {
+		expect(formatDegrees(87)).toBe('087°');
+		expect(formatDegrees(5.4)).toBe('005°');
+		expect(formatDegrees(-20)).toBe('020°');
+		expect(formatDegrees(180)).toBe('180°');
+	});
+
+	it('shows an angle of 0 as 000°', () => {
+		expect(formatDegrees(0)).toBe('000°');
+	});
+
+	it('shows north headings as 360°', () => {
+		expect(formatDegrees(360, { heading: true })).toBe('360°');
+		expect(formatDegrees(0, { heading: true })).toBe('360°');
+		expect(formatDegrees(359.6, { heading: true })).toBe('360°');
+		expect(formatDegrees(87, { heading: true })).toBe('087°');
 	});
 });
 
