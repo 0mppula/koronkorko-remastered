@@ -118,7 +118,7 @@ Uses speed (from 01). Adds none.
 - `Report.tsx`: `ReportGroup`s for True Course, True Airspeed, Wind (`"090° at 20 kt"`),
   `ReportDivider`, Wind Correction Angle (whole degrees as three digits, e.g. `"006° right"`; no
   side when it displays as `000°`), True Heading (`formatDegrees(value, { heading: true })`, north
-  as `360°`), Groundspeed (`formatUnitValue`, 1 decimal), then
+  as `360°`), Groundspeed (`formatBaseValue`, 2 decimals), then
   `<AviationDisclaimer />`.
 - `Info.tsx`: what the wind triangle is (course vs heading, TAS vs groundspeed, WCA); that all
   directions are true: the true course comes from the chart and the wind from winds-aloft

@@ -136,7 +136,7 @@ named `BUG: ...`.
   0.01), "Outside Air Temperature" (temperature symbol, `min0={false}`).
 - `Report.tsx`: inputs (elevation, QNH, OAT), `ReportDivider`, Pressure Altitude, ISA Temperature,
   ISA Deviation (signed, e.g. `"+19.9 °C"`, using the difference helper), Density Altitude,
-  `<AviationDisclaimer />`. Altitudes as whole feet/metres, temperatures 1 decimal (01).
+  `<AviationDisclaimer />`. Altitudes as whole feet/metres, temperatures 2 decimals (01).
 - `Info.tsx`: what pressure and density altitude are, why high density altitude reduces aircraft
   performance (PHAK), that the calculator uses the exact ICAO Standard Atmosphere formulas (pressure
   altitude from QNH, then density altitude from air density), the rule of thumb of about 120 ft per

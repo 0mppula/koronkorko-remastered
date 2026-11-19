@@ -225,8 +225,8 @@ Notes:
 maximumFractionDigits })` like `formatNumber`/`formatPercentage` in `lib/utils.ts` and appends
   `' ' + symbol` (e.g. `"1,250 ft"`, `"12.5 kt"`, `"15.0 °C"`). Returns `0` formatted for `NaN`,
   like `formatNumber`.
-- **Display precision (decided)**, used as `formatUnitValue`'s default per quantity: speeds 1
-  decimal, altitudes whole numbers, temperatures 1 decimal. Headings and angles are whole degrees
+- **Display precision (decided)**, used as `formatUnitValue`'s default per quantity: speeds 2
+  decimals, altitudes whole numbers, temperatures 2 decimals. Headings and angles are whole degrees
   shown as three digits (e.g. `090°`); 02 adds `formatDegrees` for that. 04 and 05 set the
   default precision for the quantities they add.
 - `withDefaultUnitPreferences` returns `DEFAULT_UNIT_PREFERENCES` overlaid with every valid value

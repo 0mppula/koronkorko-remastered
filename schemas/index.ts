@@ -1,5 +1,6 @@
 import { currencies, themes } from '@/constants/data';
 import {
+	BASE_UNITS,
 	formatUnitValue,
 	fromBaseUnit,
 	getUnitOptions,
@@ -258,6 +259,42 @@ export const dividendYieldFormDataSchema = z.object({
 	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
 	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
 });
+
+// North is 360, not 0.
+export const headingFieldSchema = (fieldName: string) =>
+	numberFieldSchema(fieldName)
+		.min(1, { message: `${fieldName} must be between 1 and 360` })
+		.max(360, { message: `${fieldName} must be between 1 and 360` });
+
+export const createCrosswindFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			runwayHeading: headingFieldSchema('Runway heading'),
+			windDirection: headingFieldSchema('Wind direction'),
+			windSpeed: unitNumberFieldSchema('Wind speed', 'speed', units.speed, {
+				min: 0,
+				max: 200,
+			}),
+			// Nullish to match Prisma's optional field; empty input means no gust.
+			gustSpeed: z.preprocess(
+				(value) => (value === '' || value === null ? undefined : value),
+				unitNumberFieldSchema('Gust speed', 'speed', units.speed, {
+					min: 0,
+					max: 200,
+				}).nullish()
+			),
+		})
+		.superRefine((data, ctx) => {
+			if (data.gustSpeed != null && data.gustSpeed <= data.windSpeed) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['gustSpeed'],
+					message: 'Gust speed must be greater than wind speed',
+				});
+			}
+		});
+
+export const crosswindFormDataSchema = createCrosswindFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

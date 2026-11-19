@@ -93,8 +93,8 @@ Follow "Adding a calculator" with these differences:
    `useMemo(() => create<X>FormDataSchema(units), [units])`, pass `unitFields` to `useCalculator`,
    and use `NumberInputWithIcon iconType="unit"` with `getUnitSymbol(...)` (`unitSymbol="°"` for
    directions; `min0={false}` for inputs that may be negative).
-6. `Report.tsx`: format with `formatUnitValue` in the user's units; end with
-   `<AviationDisclaimer />`.
+6. `Report.tsx`: format unit values with `formatBaseValue` in the user's units, never
+   `formatUnitValue` directly on base values; end with `<AviationDisclaimer />`.
 7. `Info.tsx`: explain the formula and sources, include the disclaimer sentence, end with
    `ReportSource`.
 8. `constants/calculators.ts`: `category: 'aviation'`. Add the calculator to README's aviation
@@ -107,8 +107,8 @@ Follow "Adding a calculator" with these differences:
 
 - Format money with `formatCurrency(value, currency)` from `lib/utils` (locale comes from the
   currency); `currency` from `useCurrencyStore`.
-- Format aviation values with `formatUnitValue(value, quantity, units[quantity])` from `lib/units`;
-  `units` from `useUnitsStore`.
+- Format aviation values with `formatBaseValue(value, quantity, units[quantity])` from `lib/units`
+  (`value` in base units); `units` from `useUnitsStore`.
 - `PUT /api/auth/preferences` replaces the whole preferences object: every
   `updateUserPreferences` call sends `theme`, `currency` and `units`.
 - Keep the free-plan limit checks: client-side (`checkCalculationLimit` in `lib/queryFns`) and

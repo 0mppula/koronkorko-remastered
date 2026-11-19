@@ -76,9 +76,9 @@ export const BASE_UNITS: UnitPreferences = { speed: 'kt', altitude: 'ft', temper
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
 export const unitFractionDigits: Record<UnitQuantity, number> = {
-	speed: 1,
+	speed: 2,
 	altitude: 0,
-	temperature: 1,
+	temperature: 2,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
@@ -110,12 +110,36 @@ export const formatUnitValue = (
 	unit: string,
 	fractionDigits: number = unitFractionDigits[quantity]
 ): string => {
-	const formatted = new Intl.NumberFormat(undefined, {
+	// Fixed locale, so reports and messages don't depend on the browser locale.
+	const formatted = new Intl.NumberFormat('en-US', {
 		minimumFractionDigits: fractionDigits,
 		maximumFractionDigits: fractionDigits,
 	}).format(isNaN(value) ? 0 : value);
 
 	return `${formatted} ${getUnitSymbol(quantity, unit)}`;
+};
+
+export const formatBaseValue = (baseValue: number, quantity: UnitQuantity, unit: string): string =>
+	formatUnitValue(fromBaseUnit(baseValue, quantity, unit), quantity, unit);
+
+export const normalizeDegrees = (value: number): number => ((value % 360) + 360) % 360;
+
+// a − b in (−180, 180]; positive when a is clockwise of b.
+export const signedAngleDifference = (a: number, b: number): number => {
+	const difference = normalizeDegrees(a - b);
+
+	return difference > 180 ? difference - 360 : difference;
+};
+
+export const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
+
+// Headings show north as 360°; angles show their absolute value.
+export const formatDegrees = (value: number, { heading = false }: { heading?: boolean } = {}) => {
+	let degrees = heading ? Math.round(normalizeDegrees(value)) : Math.round(Math.abs(value));
+
+	if (heading && degrees % 360 === 0) degrees = 360;
+
+	return `${String(degrees).padStart(3, '0')}°`;
 };
 
 export const withDefaultUnitPreferences = (
@@ -172,10 +196,58 @@ export const formDataFromBaseUnits = <T extends object>(
 	unitFields: UnitFields<T>,
 	units: UnitPreferences
 ): T => {
-	return convertFormData(formData, unitFields, (value, quantity) => {
-		if (units[quantity] === BASE_UNITS[quantity]) return value;
+	// Form values are display values, so float noise (e.g. 18.520000000000003) is stripped.
+	return convertFormData(formData, unitFields, (value, quantity) =>
+		Number(fromBaseUnit(value, quantity, units[quantity]).toPrecision(12))
+	);
+};
 
-		// Strips float noise (e.g. 18.520000000000003) from values shown in inputs.
-		return Number(fromBaseUnit(value, quantity, units[quantity]).toPrecision(12));
-	});
+// Form values set from base units, with the exact base values behind them.
+export interface UnitFormValues<T> {
+	formData: T;
+	baseFormData: T;
+}
+
+export const unitFormValuesFromBase = <T extends object>(
+	baseFormData: T,
+	unitFields: UnitFields<T>,
+	units: UnitPreferences
+): UnitFormValues<T> => ({
+	formData: formDataFromBaseUnits(baseFormData, unitFields, units),
+	baseFormData,
+});
+
+// Unedited fields (still equal to the values set from base units) use their exact base value;
+// converting the rounded form value would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
+export const formDataToExactBaseUnits = <T extends object>(
+	formData: T,
+	unitFields: UnitFields<T>,
+	units: UnitPreferences,
+	values: UnitFormValues<T> | null
+): T => {
+	const baseFormData = formDataToBaseUnits(formData, unitFields, units);
+
+	if (values) {
+		for (const field of Object.keys(unitFields) as (keyof T)[]) {
+			if (formData[field] === values.formData[field]) {
+				baseFormData[field] = values.baseFormData[field];
+			}
+		}
+	}
+
+	return baseFormData;
+};
+
+export const changeFormDataUnits = <T extends object>(
+	formData: T,
+	unitFields: UnitFields<T>,
+	prevUnits: UnitPreferences,
+	units: UnitPreferences,
+	prevValues: UnitFormValues<T> | null
+): UnitFormValues<T> => {
+	return unitFormValuesFromBase(
+		formDataToExactBaseUnits(formData, unitFields, prevUnits, prevValues),
+		unitFields,
+		units
+	);
 };

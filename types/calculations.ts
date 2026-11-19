@@ -4,6 +4,7 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	crosswindFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -18,6 +19,7 @@ import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
+	CrosswindCalculation,
 	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
@@ -159,6 +161,17 @@ export interface DividendYieldReportProps extends IDividendYieldFormData {
 	dividendYieldPercent: number;
 }
 
+// Crosswind Calculation
+export type ICrosswindFormData = z.infer<typeof crosswindFormDataSchema>;
+
+export interface CrosswindReportProps extends ICrosswindFormData {
+	windAngle: number;
+	crosswind: number;
+	headwind: number;
+	gustCrosswind?: number;
+	gustHeadwind?: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -171,4 +184,5 @@ export type CalculationType =
 	| DollarCostAverageCalculation
 	| EnterpriseValueCalculation
 	| LiquidationPriceCalculation
-	| DividendYieldCalculation;
+	| DividendYieldCalculation
+	| CrosswindCalculation;
