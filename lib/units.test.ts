@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	BASE_UNITS,
@@ -129,6 +129,40 @@ describe('formatBaseValue', () => {
 		// 1000 ft × 0.3048 = 304.8 m
 		expect(normalize(formatBaseValue(1000, 'altitude', 'm'))).toBe('305 m');
 		expect(normalize(formatBaseValue(15, 'temperature', 'f'))).toBe('59.00 °F');
+	});
+});
+
+describe('unit formatting with a non-English default locale', () => {
+	const NumberFormat = Intl.NumberFormat;
+
+	// Simulates a Finnish browser: Intl.NumberFormat without a locale formats as fi-FI.
+	beforeEach(() => {
+		vi.stubGlobal(
+			'Intl',
+			Object.create(Intl, {
+				NumberFormat: {
+					value: function (locales?: string, options?: Intl.NumberFormatOptions) {
+						return new NumberFormat(locales ?? 'fi-FI', options);
+					},
+				},
+			})
+		);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('uses a decimal comma by default in the simulated locale', () => {
+		expect(normalize(new Intl.NumberFormat(undefined).format(1234.5))).toBe('1 234,5');
+	});
+
+	it('formats unit values with a dot and comma grouping', () => {
+		expect(formatUnitValue(37.04, 'speed', 'kmh')).toBe('37.04 km/h');
+		expect(formatUnitValue(1250.4, 'altitude', 'ft')).toBe('1,250 ft');
+		expect(formatUnitValue(-5.5, 'temperature', 'c')).toBe('-5.50 °C');
+		expect(formatBaseValue(20, 'speed', 'kmh')).toBe('37.04 km/h');
+		expect(formatBaseValue(1000, 'altitude', 'ft')).toBe('1,000 ft');
 	});
 });
 

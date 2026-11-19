@@ -110,7 +110,8 @@ export const formatUnitValue = (
 	unit: string,
 	fractionDigits: number = unitFractionDigits[quantity]
 ): string => {
-	const formatted = new Intl.NumberFormat(undefined, {
+	// Fixed locale, so reports and messages don't depend on the browser locale.
+	const formatted = new Intl.NumberFormat('en-US', {
 		minimumFractionDigits: fractionDigits,
 		maximumFractionDigits: fractionDigits,
 	}).format(isNaN(value) ? 0 : value);

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { BASE_UNITS, formDataFromBaseUnits, fromBaseUnit, toBaseUnit } from '@/lib/units';
@@ -926,5 +926,29 @@ describe('unitNumberFieldSchema', () => {
 		expect(issueMessages(windSpeed('kt').safeParse('abc'))).toEqual([
 			'Wind speed has to be a number',
 		]);
+	});
+
+	it('shows limits with a dot regardless of the default locale', () => {
+		const NumberFormat = Intl.NumberFormat;
+
+		// Simulates a Finnish browser: Intl.NumberFormat without a locale formats as fi-FI.
+		vi.stubGlobal(
+			'Intl',
+			Object.create(Intl, {
+				NumberFormat: {
+					value: function (locales?: string, options?: Intl.NumberFormatOptions) {
+						return new NumberFormat(locales ?? 'fi-FI', options);
+					},
+				},
+			})
+		);
+
+		try {
+			expect(issueMessages(windSpeed('kmh').safeParse(371))).toEqual([
+				'Wind speed cannot be greater than 370.40 km/h',
+			]);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 });

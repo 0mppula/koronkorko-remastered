@@ -12,7 +12,10 @@ interface NumberInputWithIconProps extends InputProps {
 }
 
 const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIconProps>(
-	({ className, type, min0 = true, iconType = 'currency', unitSymbol, ...props }, ref) => {
+	(
+		{ className, type, min0 = true, iconType = 'currency', unitSymbol, onChange, ...props },
+		ref
+	) => {
 		const { currency } = useCurrencyStore();
 
 		const getIcon = () => {
@@ -43,14 +46,30 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 						iconType === 'unit' && 'pr-14',
 						className
 					)}
-					type="number"
-					// Converted unit values can have more than two decimals.
-					step={iconType === 'unit' ? 'any' : '0.01'}
+					{...(iconType === 'unit'
+						? {
+								// type="number" shows a locale decimal comma (e.g. Finnish); text always shows the dot.
+								type: 'text',
+								// The decimal keypad has no minus key.
+								inputMode: min0 ? 'decimal' : 'text',
+								autoComplete: 'off',
+							}
+						: {
+								type: 'number',
+								step: '0.01',
+								...(min0 ? { min: 0 } : {}),
+							})}
 					placeholder={
 						iconType === 'unit' ? '0' : iconType === 'percentage' ? '10' : '1000'
 					}
 					ref={ref}
-					{...(min0 ? { min: 0 } : {})}
+					onChange={(e) => {
+						if (iconType === 'unit') {
+							e.target.value = e.target.value.replace(/,/g, '.');
+						}
+
+						onChange?.(e);
+					}}
 					{...props}
 				/>
 
