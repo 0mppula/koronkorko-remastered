@@ -2,6 +2,7 @@ import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
+	CrosswindReportProps,
 	DividendYieldReportProps,
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
@@ -9,6 +10,7 @@ import {
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
+	ICrosswindFormData,
 	IDividendYieldFormData,
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
@@ -24,6 +26,7 @@ import {
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
 } from '@/types/calculations';
+import { signedAngleDifference, toRadians } from '@/lib/units';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
@@ -317,5 +320,24 @@ export const calculateDividendYield = (
 		sharePrice,
 		annualizedDividend,
 		dividendYieldPercent,
+	};
+};
+
+export const calculateCrosswind = (formData: ICrosswindFormData): CrosswindReportProps => {
+	const { runwayHeading, windDirection, windSpeed, gustSpeed } = formData;
+
+	// Wind components (FAA PHAK, FAA-H-8083-25, Aircraft Performance): XW = V·sin θ, HW = V·cos θ
+	const windAngle = signedAngleDifference(windDirection, runwayHeading);
+	const sin = Math.sin(toRadians(windAngle));
+	const cos = Math.cos(toRadians(windAngle));
+	const hasGust = gustSpeed !== undefined && gustSpeed !== null;
+
+	return {
+		...formData,
+		windAngle,
+		crosswind: windSpeed * sin,
+		headwind: windSpeed * cos,
+		gustCrosswind: hasGust ? gustSpeed * sin : undefined,
+		gustHeadwind: hasGust ? gustSpeed * cos : undefined,
 	};
 };

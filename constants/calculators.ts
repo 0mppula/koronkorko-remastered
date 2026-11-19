@@ -90,4 +90,11 @@ export const calculators = [
 		description:
 			'Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Crosswind Calculator',
+		url: 'crosswind-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

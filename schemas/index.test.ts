@@ -8,6 +8,8 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	createCrosswindFormDataSchema,
+	crosswindFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -689,6 +691,94 @@ describe('dividendYieldFormDataSchema', () => {
 		expect(dividendYieldFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
+	});
+});
+
+describe('crosswindFormDataSchema', () => {
+	const base = { runwayHeading: 60, windDirection: 90, windSpeed: 20 };
+	const withGust = { ...base, gustSpeed: 30 };
+
+	it('accepts valid input', () => {
+		expect(crosswindFormDataSchema.parse(base)).toEqual(base);
+		expect(crosswindFormDataSchema.parse(withGust)).toEqual(withGust);
+	});
+
+	itRejectsMissingFields(crosswindFormDataSchema, base);
+	itRejectsNegativeFields(crosswindFormDataSchema, withGust, Object.keys(withGust));
+
+	it.each([undefined, '', null])('treats a gust of %j as no gust', (gustSpeed) => {
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.gustSpeed).toBeUndefined();
+	});
+
+	it.each(['runwayHeading', 'windDirection'])('accepts %s of 1 and 360', (field) => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 1 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 360 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 87.5 }).success).toBe(true);
+	});
+
+	it.each([
+		['runwayHeading', 'Runway heading'],
+		['windDirection', 'Wind direction'],
+	])('rejects %s of 0 and 360.1', (field, label) => {
+		for (const value of [0, 360.1]) {
+			const result = crosswindFormDataSchema.safeParse({ ...base, [field]: value });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([`${label} must be between 1 and 360`]);
+		}
+	});
+
+	it('accepts a wind speed of 0 and 200 kt and rejects 200.1 kt', () => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, windSpeed: 0 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, windSpeed: 200 }).success).toBe(true);
+
+		const result = crosswindFormDataSchema.safeParse({ ...base, windSpeed: 200.1 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 200.0 kt']);
+	});
+
+	it.each([20, 15])('rejects a gust of %d kt with a 20 kt wind', (gustSpeed) => {
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed });
+
+		expect(issueFields(result)).toEqual(['gustSpeed']);
+		expect(issueMessages(result)).toEqual(['Gust speed must be greater than wind speed']);
+	});
+
+	it('accepts a gust of 200 kt and rejects a gust above 200 kt', () => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, gustSpeed: 200 }).success).toBe(true);
+
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed: 200.1 });
+
+		expect(issueFields(result)).toContain('gustSpeed');
+		expect(issueMessages(result)).toContain('Gust speed cannot be greater than 200.0 kt');
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			crosswindFormDataSchema.parse({
+				runwayHeading: '087',
+				windDirection: '120',
+				windSpeed: '12.5',
+				gustSpeed: '25',
+			})
+		).toEqual({ runwayHeading: 87, windDirection: 120, windSpeed: 12.5, gustSpeed: 25 });
+	});
+
+	it('checks speed limits in base units and shows them in km/h', () => {
+		const schema = createCrosswindFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+
+		// 200 kt × 1.852 = 370.4 km/h
+		expect(schema.safeParse({ ...base, windSpeed: 370.4 }).success).toBe(true);
+
+		const result = schema.safeParse({ ...base, windSpeed: 371 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)[0]).toContain('km/h');
+		expect(issueMessages(result)[0]).toContain('370.4');
 	});
 });
 

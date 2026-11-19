@@ -4,6 +4,7 @@ import {
 	calcualteBreakEvenPoint,
 	calcualteCoumpoundInterest,
 	calculateAnnualizedReturn,
+	calculateCrosswind,
 	calculateDividendYield,
 	calculateDollarCostAverage,
 	calculateEarningsPerShare,
@@ -14,6 +15,7 @@ import {
 	calculateMarkup,
 	calculatePresentValue,
 } from '@/lib/calculatorFns';
+import { formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
 	IDollarCostAverageFormData,
@@ -652,5 +654,94 @@ describe('calculateDividendYield', () => {
 		});
 
 		expect(result.dividendYieldPercent).toBeCloseTo(0.0004, 10);
+	});
+});
+
+describe('calculateCrosswind', () => {
+	// Crosswind = V·sin θ, headwind = V·cos θ (exact trigonometry)
+	const SQRT3_2 = Math.sqrt(3) / 2;
+	const SQRT2_2 = Math.SQRT2 / 2;
+
+	it.each([
+		{ runway: 60, wind: 90, speed: 20, angle: 30, crosswind: 10, headwind: 20 * SQRT3_2 },
+		{ runway: 60, wind: 30, speed: 20, angle: -30, crosswind: -10, headwind: 20 * SQRT3_2 },
+		{ runway: 60, wind: 60, speed: 15, angle: 0, crosswind: 0, headwind: 15 },
+		{ runway: 60, wind: 240, speed: 10, angle: 180, crosswind: 0, headwind: -10 },
+		{ runway: 60, wind: 150, speed: 12, angle: 90, crosswind: 12, headwind: 0 },
+		{
+			runway: 270,
+			wind: 315,
+			speed: 30,
+			angle: 45,
+			crosswind: 30 * SQRT2_2,
+			headwind: 30 * SQRT2_2,
+		},
+		// sin 10° = 0.173648, cos 10° = 0.984808, sin 20° = 0.342020, cos 20° = 0.939693
+		{ runway: 360, wind: 10, speed: 20, angle: 10, crosswind: 3.47296, headwind: 19.69616 },
+		{ runway: 10, wind: 350, speed: 20, angle: -20, crosswind: -6.8404, headwind: 18.79386 },
+		{ runway: 60, wind: 90, speed: 0, angle: 30, crosswind: 0, headwind: 0 },
+	])(
+		'runway $runway, wind $wind at $speed kt',
+		({ runway, wind, speed, angle, crosswind, headwind }) => {
+			const result = calculateCrosswind({
+				runwayHeading: runway,
+				windDirection: wind,
+				windSpeed: speed,
+			});
+
+			expect(result.windAngle).toBeCloseTo(angle, 10);
+			expect(result.crosswind).toBeCloseTo(crosswind, 4);
+			expect(result.headwind).toBeCloseTo(headwind, 4);
+		}
+	);
+
+	it('calculates gust components with the same wind direction', () => {
+		const result = calculateCrosswind({
+			runwayHeading: 60,
+			windDirection: 90,
+			windSpeed: 20,
+			gustSpeed: 30,
+		});
+
+		expect(result.crosswind).toBeCloseTo(10, 4);
+		expect(result.headwind).toBeCloseTo(20 * SQRT3_2, 4);
+		expect(result.gustCrosswind).toBeCloseTo(15, 4);
+		expect(result.gustHeadwind).toBeCloseTo(30 * SQRT3_2, 4);
+	});
+
+	it('has no gust components without a gust', () => {
+		for (const gustSpeed of [undefined, null]) {
+			const result = calculateCrosswind({
+				runwayHeading: 60,
+				windDirection: 90,
+				windSpeed: 20,
+				gustSpeed,
+			});
+
+			expect(result.gustCrosswind).toBeUndefined();
+			expect(result.gustHeadwind).toBeUndefined();
+		}
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { runwayHeading: 87, windDirection: 120, windSpeed: 12, gustSpeed: 22 };
+
+		expect(calculateCrosswind(formData)).toMatchObject(formData);
+	});
+
+	it('works with wind speeds entered in km/h', () => {
+		// 37.04 km/h = 20 kt (1 kt = 1.852 km/h exactly)
+		const formData = formDataToBaseUnits(
+			{ runwayHeading: 60, windDirection: 90, windSpeed: 37.04 },
+			{ windSpeed: 'speed' },
+			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+		);
+
+		expect(formData.windSpeed).toBeCloseTo(20, 10);
+
+		const result = calculateCrosswind(formData);
+
+		expect(result.crosswind).toBeCloseTo(10, 4);
+		expect(fromBaseUnit(result.crosswind, 'speed', 'kmh')).toBeCloseTo(18.52, 4);
 	});
 });

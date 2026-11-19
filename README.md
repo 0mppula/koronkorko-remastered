@@ -106,6 +106,10 @@ Calculate the dividend yield of a stock, given its dividend amount, frequency, a
 
 Calculators for pilots and student pilots. Values can be entered and shown in the units chosen in the unit preferences.
 
+### [Crosswind Calculator][13]
+
+Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed, including gust components when a gust speed is given.
+
 ---
 
 ## How to set up the project locally
@@ -240,5 +244,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [10]: https://www.koronkorko.com/enterprise-value-calculator
 [11]: https://www.koronkorko.com/liquidation-price-calculator
 [12]: https://www.koronkorko.com/dividend-yield-calculator
+[13]: https://www.koronkorko.com/crosswind-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

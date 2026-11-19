@@ -63,6 +63,7 @@ model User {
   Subscription                     Subscription?
   LiquidationPriceCalculation      LiquidationPriceCalculation[]
   DividendYieldCalculation         DividendYieldCalculation[]
+  CrosswindCalculations            CrosswindCalculation[]
 }
 
 enum Plan {
@@ -300,6 +301,24 @@ model DividendYieldCalculation {
   formData  DividendYieldCalculationFormData
   createdAt DateTime                         @default(now())
   updatedAt DateTime                         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type CrosswindCalculationFormData {
+  runwayHeading Float
+  windDirection Float
+  windSpeed     Float
+  gustSpeed     Float?
+}
+
+model CrosswindCalculation {
+  id        String                       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                       @db.ObjectId
+  name      String
+  formData  CrosswindCalculationFormData
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
