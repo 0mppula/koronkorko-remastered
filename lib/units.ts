@@ -196,10 +196,45 @@ export const formDataFromBaseUnits = <T extends object>(
 	unitFields: UnitFields<T>,
 	units: UnitPreferences
 ): T => {
-	return convertFormData(formData, unitFields, (value, quantity) => {
-		if (units[quantity] === BASE_UNITS[quantity]) return value;
+	// Form values are display values, so float noise (e.g. 18.520000000000003) is stripped.
+	return convertFormData(formData, unitFields, (value, quantity) =>
+		Number(fromBaseUnit(value, quantity, units[quantity]).toPrecision(12))
+	);
+};
 
-		// Strips float noise (e.g. 18.520000000000003) from values shown in inputs.
-		return Number(fromBaseUnit(value, quantity, units[quantity]).toPrecision(12));
-	});
+// Form values set from base units, with the exact base values behind them.
+export interface UnitFormValues<T> {
+	formData: T;
+	baseFormData: T;
+}
+
+export const unitFormValuesFromBase = <T extends object>(
+	baseFormData: T,
+	unitFields: UnitFields<T>,
+	units: UnitPreferences
+): UnitFormValues<T> => ({
+	formData: formDataFromBaseUnits(baseFormData, unitFields, units),
+	baseFormData,
+});
+
+// Unedited fields convert from their exact base value; converting the rounded form value again
+// would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
+export const changeFormDataUnits = <T extends object>(
+	formData: T,
+	unitFields: UnitFields<T>,
+	prevUnits: UnitPreferences,
+	units: UnitPreferences,
+	prevValues: UnitFormValues<T> | null
+): UnitFormValues<T> => {
+	const baseFormData = formDataToBaseUnits(formData, unitFields, prevUnits);
+
+	if (prevValues) {
+		for (const field of Object.keys(unitFields) as (keyof T)[]) {
+			if (formData[field] === prevValues.formData[field]) {
+				baseFormData[field] = prevValues.baseFormData[field];
+			}
+		}
+	}
+
+	return unitFormValuesFromBase(baseFormData, unitFields, units);
 };

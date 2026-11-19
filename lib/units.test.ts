@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	BASE_UNITS,
+	changeFormDataUnits,
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
@@ -14,10 +15,12 @@ import {
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
+	unitFormValuesFromBase,
 	unitOptions,
 	unitQuantities,
 	withDefaultUnitPreferences,
 	type UnitFields,
+	type UnitFormValues,
 	type UnitPreferences,
 } from '@/lib/units';
 
@@ -324,9 +327,116 @@ describe('formDataToBaseUnits / formDataFromBaseUnits', () => {
 		).toEqual(formData);
 	});
 
-	it('keeps base unit values exact', () => {
-		const formData = { windSpeed: 53.99568034557236, elevation: 1000.123456789012, runway: 27 };
+	it('strips float noise from form values in base units too', () => {
+		expect(
+			formDataFromBaseUnits(
+				{ windSpeed: 20.0000000000216, elevation: 999.9999999999999, runway: 27 },
+				unitFields,
+				BASE_UNITS
+			)
+		).toEqual({ windSpeed: 20, elevation: 1000, runway: 27 });
+	});
 
-		expect(formDataFromBaseUnits(formData, unitFields, BASE_UNITS)).toEqual(formData);
+	it('keeps conversions to base units unrounded', () => {
+		expect(
+			formDataToBaseUnits({ windSpeed: 50, elevation: 0, runway: 27 }, unitFields, units)
+				.windSpeed
+		).toBe(50 / 1.852);
+	});
+});
+
+describe('changeFormDataUnits', () => {
+	interface FormData {
+		windSpeed: number | string;
+		gustSpeed: number | string | null;
+		runway: number;
+	}
+
+	const unitFields: UnitFields<FormData> = { windSpeed: 'speed', gustSpeed: 'speed' };
+	const withSpeed = (speed: UnitPreferences['speed']): UnitPreferences => ({
+		...BASE_UNITS,
+		speed,
+	});
+
+	const toggle = (
+		start: FormData,
+		path: UnitPreferences['speed'][],
+		rounds = 1
+	): UnitFormValues<FormData> => {
+		let values = unitFormValuesFromBase(start, unitFields, withSpeed(path[0]));
+
+		for (let round = 0; round < rounds; round++) {
+			for (let i = 1; i < path.length; i++) {
+				values = changeFormDataUnits(
+					values.formData,
+					unitFields,
+					withSpeed(path[i - 1]),
+					withSpeed(path[i]),
+					values
+				);
+			}
+		}
+
+		return values;
+	};
+
+	const imported = { windSpeed: 20, gustSpeed: 30, runway: 27 };
+
+	it('converts the form to the new units', () => {
+		expect(toggle(imported, ['kt', 'kmh']).formData).toEqual({
+			windSpeed: 37.04,
+			gustSpeed: 55.56,
+			runway: 27,
+		});
+	});
+
+	it('round trips kt → km/h → kt exactly', () => {
+		expect(toggle(imported, ['kt', 'kmh', 'kt']).formData).toEqual(imported);
+	});
+
+	it('round trips kt → mph → m/s → kt exactly', () => {
+		expect(toggle(imported, ['kt', 'mph', 'ms', 'kt']).formData).toEqual(imported);
+	});
+
+	it('does not drift with repeated toggling', () => {
+		expect(toggle(imported, ['kt', 'mph', 'ms', 'kmh', 'kt'], 50).formData).toEqual(imported);
+		expect(toggle(imported, ['kt', 'mph', 'ms', 'kt'], 50).formData).toEqual(imported);
+	});
+
+	it('round trips every 2-decimal speed up to 200 kt exactly', () => {
+		for (let i = 0; i <= 20000; i++) {
+			const start = { windSpeed: i / 100, gustSpeed: null, runway: 27 };
+
+			expect(toggle(start, ['kt', 'mph', 'ms', 'kt'], 3).formData.windSpeed).toBe(i / 100);
+		}
+	});
+
+	it('converts edited values from what the user typed', () => {
+		const inKmh = toggle(imported, ['kt', 'kmh']);
+		const edited = { ...inKmh.formData, windSpeed: '50' };
+
+		const values = changeFormDataUnits(
+			edited,
+			unitFields,
+			withSpeed('kmh'),
+			withSpeed('kt'),
+			inKmh
+		);
+
+		expect(values.baseFormData.windSpeed).toBe(50 / 1.852);
+		expect(values.formData.windSpeed).toBe(Number((50 / 1.852).toPrecision(12)));
+		expect(values.formData.gustSpeed).toBe(30);
+	});
+
+	it('keeps empty optional values empty', () => {
+		const values = toggle({ windSpeed: 20, gustSpeed: null, runway: 27 }, ['kt', 'mph', 'kt']);
+
+		expect(values.formData.gustSpeed).toBeNull();
+	});
+
+	it('converts from the form values without previous values', () => {
+		expect(
+			changeFormDataUnits(imported, unitFields, BASE_UNITS, withSpeed('kmh'), null).formData
+		).toEqual({ windSpeed: 37.04, gustSpeed: 55.56, runway: 27 });
 	});
 });

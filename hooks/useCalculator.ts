@@ -7,9 +7,12 @@ import {
 } from '@/lib/queryFns/calculations';
 import {
 	BASE_UNITS,
+	changeFormDataUnits,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
 	UnitFields,
+	UnitFormValues,
+	unitFormValuesFromBase,
 	UnitPreferences,
 	unitQuantities,
 } from '@/lib/units';
@@ -73,6 +76,22 @@ const useCalculator = <
 
 	// Starts at base units so the base-unit defaults are converted on mount.
 	const prevUnitsRef = useRef<UnitPreferences>(BASE_UNITS);
+	const unitFormValuesRef = useRef<UnitFormValues<TFormData> | null>(null);
+
+	const resetFormFromBase = useCallback(
+		(baseFormData: TFormData) => {
+			if (!unitFields) {
+				form.reset(baseFormData);
+				return;
+			}
+
+			const values = unitFormValuesFromBase(baseFormData, unitFields, units);
+
+			unitFormValuesRef.current = values;
+			form.reset(values.formData);
+		},
+		[unitFields, units, form]
+	);
 
 	// Keep the same physical values in the form when the user changes units.
 	useEffect(() => {
@@ -87,13 +106,16 @@ const useCalculator = <
 			return;
 		}
 
-		form.reset(
-			formDataFromBaseUnits(
-				formDataToBaseUnits(form.getValues(), unitFields, prevUnits),
-				unitFields,
-				units
-			)
+		const values = changeFormDataUnits(
+			form.getValues(),
+			unitFields,
+			prevUnits,
+			units,
+			unitFormValuesRef.current
 		);
+
+		unitFormValuesRef.current = values;
+		form.reset(values.formData);
 	}, [unitFields, units, form]);
 
 	const {
@@ -127,8 +149,8 @@ const useCalculator = <
 		setReport(null);
 		toast.success('Calculator cleared');
 
-		form.reset(formDefaultValues);
-	}, [setReport, formDefaultValues, form]);
+		resetFormFromBase(defaultValues);
+	}, [setReport, resetFormFromBase, defaultValues]);
 
 	const handleSaveUpdateStart = useCallback(async () => {
 		const startIfFormIsValid = (_: TFormData) => {
@@ -212,9 +234,9 @@ const useCalculator = <
 	const handleClose = useCallback(() => {
 		setActiveCalculation(null);
 		setReport(null);
-		form.reset(formDefaultValues);
+		resetFormFromBase(defaultValues);
 		toast.success('Calculation closed');
-	}, [setActiveCalculation, setReport, form, formDefaultValues]);
+	}, [setActiveCalculation, setReport, resetFormFromBase, defaultValues]);
 
 	const handleDelete = useCallback(
 		(id: string) => {
@@ -229,7 +251,7 @@ const useCalculator = <
 
 			setActiveCalculation(calculation);
 			setImportModalOpen(false);
-			form.reset(fromBaseUnits(formData));
+			resetFormFromBase(formData);
 
 			// Stored values may be invalid (e.g. saved before stricter validation), so only
 			// calculate if they pass the form schema. Otherwise show the field errors to fix.
@@ -241,7 +263,7 @@ const useCalculator = <
 				setReport(null);
 			}
 		},
-		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form, fromBaseUnits]
+		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form, resetFormFromBase]
 	);
 
 	const handleImportStart = useCallback(() => {
