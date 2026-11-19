@@ -102,9 +102,9 @@ describe('getUnitSymbol', () => {
 
 describe('formatUnitValue', () => {
 	it('uses the default precision of each quantity', () => {
-		expect(normalize(formatUnitValue(12.54, 'speed', 'kt'))).toBe('12.5 kt');
+		expect(normalize(formatUnitValue(12.544, 'speed', 'kt'))).toBe('12.54 kt');
 		expect(normalize(formatUnitValue(1250.4, 'altitude', 'ft'))).toBe('1,250 ft');
-		expect(normalize(formatUnitValue(15, 'temperature', 'c'))).toBe('15.0 °C');
+		expect(normalize(formatUnitValue(15, 'temperature', 'c'))).toBe('15.00 °C');
 	});
 
 	it('respects explicit fraction digits', () => {
@@ -113,22 +113,22 @@ describe('formatUnitValue', () => {
 	});
 
 	it('falls back to zero for NaN', () => {
-		expect(normalize(formatUnitValue(NaN, 'speed', 'kt'))).toBe('0.0 kt');
+		expect(normalize(formatUnitValue(NaN, 'speed', 'kt'))).toBe('0.00 kt');
 		expect(normalize(formatUnitValue(NaN, 'altitude', 'ft'))).toBe('0 ft');
 	});
 });
 
 describe('formatBaseValue', () => {
 	it('formats base values unchanged in base units', () => {
-		expect(normalize(formatBaseValue(12.54, 'speed', 'kt'))).toBe('12.5 kt');
+		expect(normalize(formatBaseValue(12.544, 'speed', 'kt'))).toBe('12.54 kt');
 	});
 
 	it('converts base values to the given unit before formatting', () => {
 		// 10 kt × 1.852 = 18.52 km/h
-		expect(normalize(formatBaseValue(10, 'speed', 'kmh'))).toBe('18.5 km/h');
+		expect(normalize(formatBaseValue(10, 'speed', 'kmh'))).toBe('18.52 km/h');
 		// 1000 ft × 0.3048 = 304.8 m
 		expect(normalize(formatBaseValue(1000, 'altitude', 'm'))).toBe('305 m');
-		expect(normalize(formatBaseValue(15, 'temperature', 'f'))).toBe('59.0 °F');
+		expect(normalize(formatBaseValue(15, 'temperature', 'f'))).toBe('59.00 °F');
 	});
 });
 

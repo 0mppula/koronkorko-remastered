@@ -76,9 +76,9 @@ export const BASE_UNITS: UnitPreferences = { speed: 'kt', altitude: 'ft', temper
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
 export const unitFractionDigits: Record<UnitQuantity, number> = {
-	speed: 1,
+	speed: 2,
 	altitude: 0,
-	temperature: 1,
+	temperature: 2,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
