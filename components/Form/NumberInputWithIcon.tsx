@@ -1,4 +1,5 @@
 import useCurrencyStore from '@/hooks/useCurrency';
+import { formatUnitInputValue } from '@/lib/units';
 import { cn } from '@/lib/utils';
 import { Percent } from 'lucide-react';
 import React from 'react';
@@ -13,7 +14,16 @@ interface NumberInputWithIconProps extends InputProps {
 
 const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIconProps>(
 	(
-		{ className, type, min0 = true, iconType = 'currency', unitSymbol, onChange, ...props },
+		{
+			className,
+			type,
+			min0 = true,
+			iconType = 'currency',
+			unitSymbol,
+			onChange,
+			value,
+			...props
+		},
 		ref
 	) => {
 		const { currency } = useCurrencyStore();
@@ -70,6 +80,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 
 						onChange?.(e);
 					}}
+					value={iconType === 'unit' ? formatUnitInputValue(value) : value}
 					{...props}
 				/>
 

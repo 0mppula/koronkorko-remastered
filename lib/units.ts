@@ -3,6 +3,8 @@ const NAUTICAL_MILE_IN_METRES = 1852;
 const MILE_IN_METRES = 1609.344;
 const FOOT_IN_METRES = 0.3048;
 const SECONDS_IN_HOUR = 3600;
+// NIST SP 811 App. B.9: 1 inHg (conventional) = 3386.389 Pa, rounded to 33.8639 hPa.
+const INCH_OF_MERCURY_IN_HECTOPASCALS = 33.8639;
 
 export interface UnitOption {
 	readonly value: string;
@@ -16,6 +18,7 @@ export const unitQuantities = [
 	{ value: 'speed', label: 'Speed' },
 	{ value: 'altitude', label: 'Altitude' },
 	{ value: 'temperature', label: 'Temperature' },
+	{ value: 'pressure', label: 'Pressure' },
 ] as const;
 
 export type UnitQuantity = (typeof unitQuantities)[number]['value'];
@@ -67,18 +70,40 @@ export const unitOptions = {
 			fromBase: (value: number) => (value * 9) / 5 + 32,
 		},
 	],
+	pressure: [
+		{
+			value: 'hpa',
+			label: 'Hectopascals (hPa)',
+			symbol: 'hPa',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'inhg',
+			label: 'Inches of mercury (inHg)',
+			symbol: 'inHg',
+			toBase: (value: number) => value * INCH_OF_MERCURY_IN_HECTOPASCALS,
+			fromBase: (value: number) => value / INCH_OF_MERCURY_IN_HECTOPASCALS,
+		},
+	],
 } as const satisfies Record<UnitQuantity, readonly UnitOption[]>;
 
 export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number]['value'];
 export type UnitPreferences = { [Q in UnitQuantity]: UnitValue<Q> };
 
-export const BASE_UNITS: UnitPreferences = { speed: 'kt', altitude: 'ft', temperature: 'c' };
+export const BASE_UNITS: UnitPreferences = {
+	speed: 'kt',
+	altitude: 'ft',
+	temperature: 'c',
+	pressure: 'hpa',
+};
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
 export const unitFractionDigits: Record<UnitQuantity, number> = {
 	speed: 2,
 	altitude: 0,
 	temperature: 2,
+	pressure: 2,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
@@ -114,6 +139,8 @@ export const formatUnitValue = (
 	const formatted = new Intl.NumberFormat('en-US', {
 		minimumFractionDigits: fractionDigits,
 		maximumFractionDigits: fractionDigits,
+		// Pressures are written without separators (1013.25 hPa).
+		useGrouping: quantity !== 'pressure',
 	}).format(isNaN(value) ? 0 : value);
 
 	return `${formatted} ${getUnitSymbol(quantity, unit)}`;
@@ -121,6 +148,26 @@ export const formatUnitValue = (
 
 export const formatBaseValue = (baseValue: number, quantity: UnitQuantity, unit: string): string =>
 	formatUnitValue(fromBaseUnit(baseValue, quantity, unit), quantity, unit);
+
+// A difference has no offset: 10 °C warmer is 18 °F warmer, not 50 °F.
+export const fromBaseTemperatureDifference = (valueC: number, unit: string): number =>
+	unit === 'f' ? (valueC * 9) / 5 : valueC;
+
+export const formatTemperatureDifference = (baseValue: number, unit: string): string => {
+	const formatted = new Intl.NumberFormat('en-US', {
+		minimumFractionDigits: unitFractionDigits.temperature,
+		maximumFractionDigits: unitFractionDigits.temperature,
+		signDisplay: 'exceptZero',
+	}).format(fromBaseTemperatureDifference(isNaN(baseValue) ? 0 : baseValue, unit));
+
+	return `${formatted} ${getUnitSymbol('temperature', unit)}`;
+};
+
+// Display only: form state keeps the unrounded value so validation at the limits stays exact.
+export const formatUnitInputValue = <T>(value: T): T | string =>
+	typeof value === 'number' && Number.isFinite(value)
+		? String(Number(value.toFixed(2)) || 0)
+		: value;
 
 export const normalizeDegrees = (value: number): number => ((value % 360) + 360) % 360;
 

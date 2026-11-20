@@ -9,8 +9,10 @@ import {
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
 	createCrosswindFormDataSchema,
+	createDensityAltitudeFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
+	densityAltitudeFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -781,6 +783,21 @@ describe('crosswindFormDataSchema', () => {
 		expect(issueFields(result)).toEqual(['windSpeed']);
 		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.40 km/h']);
 	});
+
+	// The input shows 230.16 mph, which is above 200 kt; the form holds the unrounded value.
+	it('accepts the form value of a 200 kt wind in mph', () => {
+		const units = { ...BASE_UNITS, speed: 'mph' } as const;
+		const formData = formDataFromBaseUnits(
+			{ ...base, windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			units
+		);
+
+		expect(createCrosswindFormDataSchema(units).safeParse(formData).success).toBe(true);
+		expect(
+			createCrosswindFormDataSchema(units).safeParse({ ...base, windSpeed: 230.16 }).success
+		).toBe(false);
+	});
 });
 
 describe('windTriangleFormDataSchema', () => {
@@ -944,8 +961,120 @@ describe('windTriangleFormDataSchema', () => {
 	});
 });
 
+describe('densityAltitudeFormDataSchema', () => {
+	const base = { fieldElevation: 5000, qnh: 1013.25, outsideAirTemperature: 30 };
+
+	it('accepts valid input', () => {
+		expect(densityAltitudeFormDataSchema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(densityAltitudeFormDataSchema, base);
+
+	it('accepts a negative elevation and temperature', () => {
+		const input = { fieldElevation: -1200, qnh: 1020, outsideAirTemperature: -25.5 };
+
+		expect(densityAltitudeFormDataSchema.parse(input)).toEqual(input);
+	});
+
+	it.each([
+		['fieldElevation', -1500, -1500.1, 'Field elevation cannot be lower than -1,500 ft'],
+		['qnh', 900, 899.99, 'QNH cannot be lower than 900.00 hPa'],
+		[
+			'outsideAirTemperature',
+			-60,
+			-60.01,
+			'Outside air temperature cannot be lower than -60.00 °C',
+		],
+		['fieldElevation', 20000, 20000.1, 'Field elevation cannot be greater than 20,000 ft'],
+		['qnh', 1100, 1100.01, 'QNH cannot be greater than 1100.00 hPa'],
+		[
+			'outsideAirTemperature',
+			60,
+			60.01,
+			'Outside air temperature cannot be greater than 60.00 °C',
+		],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		expect(densityAltitudeFormDataSchema.safeParse({ ...base, [field]: limit }).success).toBe(
+			true
+		);
+
+		const result = densityAltitudeFormDataSchema.safeParse({ ...base, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			densityAltitudeFormDataSchema.parse({
+				fieldElevation: '-500',
+				qnh: '1013.25',
+				outsideAirTemperature: '-5',
+			})
+		).toEqual({ fieldElevation: -500, qnh: 1013.25, outsideAirTemperature: -5 });
+	});
+
+	describe('in m, inHg and °F', () => {
+		const units = { ...BASE_UNITS, altitude: 'm', pressure: 'inhg', temperature: 'f' } as const;
+		const schema = createDensityAltitudeFormDataSchema(units);
+		// 1524 m = 5000 ft, 29.92 inHg ≈ 1013.21 hPa, 86 °F = 30 °C
+		const userBase = { fieldElevation: 1524, qnh: 29.92, outsideAirTemperature: 86 };
+
+		it('accepts valid input', () => {
+			expect(schema.safeParse(userBase).success).toBe(true);
+		});
+
+		// −1500 ft = −457.2 m, 20000 ft = 6096 m, 900 hPa ≈ 26.577 inHg, 1100 hPa ≈ 32.483 inHg,
+		// −60 °C = −76 °F, 60 °C = 140 °F. Shown limits are rounded inwards.
+		it.each([
+			['fieldElevation', -457, -458, 'Field elevation cannot be lower than -457 m'],
+			['fieldElevation', 6096, 6097, 'Field elevation cannot be greater than 6,096 m'],
+			['qnh', 26.58, 26.57, 'QNH cannot be lower than 26.58 inHg'],
+			['qnh', 32.48, 32.49, 'QNH cannot be greater than 32.48 inHg'],
+			[
+				'outsideAirTemperature',
+				-76,
+				-76.1,
+				'Outside air temperature cannot be lower than -76.00 °F',
+			],
+			[
+				'outsideAirTemperature',
+				140,
+				140.1,
+				'Outside air temperature cannot be greater than 140.00 °F',
+			],
+		])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+			expect(schema.safeParse({ ...userBase, [field]: limit }).success).toBe(true);
+
+			const result = schema.safeParse({ ...userBase, [field]: beyond });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			for (const baseValues of [
+				{ fieldElevation: -1500, qnh: 900, outsideAirTemperature: -60 },
+				{ fieldElevation: 20000, qnh: 1100, outsideAirTemperature: 60 },
+			]) {
+				const formData = formDataFromBaseUnits(
+					baseValues,
+					{
+						fieldElevation: 'altitude',
+						qnh: 'pressure',
+						outsideAirTemperature: 'temperature',
+					},
+					units
+				);
+
+				expect(schema.safeParse(formData).success).toBe(true);
+			}
+		});
+	});
+});
+
 describe('unitPreferencesSchema', () => {
-	const base = { speed: 'kmh', altitude: 'm', temperature: 'f' };
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg' };
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
@@ -965,7 +1094,7 @@ describe('userPreferencesSchema', () => {
 	const base = {
 		theme: 'dark',
 		currency: 'eur',
-		units: { speed: 'kt', altitude: 'ft', temperature: 'c' },
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa' },
 	};
 
 	it('accepts valid input', () => {

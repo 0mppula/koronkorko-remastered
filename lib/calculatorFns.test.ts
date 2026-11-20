@@ -5,6 +5,7 @@ import {
 	calcualteCoumpoundInterest,
 	calculateAnnualizedReturn,
 	calculateCrosswind,
+	calculateDensityAltitude,
 	calculateDividendYield,
 	calculateDollarCostAverage,
 	calculateEarningsPerShare,
@@ -16,7 +17,7 @@ import {
 	calculatePresentValue,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
-import { formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
+import { BASE_UNITS, formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
 	IDollarCostAverageFormData,
@@ -735,7 +736,7 @@ describe('calculateCrosswind', () => {
 		const formData = formDataToBaseUnits(
 			{ runwayHeading: 60, windDirection: 90, windSpeed: 37.04 },
 			{ windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		expect(formData.windSpeed).toBeCloseTo(20, 10);
@@ -895,7 +896,7 @@ describe('calculateWindTriangle', () => {
 		const formData = formDataToBaseUnits(
 			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 92.6 },
 			{ trueAirspeed: 'speed', windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		const result = calculateWindTriangle(formData);
@@ -910,12 +911,213 @@ describe('calculateWindTriangle', () => {
 		const formData = formDataToBaseUnits(
 			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 185.2 },
 			{ trueAirspeed: 'speed', windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		const result = calculateWindTriangle(formData);
 
 		expect(result.windCorrectionAngle).toBeCloseTo(90, 3);
 		expect(result.groundspeed).toBeCloseTo(0, 4);
+	});
+});
+
+describe('calculateDensityAltitude', () => {
+	// ICAO Standard Atmosphere troposphere: T0 288.15 K, P0 1013.25 hPa, L 0.0065 K/m,
+	// g0 9.80665 m/s², R 287.05287 J/(kg·K), n = g0/(R·L), ρ0 = P0/(R·T0) = 1.225 kg/m³.
+	// The forward relations below (pressure and density at an altitude) are written here
+	// independently of calculateDensityAltitude, which solves them for altitude.
+	// Sources opened and checked:
+	// - Engineering ToolBox, "International Standard Atmosphere"
+	//   (https://www.engineeringtoolbox.com/international-standard-atmosphere-d_985.html): pressure
+	//   (bar) and density ratio ρ/ρ0 by altitude in metres, 4–5 significant digits. The table matches
+	//   these formulas at geometric altitude (z = r0·h/(r0 − h), r0 = 6356766 m, as given in the
+	//   Wikipedia "International Standard Atmosphere" article), not at geopotential altitude.
+	// - Hot-day and non-standard cases: expected values computed by hand-written code with
+	//   40-digit decimals from the formulas above (not by running calculateDensityAltitude).
+	//   5000 ft, 1013.25 hPa, 30 °C was also checked by hand (≈ 7801 ft).
+	// Not checked: no online density altitude calculator. The NWS calculator
+	// (https://www.weather.gov/epz/wxcalc_densityaltitude) only runs in the browser and takes
+	// station pressure and dew point, not QNH; the FAA PHAK chapter PDF couldn't be read.
+	const T0 = 288.15;
+	const P0 = 1013.25;
+	const LAPSE_RATE = 0.0065;
+	const R = 287.05287;
+	const N = 9.80665 / (R * LAPSE_RATE);
+	const RHO0 = (P0 * 100) / (R * T0);
+	const FT = 0.3048;
+	const TROPOPAUSE_FT = 11000 / FT;
+
+	const isaPressureHpa = (altitudeM: number) => P0 * (1 - (LAPSE_RATE * altitudeM) / T0) ** N;
+	const isaDensity = (altitudeM: number) => RHO0 * (1 - (LAPSE_RATE * altitudeM) / T0) ** (N - 1);
+	const geopotential = (geometricM: number) => (6356766 * geometricM) / (6356766 + geometricM);
+
+	describe('forward ISA relations used by these tests', () => {
+		it('give ρ0 = 1.225 kg/m³ at sea level', () => {
+			expect(RHO0).toBeCloseTo(1.225, 6);
+			expect(N).toBeCloseTo(5.25588, 5);
+		});
+
+		it.each([
+			{ z: -500, bar: 1.0748, ratio: 1.0489 },
+			{ z: 1000, bar: 0.8988, ratio: 0.9075 },
+			{ z: 2000, bar: 0.795, ratio: 0.8217 },
+			{ z: 5000, bar: 0.5405, ratio: 0.6012 },
+			{ z: 10000, bar: 0.265, ratio: 0.3376 },
+		])('match the published ISA table at $z m', ({ z, bar, ratio }) => {
+			const h = geopotential(z);
+
+			// The table rounds to 0.1 hPa and 4 decimals.
+			expect(Math.abs(isaPressureHpa(h) - bar * 1000)).toBeLessThanOrEqual(0.05);
+			expect(isaDensity(h) / RHO0).toBeCloseTo(ratio, 4);
+		});
+	});
+
+	it('gives zero everywhere at ISA sea level', () => {
+		const result = calculateDensityAltitude({
+			fieldElevation: 0,
+			qnh: 1013.25,
+			outsideAirTemperature: 15,
+		});
+
+		expect(result.pressureAltitude).toBeCloseTo(0, 9);
+		expect(result.isaTemperature).toBeCloseTo(15, 9);
+		expect(result.isaDeviation).toBeCloseTo(0, 9);
+		expect(result.densityAltitude).toBeCloseTo(0, 6);
+	});
+
+	// ISA temperature at 5000 ft: 15 − 0.0065 × 5000 × 0.3048 = 5.094 °C.
+	it('gives PA = DA = 5000 ft at 5000 ft on an ISA day', () => {
+		const result = calculateDensityAltitude({
+			fieldElevation: 5000,
+			qnh: 1013.25,
+			outsideAirTemperature: 5.094,
+		});
+
+		expect(result.pressureAltitude).toBeCloseTo(5000, 6);
+		expect(result.isaTemperature).toBeCloseTo(5.094, 9);
+		expect(result.isaDeviation).toBeCloseTo(0, 9);
+		expect(result.densityAltitude).toBeCloseTo(5000, 6);
+	});
+
+	it.each([-1500, 0, 1234.5, 5000, 12000, 20000])(
+		'gives PA = elevation at %s ft with standard pressure',
+		(fieldElevation) => {
+			const result = calculateDensityAltitude({
+				fieldElevation,
+				qnh: 1013.25,
+				outsideAirTemperature: 0,
+			});
+
+			expect(result.pressureAltitude).toBeCloseTo(fieldElevation, 6);
+		}
+	);
+
+	// Rounded to 0.01 ft and 0.0001 °C.
+	it.each([
+		{ e: 5000, qnh: 1013.25, oat: 30, pa: 5000, isa: 5.094, da: 7800.73 },
+		{ e: 0, qnh: 1013.25, oat: 35, pa: 0, isa: 15, da: 2275.31 },
+		{ e: 2000, qnh: 995, oat: 25, pa: 2495.19, isa: 10.0565, da: 4211.9 },
+		{ e: 0, qnh: 1035, oat: -20, pa: -588.91, isa: 16.1667, da: -5243.68 },
+		{ e: 7000, qnh: 1020, oat: 30, pa: 6825, isa: 1.4783, da: 10006.21 },
+	])('elevation $e ft, QNH $qnh hPa, OAT $oat °C', ({ e, qnh, oat, pa, isa, da }) => {
+		const result = calculateDensityAltitude({
+			fieldElevation: e,
+			qnh,
+			outsideAirTemperature: oat,
+		});
+
+		expect(result.pressureAltitude).toBeCloseTo(pa, 1);
+		expect(result.isaTemperature).toBeCloseTo(isa, 3);
+		expect(result.isaDeviation).toBeCloseTo(oat - isa, 3);
+		expect(result.densityAltitude).toBeCloseTo(da, 1);
+	});
+
+	const corners = [-1500, 20000].flatMap((e) =>
+		[900, 1100].flatMap((qnh) => [-60, 60].map((oat) => ({ e, qnh, oat })))
+	);
+	const grid = [-1500, 0, 5000, 12000, 20000].flatMap((e) =>
+		[900, 1013.25, 1100].flatMap((qnh) => [-60, 15, 60].map((oat) => ({ e, qnh, oat })))
+	);
+
+	it.each([...corners, ...grid])(
+		'is consistent with the ISA at elevation $e ft, QNH $qnh hPa, OAT $oat °C',
+		({ e, qnh, oat }) => {
+			const result = calculateDensityAltitude({
+				fieldElevation: e,
+				qnh,
+				outsideAirTemperature: oat,
+			});
+			const stationPressure = (qnh / P0) * isaPressureHpa(e * FT);
+			const airDensity = (stationPressure * 100) / (R * (oat + 273.15));
+
+			for (const value of Object.values(result)) {
+				expect(Number.isFinite(value)).toBe(true);
+			}
+
+			expect(isaPressureHpa(result.pressureAltitude * FT) / stationPressure).toBeCloseTo(
+				1,
+				9
+			);
+			expect(isaDensity(result.densityAltitude * FT) / airDensity).toBeCloseTo(1, 9);
+			expect(result.isaTemperature).toBeCloseTo(
+				15 - LAPSE_RATE * result.pressureAltitude * FT,
+				9
+			);
+			expect(result.isaDeviation).toBeCloseTo(oat - result.isaTemperature, 9);
+			expect(result.pressureAltitude).toBeLessThan(TROPOPAUSE_FT);
+			expect(result.densityAltitude).toBeLessThan(TROPOPAUSE_FT);
+		}
+	);
+
+	it('gives the highest results at the hot, high, low-pressure corner of the limits', () => {
+		const result = calculateDensityAltitude({
+			fieldElevation: 20000,
+			qnh: 900,
+			outsideAirTemperature: 60,
+		});
+
+		expect(result.pressureAltitude).toBeCloseTo(22797.14, 1);
+		expect(result.densityAltitude).toBeCloseTo(31562.89, 1);
+	});
+
+	it('gives a higher DA for a higher OAT at the same PA', () => {
+		const results = [-10, 15, 40].map((outsideAirTemperature) =>
+			calculateDensityAltitude({ fieldElevation: 3000, qnh: 1005, outsideAirTemperature })
+		);
+
+		expect(results[0].pressureAltitude).toBe(results[2].pressureAltitude);
+		expect(results[1].densityAltitude).toBeGreaterThan(results[0].densityAltitude);
+		expect(results[2].densityAltitude).toBeGreaterThan(results[1].densityAltitude);
+	});
+
+	it('gives a lower PA for a higher QNH at the same elevation', () => {
+		const [low, high] = [990, 1030].map((qnh) =>
+			calculateDensityAltitude({ fieldElevation: 3000, qnh, outsideAirTemperature: 15 })
+		);
+
+		expect(high.pressureAltitude).toBeLessThan(low.pressureAltitude);
+		expect(high.densityAltitude).toBeLessThan(low.densityAltitude);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { fieldElevation: 1234, qnh: 1001.5, outsideAirTemperature: -7.5 };
+
+		expect(calculateDensityAltitude(formData)).toMatchObject(formData);
+	});
+
+	// 1524 m = 5000 ft; 29.92 inHg = 1013.2079 hPa (not 1013.25); 41.17 °F = 5.0944 °C.
+	it('works with values entered in m, inHg and °F', () => {
+		const formData = formDataToBaseUnits(
+			{ fieldElevation: 1524, qnh: 29.92, outsideAirTemperature: 41.17 },
+			{ fieldElevation: 'altitude', qnh: 'pressure', outsideAirTemperature: 'temperature' },
+			{ ...BASE_UNITS, altitude: 'm', pressure: 'inhg', temperature: 'f' }
+		);
+
+		const result = calculateDensityAltitude(formData);
+
+		expect(formData.fieldElevation).toBeCloseTo(5000, 9);
+		expect(result.pressureAltitude).toBeCloseTo(5001.11, 1);
+		expect(result.densityAltitude).toBeCloseTo(5001.42, 1);
+		expect(Math.abs(result.densityAltitude - 5000)).toBeLessThan(2);
 	});
 });
