@@ -55,7 +55,7 @@ Each feature has its own plan file and branch. Update this checklist in the feat
       `feature/wind-triangle-calculator`
 - [x] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
       `feature/density-altitude-calculator` (adds the pressure unit)
-- [ ] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
+- [x] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
       `feature/fuel-planning-calculator` (adds the fuel unit: L, US gal, kg, lb)
 
 01 must be merged first. 02–05 depend on 01; 03 reuses angle helpers added in 02. 04 and 05 are
