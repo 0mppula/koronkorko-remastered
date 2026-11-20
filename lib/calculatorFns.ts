@@ -20,13 +20,15 @@ import {
 	IMarkupFormData,
 	IPresentValueFormData,
 	IPriceToEarningsRatioFormData,
+	IWindTriangleFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
+	WindTriangleReportProps,
 } from '@/types/calculations';
-import { signedAngleDifference, toRadians } from '@/lib/units';
+import { normalizeDegrees, signedAngleDifference, toRadians } from '@/lib/units';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
@@ -339,5 +341,26 @@ export const calculateCrosswind = (formData: ICrosswindFormData): CrosswindRepor
 		headwind: windSpeed * cos,
 		gustCrosswind: hasGust ? gustSpeed * sin : undefined,
 		gustHeadwind: hasGust ? gustSpeed * cos : undefined,
+	};
+};
+
+export const calculateWindTriangle = (formData: IWindTriangleFormData): WindTriangleReportProps => {
+	const { trueCourse, trueAirspeed, windDirection, windSpeed } = formData;
+
+	// Wind triangle (FAA PHAK, FAA-H-8083-25, Navigation; Ed Williams, Aviation Formulary)
+	const windAngle = toRadians(signedAngleDifference(windDirection, trueCourse));
+	// Clamped against unit-conversion noise at the crosswind = TAS limit.
+	const sinCorrection = Math.max(
+		-1,
+		Math.min(1, (windSpeed * Math.sin(windAngle)) / trueAirspeed)
+	);
+	const windCorrectionAngle = (Math.asin(sinCorrection) * 180) / Math.PI;
+
+	return {
+		...formData,
+		windCorrectionAngle,
+		trueHeading: normalizeDegrees(trueCourse + windCorrectionAngle),
+		groundspeed:
+			trueAirspeed * Math.sqrt(1 - sinCorrection ** 2) - windSpeed * Math.cos(windAngle),
 	};
 };

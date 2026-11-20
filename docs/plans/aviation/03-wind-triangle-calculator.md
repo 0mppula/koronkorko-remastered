@@ -99,9 +99,14 @@ export const windTriangleFormDataSchema = createWindTriangleFormDataSchema(BASE_
     - **No solution (decided):** if the wind's crosswind component exceeds the TAS,
       `|windSpeed × sin(δ)| > trueAirspeed`, there is no heading that holds the course. Message:
       `"The wind's crosswind component exceeds the true airspeed, so this course can't be flown"`.
-    - Otherwise, if the groundspeed would be ≤ 0 (headwind at least as strong as the TAS):
-      `"The headwind is too strong: groundspeed would be zero or negative."`
+    - Otherwise, if the groundspeed would be ≤ 0 (a headwind at least as strong as the TAS, or a
+      pure crosswind equal to the TAS):
+      `"The wind is too strong: groundspeed would be zero or negative"`
     - Both speeds are in the same unit within one schema, so the checks work in any unit.
+    - Zod runs `superRefine` even when a field failed its own refine/min/max checks, so both
+      checks are skipped unless `trueAirspeed > 0` and `windSpeed >= 0` (no duplicate issues).
+    - Groundspeed counts as zero when `≤ trueAirspeed × 1e-9` (float noise); `calculateWindTriangle`
+      clamps the `asin` argument to [−1, 1] against unit-conversion noise at crosswind = TAS.
 - Limits (decided, base units): TAS > 0 and ≤ 600 kt, wind speed 0–200 kt; messages in the user's
   unit. Course and wind direction 1–360 like 02.
 
@@ -115,9 +120,9 @@ Uses speed (from 01). Adds none.
   `{ trueCourse: 360, trueAirspeed: 100, windDirection: 360, windSpeed: 0 }`. Inputs in two
   `FormGroup`s: "True Course" (`°`), "True Airspeed" (speed symbol); "Wind Direction (true,
   from)" (`°`), "Wind Speed" (speed symbol).
-- `Report.tsx`: `ReportGroup`s for True Course, True Airspeed, Wind (`"090° at 20 kt"`),
+- `Report.tsx`: `ReportGroup`s for True Course, True Airspeed, Wind (`"090° at 20.00 kt"`),
   `ReportDivider`, Wind Correction Angle (whole degrees as three digits, e.g. `"006° right"`; no
-  side when it displays as `000°`), True Heading (`formatDegrees(value, { heading: true })`, north
+  side when it displays as `000°`; the side comes from the rounded absolute value), True Heading (`formatDegrees(value, { heading: true })`, north
   as `360°`), Groundspeed (`formatBaseValue`, 2 decimals), then
   `<AviationDisclaimer />`.
 - `Info.tsx`: what the wind triangle is (course vs heading, TAS vs groundspeed, WCA); that all
@@ -150,7 +155,8 @@ IWindTriangleFormData { windCorrectionAngle; trueHeading; groundspeed }`, add to
    routes; `db.windTriangleCalculation`, `windTriangleFormDataSchema`).
 10. `app/(calculators)/wind-triangle-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
     `Info.tsx`.
-11. `README.md` aviation entry, `AGENTS.md` Project list, check off 03 in `00-epic.md`.
+11. `README.md` aviation entry and check off 03 in `00-epic.md` (not `AGENTS.md`:
+    `constants/calculators.ts` is the source of truth for the calculator list).
 
 ## Test cases
 
@@ -159,7 +165,9 @@ derivations: sin 30° = 0.5, cos 30° = √3/2, asin(0.5) = 30°, cos(asin 0.1) 
 is cross-checked against at least one independent source**, e.g. a published E6B worked example or
 an established online E6B / wind triangle calculator. List the sources used (title/URL and which
 cases they confirm) in a comment at the top of the `describe('calculateWindTriangle')` block in
-`lib/calculatorFns.test.ts`. Never take expected values from running the code. Use
+`lib/calculatorFns.test.ts`. Only list a source as confirming a case after opening it and
+checking its numbers; cases no accessible source confirms are listed as not independently
+verified. Never take expected values from running the code. Use
 `toBeCloseTo(x, 4)` (headings `toBeCloseTo(x, 3)`); widen the tolerance only for cases taken from a
 source that rounds (and say so in the comment).
 
@@ -178,12 +186,13 @@ source that rounds (and say so in the comment).
   row-3 result; groundspeed is 160.3879 km/h (86.60254 × 1.852).
 
 Schema: valid input passes; missing fields; negative speeds rejected; directions 0 and 360.1
-rejected, 1 and 360 accepted; TAS 0 rejected (`"True airspeed must be greater than 0 kt"`); TAS 600
-accepted, 600.1 rejected; wind 200 accepted, 200.1 rejected; numeric strings coerced. No-solution
-case rejected on `windSpeed` with the crosswind message: TC 360, TAS 100, wind 090/150 (crosswind
-component 150 > 100). Groundspeed cases rejected with the headwind message: TC 090, TAS 100, wind
-090/100 (groundspeed 0) and 090/120 (negative). Same checks pass in km/h with limit messages in
-km/h.
+rejected, 1 and 360 accepted; TAS 0 rejected with only `"True airspeed must be greater than 0.00 kt"`;
+TAS 600 accepted, 600.1 rejected; wind 200 accepted, 200.1 rejected; numeric strings coerced.
+No-solution case rejected on `windSpeed` with the crosswind message: TC 360, TAS 100, wind
+090/150 (crosswind component 150 > 100). Groundspeed cases rejected on `windSpeed` with the wind
+message: TC 090, TAS 100, wind 090/100 (groundspeed 0), 090/120 (negative), and TC 360, TAS 100,
+wind 090/100 (pure crosswind equal to the TAS, groundspeed 0). A crosswind component equal to the
+TAS with a tailwind is accepted. Same checks pass in km/h with limit messages in km/h.
 
 ## Acceptance criteria
 

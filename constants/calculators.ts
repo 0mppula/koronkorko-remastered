@@ -97,4 +97,11 @@ export const calculators = [
 		description:
 			'Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Wind Triangle Calculator',
+		url: 'wind-triangle-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

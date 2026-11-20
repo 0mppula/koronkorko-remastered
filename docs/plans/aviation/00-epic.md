@@ -51,7 +51,7 @@ Each feature has its own plan file and branch. Update this checklist in the feat
       (categories + landing sections, units store/modal/sync, `lib/units.ts`, unit-aware input,
       disclaimer, AGENTS.md checklist, copy)
 - [x] **02 Crosswind Calculator** – `02-crosswind-calculator.md` – `feature/crosswind-calculator`
-- [ ] **03 Wind Triangle Calculator** – `03-wind-triangle-calculator.md` –
+- [x] **03 Wind Triangle Calculator** – `03-wind-triangle-calculator.md` –
       `feature/wind-triangle-calculator`
 - [ ] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
       `feature/density-altitude-calculator` (adds the pressure unit)
