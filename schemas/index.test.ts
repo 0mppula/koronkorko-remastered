@@ -9,6 +9,7 @@ import {
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
 	createCrosswindFormDataSchema,
+	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
@@ -22,6 +23,7 @@ import {
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
 	userPreferencesSchema,
+	windTriangleFormDataSchema,
 } from '@/schemas';
 
 // Expected behavior is based on what each calculator needs for a meaningful result.
@@ -778,6 +780,167 @@ describe('crosswindFormDataSchema', () => {
 
 		expect(issueFields(result)).toEqual(['windSpeed']);
 		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.40 km/h']);
+	});
+});
+
+describe('windTriangleFormDataSchema', () => {
+	const base = { trueCourse: 90, trueAirspeed: 100, windDirection: 45, windSpeed: 20 };
+	const CROSSWIND_MESSAGE =
+		"The wind's crosswind component exceeds the true airspeed, so this course can't be flown";
+	const WIND_MESSAGE = 'The wind is too strong: groundspeed would be zero or negative';
+
+	it('accepts valid input', () => {
+		expect(windTriangleFormDataSchema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(windTriangleFormDataSchema, base);
+	itRejectsNegativeFields(windTriangleFormDataSchema, base, Object.keys(base));
+
+	it.each(['trueCourse', 'windDirection'])('accepts %s of 1 and 360', (field) => {
+		expect(windTriangleFormDataSchema.safeParse({ ...base, [field]: 1 }).success).toBe(true);
+		expect(windTriangleFormDataSchema.safeParse({ ...base, [field]: 360 }).success).toBe(true);
+	});
+
+	it.each([
+		['trueCourse', 'True course'],
+		['windDirection', 'Wind direction'],
+	])('rejects %s of 0 and 360.1', (field, label) => {
+		for (const value of [0, 360.1]) {
+			const result = windTriangleFormDataSchema.safeParse({ ...base, [field]: value });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([`${label} must be between 1 and 360`]);
+		}
+	});
+
+	it('rejects a TAS of 0 with only the TAS message', () => {
+		const result = windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 0 });
+
+		expect(issueFields(result)).toEqual(['trueAirspeed']);
+		expect(issueMessages(result)).toEqual(['True airspeed must be greater than 0.00 kt']);
+	});
+
+	it('accepts a TAS of 600 kt and rejects 600.1 kt', () => {
+		expect(windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 600 }).success).toBe(
+			true
+		);
+
+		const result = windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 600.1 });
+
+		expect(issueFields(result)).toEqual(['trueAirspeed']);
+		expect(issueMessages(result)).toEqual(['True airspeed cannot be greater than 600.00 kt']);
+	});
+
+	it('accepts a wind speed of 0 and 200 kt and rejects 200.1 kt', () => {
+		const fast = { ...base, trueAirspeed: 600 };
+
+		expect(windTriangleFormDataSchema.safeParse({ ...base, windSpeed: 0 }).success).toBe(true);
+		expect(windTriangleFormDataSchema.safeParse({ ...fast, windSpeed: 200 }).success).toBe(
+			true
+		);
+
+		const result = windTriangleFormDataSchema.safeParse({ ...fast, windSpeed: 200.1 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 200.00 kt']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			windTriangleFormDataSchema.parse({
+				trueCourse: '090',
+				trueAirspeed: '100',
+				windDirection: '045',
+				windSpeed: '20.5',
+			})
+		).toEqual({ trueCourse: 90, trueAirspeed: 100, windDirection: 45, windSpeed: 20.5 });
+	});
+
+	// sin 90° = 1, so the crosswind component is the full wind speed.
+	it('rejects a crosswind component above the TAS on windSpeed', () => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: 360,
+			trueAirspeed: 100,
+			windDirection: 90,
+			windSpeed: 150,
+		});
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual([CROSSWIND_MESSAGE]);
+	});
+
+	it.each([
+		{ case: 'a headwind equal to the TAS', tc: 90, wd: 90, ws: 100 },
+		{ case: 'a headwind above the TAS', tc: 90, wd: 90, ws: 120 },
+		{ case: 'a pure crosswind equal to the TAS', tc: 360, wd: 90, ws: 100 },
+	])('rejects $case (groundspeed ≤ 0) on windSpeed', ({ tc, wd, ws }) => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: tc,
+			trueAirspeed: 100,
+			windDirection: wd,
+			windSpeed: ws,
+		});
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual([WIND_MESSAGE]);
+	});
+
+	// GS = 0 + 100·cos 45° > 0: heading at 90° to the course, carried along by the tailwind.
+	it('accepts a crosswind component equal to the TAS with a tailwind', () => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: 360,
+			trueAirspeed: 100 * Math.SQRT1_2,
+			windDirection: 135,
+			windSpeed: 100,
+		});
+
+		expect(result.success).toBe(true);
+	});
+
+	describe('in km/h', () => {
+		const schema = createWindTriangleFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+		// 100 kt = 185.2 km/h, 20 kt = 37.04 km/h
+		const kmhBase = { ...base, trueAirspeed: 185.2, windSpeed: 37.04 };
+
+		it('accepts valid input', () => {
+			expect(schema.safeParse(kmhBase).success).toBe(true);
+		});
+
+		it('checks the limits in base units and shows them in km/h', () => {
+			// 600 kt = 1111.2 km/h, 200 kt = 370.4 km/h
+			expect(schema.safeParse({ ...kmhBase, trueAirspeed: 1111.2 }).success).toBe(true);
+			expect(issueMessages(schema.safeParse({ ...kmhBase, trueAirspeed: 0 }))).toEqual([
+				'True airspeed must be greater than 0.00 km/h',
+			]);
+			expect(issueMessages(schema.safeParse({ ...kmhBase, trueAirspeed: 1112 }))).toEqual([
+				'True airspeed cannot be greater than 1,111.20 km/h',
+			]);
+
+			const fast = { ...kmhBase, trueAirspeed: 1111.2 };
+
+			expect(schema.safeParse({ ...fast, windSpeed: 370.4 }).success).toBe(true);
+			expect(issueMessages(schema.safeParse({ ...fast, windSpeed: 371 }))).toEqual([
+				'Wind speed cannot be greater than 370.40 km/h',
+			]);
+		});
+
+		it('rejects unsolvable winds with the same messages', () => {
+			const crosswind = schema.safeParse({
+				trueCourse: 360,
+				trueAirspeed: 185.2,
+				windDirection: 90,
+				windSpeed: 277.8,
+			});
+			const headwind = schema.safeParse({
+				trueCourse: 90,
+				trueAirspeed: 185.2,
+				windDirection: 90,
+				windSpeed: 185.2,
+			});
+
+			expect(issueMessages(crosswind)).toEqual([CROSSWIND_MESSAGE]);
+			expect(issueMessages(headwind)).toEqual([WIND_MESSAGE]);
+		});
 	});
 });
 

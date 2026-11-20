@@ -110,6 +110,10 @@ Calculators for pilots and student pilots. Values can be entered and shown in th
 
 Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed, including gust components when a gust speed is given.
 
+### [Wind Triangle Calculator][14]
+
+Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed.
+
 ---
 
 ## How to set up the project locally
@@ -245,5 +249,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [11]: https://www.koronkorko.com/liquidation-price-calculator
 [12]: https://www.koronkorko.com/dividend-yield-calculator
 [13]: https://www.koronkorko.com/crosswind-calculator
+[14]: https://www.koronkorko.com/wind-triangle-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

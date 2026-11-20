@@ -4,7 +4,9 @@ import {
 	formatUnitValue,
 	fromBaseUnit,
 	getUnitOptions,
+	signedAngleDifference,
 	toBaseUnit,
+	toRadians,
 	unitFractionDigits,
 	UnitPreferences,
 	UnitQuantity,
@@ -295,6 +297,58 @@ export const createCrosswindFormDataSchema = (units: UnitPreferences) =>
 		});
 
 export const crosswindFormDataSchema = createCrosswindFormDataSchema(BASE_UNITS);
+
+const GROUNDSPEED_TOLERANCE = 1e-9;
+
+export const createWindTriangleFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			trueCourse: headingFieldSchema('True course'),
+			trueAirspeed: unitNumberFieldSchema('True airspeed', 'speed', units.speed, {
+				min: 0,
+				minExclusive: true,
+				max: 600,
+			}),
+			windDirection: headingFieldSchema('Wind direction'),
+			windSpeed: unitNumberFieldSchema('Wind speed', 'speed', units.speed, {
+				min: 0,
+				max: 200,
+			}),
+		})
+		.superRefine((data, ctx) => {
+			const { trueCourse, trueAirspeed, windDirection, windSpeed } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (!(trueAirspeed > 0) || !(windSpeed >= 0)) return;
+
+			// Both speeds are in the same unit, so these checks hold in any unit.
+			const windAngle = toRadians(signedAngleDifference(windDirection, trueCourse));
+			const crosswind = windSpeed * Math.sin(windAngle);
+
+			if (Math.abs(crosswind) > trueAirspeed) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message:
+						"The wind's crosswind component exceeds the true airspeed, so this course can't be flown",
+				});
+
+				return;
+			}
+
+			const groundspeed =
+				Math.sqrt(trueAirspeed ** 2 - crosswind ** 2) - windSpeed * Math.cos(windAngle);
+
+			if (groundspeed <= trueAirspeed * GROUNDSPEED_TOLERANCE) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message: 'The wind is too strong: groundspeed would be zero or negative',
+				});
+			}
+		});
+
+export const windTriangleFormDataSchema = createWindTriangleFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

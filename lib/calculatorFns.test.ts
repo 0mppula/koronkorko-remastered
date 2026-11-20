@@ -14,6 +14,7 @@ import {
 	calculateLiquidationPrice,
 	calculateMarkup,
 	calculatePresentValue,
+	calculateWindTriangle,
 } from '@/lib/calculatorFns';
 import { formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
 import {
@@ -743,5 +744,178 @@ describe('calculateCrosswind', () => {
 
 		expect(result.crosswind).toBeCloseTo(10, 4);
 		expect(fromBaseUnit(result.crosswind, 'speed', 'kmh')).toBeCloseTo(18.52, 4);
+	});
+});
+
+describe('calculateWindTriangle', () => {
+	// WCA = asin(WS·sin δ / TAS), GS = TAS·cos WCA − WS·cos δ, δ = wind direction − course.
+	// Expected values are exact derivations from these formulas. Sources opened and checked:
+	// - Ed Williams, Aviation Formulary V1.47, "Wind Triangles (2) Find HD, GS"
+	//   (https://edwilliams.org/avform147.htm): confirms the formula and sign convention (wind from
+	//   the right gives a positive WCA); it has no numeric wind triangle example.
+	// - Omni Wind Correction Angle Calculator worked example
+	//   (https://www.omnicalculator.com/physics/wind-correction-angle): TC 090, TAS 100, wind
+	//   045/20 gives WCA −8° and heading 082°, whole degrees only, confirms the Omni case.
+	// - Omni Ground Speed Calculator FAQ (https://www.omnicalculator.com/physics/ground-speed):
+	//   GS = TAS + WS in a pure tailwind and TAS − WS in a pure headwind (80/20 kt), GS = TAS in
+	//   still air; confirms the rules behind rows 1, 2 and 6.
+	// Not found in any source: rows 3, 4 and 5. They, like every row and the Omni case, are verified
+	// by vector addition (TAS along the heading + wind = groundspeed along the course), an
+	// independent method that doesn't use the asin formula.
+	const SQRT3_2 = Math.sqrt(3) / 2;
+	const ASIN_0_1 = 5.739170477266787; // asin(0.1) in degrees
+
+	const tableCases = [
+		{ tc: 90, tas: 100, wd: 90, ws: 20, wca: 0, th: 90, gs: 80 },
+		{ tc: 90, tas: 100, wd: 270, ws: 20, wca: 0, th: 90, gs: 120 },
+		{ tc: 360, tas: 100, wd: 90, ws: 50, wca: 30, th: 30, gs: 100 * SQRT3_2 },
+		{ tc: 10, tas: 100, wd: 280, ws: 50, wca: -30, th: 340, gs: 100 * SQRT3_2 },
+		{
+			tc: 180,
+			tas: 100,
+			wd: 210,
+			ws: 20,
+			wca: ASIN_0_1,
+			th: 180 + ASIN_0_1,
+			gs: Math.sqrt(9900) - 10 * Math.sqrt(3),
+		},
+		{ tc: 123, tas: 110, wd: 360, ws: 0, wca: 0, th: 123, gs: 110 },
+	];
+	const omniCase = {
+		tc: 90,
+		tas: 100,
+		wd: 45,
+		ws: 20,
+		wca: -8.1301,
+		th: 81.8699,
+		gs: 60 * Math.SQRT2,
+	};
+
+	it.each(tableCases)(
+		'course $tc, TAS $tas, wind $wd at $ws kt',
+		({ tc, tas, wd, ws, wca, th, gs }) => {
+			const result = calculateWindTriangle({
+				trueCourse: tc,
+				trueAirspeed: tas,
+				windDirection: wd,
+				windSpeed: ws,
+			});
+
+			expect(result.windCorrectionAngle).toBeCloseTo(wca, 3);
+			expect(result.trueHeading).toBeCloseTo(th, 3);
+			expect(result.groundspeed).toBeCloseTo(gs, 4);
+		}
+	);
+
+	it('matches the Omni worked example (course 090, TAS 100, wind 045 at 20 kt)', () => {
+		const result = calculateWindTriangle({
+			trueCourse: 90,
+			trueAirspeed: 100,
+			windDirection: 45,
+			windSpeed: 20,
+		});
+
+		// Omni rounds to whole degrees.
+		expect(Math.round(result.windCorrectionAngle)).toBe(-8);
+		expect(Math.round(result.trueHeading)).toBe(82);
+		// asin(−0.2·sin 45°) = −8.1301°; GS = 100·√0.98 − 20·cos 45° = 60√2
+		expect(result.windCorrectionAngle).toBeCloseTo(-8.1301, 3);
+		expect(result.groundspeed).toBeCloseTo(60 * Math.SQRT2, 4);
+	});
+
+	// Vectors as (east, north); a bearing b points along (sin b, cos b).
+	const bearingVector = (bearing: number, length: number) => {
+		const radians = (bearing * Math.PI) / 180;
+
+		return { east: length * Math.sin(radians), north: length * Math.cos(radians) };
+	};
+
+	it.each([...tableCases, omniCase])(
+		'adds up as vectors: course $tc, TAS $tas, wind $wd at $ws kt',
+		({ tc, tas, wd, ws, th, gs }) => {
+			const result = calculateWindTriangle({
+				trueCourse: tc,
+				trueAirspeed: tas,
+				windDirection: wd,
+				windSpeed: ws,
+			});
+
+			// Checks both the expected table values and the calculated result.
+			for (const { heading, groundspeed } of [
+				{ heading: th, groundspeed: gs },
+				{ heading: result.trueHeading, groundspeed: result.groundspeed },
+			]) {
+				const air = bearingVector(heading, tas);
+				// The wind blows toward the opposite of the direction it comes from.
+				const wind = bearingVector(wd + 180, ws);
+				const ground = { east: air.east + wind.east, north: air.north + wind.north };
+				const course = bearingVector(tc, 1);
+
+				const along = ground.east * course.east + ground.north * course.north;
+				const across = ground.east * course.north - ground.north * course.east;
+
+				expect(across).toBeCloseTo(0, 4);
+				expect(along).toBeCloseTo(groundspeed, 4);
+				expect(Math.hypot(ground.east, ground.north)).toBeCloseTo(groundspeed, 4);
+			}
+		}
+	);
+
+	it('keeps the heading in [0, 360) when it wraps across north', () => {
+		const left = calculateWindTriangle({
+			trueCourse: 10,
+			trueAirspeed: 100,
+			windDirection: 280,
+			windSpeed: 50,
+		});
+		const right = calculateWindTriangle({
+			trueCourse: 350,
+			trueAirspeed: 100,
+			windDirection: 80,
+			windSpeed: 50,
+		});
+
+		expect(left.trueHeading).toBeCloseTo(340, 3);
+		expect(right.trueHeading).toBeCloseTo(20, 3);
+
+		for (const { trueHeading } of [left, right]) {
+			expect(trueHeading).toBeGreaterThanOrEqual(0);
+			expect(trueHeading).toBeLessThan(360);
+		}
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { trueCourse: 87, trueAirspeed: 120, windDirection: 120, windSpeed: 12 };
+
+		expect(calculateWindTriangle(formData)).toMatchObject(formData);
+	});
+
+	it('works with speeds entered in km/h', () => {
+		// 185.2 km/h = 100 kt and 92.6 km/h = 50 kt (1 kt = 1.852 km/h exactly)
+		const formData = formDataToBaseUnits(
+			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 92.6 },
+			{ trueAirspeed: 'speed', windSpeed: 'speed' },
+			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+		);
+
+		const result = calculateWindTriangle(formData);
+
+		expect(result.windCorrectionAngle).toBeCloseTo(30, 3);
+		expect(result.trueHeading).toBeCloseTo(30, 3);
+		expect(result.groundspeed).toBeCloseTo(100 * SQRT3_2, 4);
+		expect(fromBaseUnit(result.groundspeed, 'speed', 'kmh')).toBeCloseTo(160.3879, 4);
+	});
+
+	it('gives a finite result when the crosswind equals the TAS after a unit conversion', () => {
+		const formData = formDataToBaseUnits(
+			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 185.2 },
+			{ trueAirspeed: 'speed', windSpeed: 'speed' },
+			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+		);
+
+		const result = calculateWindTriangle(formData);
+
+		expect(result.windCorrectionAngle).toBeCloseTo(90, 3);
+		expect(result.groundspeed).toBeCloseTo(0, 4);
 	});
 });

@@ -18,6 +18,7 @@ export const LIQUIDATION_PRICE_CALCULATIONS_API_URL =
 	'/api/liquidation-price-calculations' as const;
 export const DIVIDEND_YIELD_CALCULATIONS_API_URL = '/api/dividend-yield-calculations' as const;
 export const CROSSWIND_CALCULATIONS_API_URL = '/api/crosswind-calculations' as const;
+export const WIND_TRIANGLE_CALCULATIONS_API_URL = '/api/wind-triangle-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -33,6 +34,7 @@ export const API_URLS = [
 	LIQUIDATION_PRICE_CALCULATIONS_API_URL,
 	DIVIDEND_YIELD_CALCULATIONS_API_URL,
 	CROSSWIND_CALCULATIONS_API_URL,
+	WIND_TRIANGLE_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -53,6 +55,7 @@ export const ENTERPRICE_VALUE_CALCULATIONS_QUERY_KEY = 'enterprise-value-calcula
 export const LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY = 'liquidation-price-calculations' as const;
 export const DIVIDEND_YIELD_CALCULATIONS_QUERY_KEY = 'dividend-yield-calculations' as const;
 export const CROSSWIND_CALCULATIONS_QUERY_KEY = 'crosswind-calculations' as const;
+export const WIND_TRIANGLE_CALCULATIONS_QUERY_KEY = 'wind-triangle-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -68,4 +71,5 @@ export const QUERY_KEYS = [
 	LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY,
 	DIVIDEND_YIELD_CALCULATIONS_QUERY_KEY,
 	CROSSWIND_CALCULATIONS_QUERY_KEY,
+	WIND_TRIANGLE_CALCULATIONS_QUERY_KEY,
 ] as const;

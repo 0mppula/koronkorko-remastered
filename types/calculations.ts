@@ -14,6 +14,7 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	windTriangleFormDataSchema,
 } from '@/schemas';
 import {
 	AnnualizedReturnCalculation,
@@ -29,6 +30,7 @@ import {
 	MarkupCalculation,
 	PresentValueCalculation,
 	PriceToEarningsRatioCalculation,
+	WindTriangleCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
 
@@ -172,6 +174,15 @@ export interface CrosswindReportProps extends ICrosswindFormData {
 	gustHeadwind?: number;
 }
 
+// Wind Triangle Calculation
+export type IWindTriangleFormData = z.infer<typeof windTriangleFormDataSchema>;
+
+export interface WindTriangleReportProps extends IWindTriangleFormData {
+	windCorrectionAngle: number;
+	trueHeading: number;
+	groundspeed: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -185,4 +196,5 @@ export type CalculationType =
 	| EnterpriseValueCalculation
 	| LiquidationPriceCalculation
 	| DividendYieldCalculation
-	| CrosswindCalculation;
+	| CrosswindCalculation
+	| WindTriangleCalculation;
