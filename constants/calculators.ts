@@ -111,4 +111,11 @@ export const calculators = [
 		description:
 			'Calculate the pressure altitude, ISA temperature deviation and density altitude, given the field elevation, QNH and outside air temperature. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Fuel Planning Calculator',
+		url: 'fuel-planning-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

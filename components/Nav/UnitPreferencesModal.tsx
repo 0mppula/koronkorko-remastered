@@ -103,7 +103,7 @@ const UnitPreferencesModal = () => {
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
+			<DialogContent className="max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>Unit Preferences</DialogTitle>
 				</DialogHeader>
