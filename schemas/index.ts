@@ -381,6 +381,7 @@ export const unitPreferencesSchema = z.object(
 		altitude: unitValueSchema('altitude'),
 		temperature: unitValueSchema('temperature'),
 		pressure: unitValueSchema('pressure'),
+		fuel: unitValueSchema('fuel'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

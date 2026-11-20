@@ -10,6 +10,7 @@ import {
 	changeFormDataUnits,
 	formDataFromBaseUnits,
 	formDataToExactBaseUnits,
+	GetUnitContext,
 	UnitFields,
 	UnitFormValues,
 	unitFormValuesFromBase,
@@ -32,6 +33,8 @@ interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 	queryKey: (typeof QUERY_KEYS)[number];
 	// Fields entered in the user's units; defaultValues, calcFn and saved data use base units.
 	unitFields?: UnitFields<TFormData>;
+	// Must be a stable reference, like unitFields.
+	getUnitContext?: GetUnitContext<TFormData>;
 }
 
 const useCalculator = <
@@ -45,6 +48,7 @@ const useCalculator = <
 	apiUrl,
 	queryKey,
 	unitFields,
+	getUnitContext,
 }: IUseCalculator<TFormData, TReportProps>) => {
 	const [activeCalculation, setActiveCalculation] = useState<TCalculation | null>(null);
 	const [report, setReport] = useState<TReportProps | null>(null);
@@ -63,15 +67,23 @@ const useCalculator = <
 	const toBaseUnits = useCallback(
 		(formData: TFormData) =>
 			unitFields
-				? formDataToExactBaseUnits(formData, unitFields, units, unitFormValuesRef.current)
+				? formDataToExactBaseUnits(
+						formData,
+						unitFields,
+						units,
+						unitFormValuesRef.current,
+						getUnitContext
+					)
 				: formData,
-		[unitFields, units]
+		[unitFields, units, getUnitContext]
 	);
 
 	const fromBaseUnits = useCallback(
 		(formData: TFormData) =>
-			unitFields ? formDataFromBaseUnits(formData, unitFields, units) : formData,
-		[unitFields, units]
+			unitFields
+				? formDataFromBaseUnits(formData, unitFields, units, getUnitContext)
+				: formData,
+		[unitFields, units, getUnitContext]
 	);
 
 	const formDefaultValues = useMemo(
@@ -89,12 +101,12 @@ const useCalculator = <
 				return;
 			}
 
-			const values = unitFormValuesFromBase(baseFormData, unitFields, units);
+			const values = unitFormValuesFromBase(baseFormData, unitFields, units, getUnitContext);
 
 			unitFormValuesRef.current = values;
 			form.reset(values.formData);
 		},
-		[unitFields, units, form]
+		[unitFields, units, form, getUnitContext]
 	);
 
 	// Keep the same physical values in the form when the user changes units.
@@ -115,12 +127,13 @@ const useCalculator = <
 			unitFields,
 			prevUnits,
 			units,
-			unitFormValuesRef.current
+			unitFormValuesRef.current,
+			getUnitContext
 		);
 
 		unitFormValuesRef.current = values;
 		form.reset(values.formData);
-	}, [unitFields, units, form]);
+	}, [unitFields, units, form, getUnitContext]);
 
 	const {
 		deleteMutation: { mutate: deleteMutate },

@@ -14,6 +14,7 @@ import {
 	formDataToExactBaseUnits,
 	fromBaseTemperatureDifference,
 	fromBaseUnit,
+	getPairedFuelUnit,
 	getUnitSymbol,
 	normalizeDegrees,
 	signedAngleDifference,
@@ -107,6 +108,271 @@ describe('pressure conversions', () => {
 	});
 });
 
+describe('fuel conversions', () => {
+	// Standard fuel weights by definition: 6.0 lb/US gal (AVGAS) and 6.7 lb/US gal (Jet A).
+	const AVGAS = (6.0 * 0.45359237) / 3.785411784;
+	const JET_A = (6.7 * 0.45359237) / 3.785411784;
+	const avgas = { fuelDensityKgPerL: AVGAS };
+	const jetA = { fuelDensityKgPerL: JET_A };
+
+	it('has the expected densities in kg/L', () => {
+		expect(AVGAS).toBeCloseTo(0.71896, 5);
+		expect(JET_A).toBeCloseTo(0.80284, 5);
+	});
+
+	it('converts litres to and from US gallons (1 US gal = 3.785411784 L)', () => {
+		expect(fromBaseUnit(3.785411784, 'fuel', 'usgal')).toBe(1);
+		expect(toBaseUnit(1, 'fuel', 'usgal')).toBe(3.785411784);
+	});
+
+	it('converts pounds of fuel to litres through the density', () => {
+		// 6 lb of AVGAS and 6.7 lb of Jet A are 1 US gal by definition.
+		expect(toBaseUnit(6, 'fuel', 'lb', avgas)).toBeCloseTo(3.785411784, 12);
+		expect(toBaseUnit(6.7, 'fuel', 'lb', jetA)).toBeCloseTo(3.785411784, 12);
+		expect(fromBaseUnit(3.785411784, 'fuel', 'lb', avgas)).toBeCloseTo(6, 12);
+		expect(fromBaseUnit(3.785411784, 'fuel', 'lb', jetA)).toBeCloseTo(6.7, 12);
+	});
+
+	it('converts kilograms of fuel to litres through the density', () => {
+		expect(toBaseUnit(AVGAS, 'fuel', 'kg', avgas)).toBeCloseTo(1, 12);
+		expect(fromBaseUnit(1, 'fuel', 'kg', jetA)).toBe(JET_A);
+		expect(toBaseUnit(1, 'fuel', 'kg', avgas)).toBeCloseTo(1 / 0.71896, 4);
+	});
+
+	it('converts kilograms to pounds with the international pound', () => {
+		const litres = toBaseUnit(1, 'fuel', 'kg', jetA);
+
+		expect(fromBaseUnit(litres, 'fuel', 'lb', jetA)).toBeCloseTo(1 / 0.45359237, 12);
+	});
+
+	it('returns the inputs when converting back through the density', () => {
+		for (const context of [avgas, jetA]) {
+			for (const unit of ['kg', 'lb']) {
+				for (const value of [0.01, 1, 64.71, 150, 10000]) {
+					const litres = toBaseUnit(value, 'fuel', unit, context);
+
+					expect(fromBaseUnit(litres, 'fuel', unit, context)).toBeCloseTo(value, 9);
+				}
+			}
+		}
+	});
+
+	it('throws for mass units without a valid density', () => {
+		expect(() => toBaseUnit(1, 'fuel', 'kg')).toThrow();
+		expect(() => fromBaseUnit(1, 'fuel', 'lb', {})).toThrow();
+		expect(() => toBaseUnit(1, 'fuel', 'lb', { fuelDensityKgPerL: 0 })).toThrow();
+	});
+
+	it('ignores the density for volume units', () => {
+		expect(toBaseUnit(1, 'fuel', 'usgal', jetA)).toBe(3.785411784);
+		expect(fromBaseUnit(25, 'fuel', 'l', avgas)).toBe(25);
+	});
+
+	it('pairs L with kg and US gal with lb', () => {
+		expect(getPairedFuelUnit('l')).toBe('kg');
+		expect(getPairedFuelUnit('kg')).toBe('l');
+		expect(getPairedFuelUnit('usgal')).toBe('lb');
+		expect(getPairedFuelUnit('lb')).toBe('usgal');
+	});
+
+	it('formats fuel with 2 decimals and grouping', () => {
+		expect(normalize(formatUnitValue(2641.72, 'fuel', 'usgal'))).toBe('2,641.72 US gal');
+		expect(normalize(formatBaseValue(90, 'fuel', 'l'))).toBe('90.00 L');
+		// 90 L × 0.71896 kg/L = 64.71 kg
+		expect(normalize(formatBaseValue(90, 'fuel', 'kg', avgas))).toBe('64.71 kg');
+		// 25 US gal × 6.0 lb/US gal and × 6.7 lb/US gal
+		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'usgal'))).toBe('25.00 US gal');
+		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'lb', avgas))).toBe('150.00 lb');
+		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'lb', jetA))).toBe('167.50 lb');
+	});
+
+	describe('in a form with a fuel type', () => {
+		interface FormData {
+			fuelBurnRate: number | string;
+			taxiFuel: number | string | null;
+			fuelType: string;
+		}
+
+		const unitFields: UnitFields<FormData> = { fuelBurnRate: 'fuel', taxiFuel: 'fuel' };
+		const getContext = ({ fuelType }: FormData) => (fuelType === 'jetA' ? jetA : avgas);
+		const withFuel = (fuel: UnitPreferences['fuel']): UnitPreferences => ({
+			...BASE_UNITS,
+			fuel,
+		});
+		const saved: FormData = { fuelBurnRate: 30, taxiFuel: 5, fuelType: 'avgas' };
+
+		it("converts mass fields with the density of the record's own fuel type", () => {
+			const units = withFuel('lb');
+
+			expect(
+				formDataToBaseUnits(
+					{ fuelBurnRate: 60, taxiFuel: 6.7, fuelType: 'jetA' },
+					unitFields,
+					units,
+					getContext
+				)
+			).toEqual({
+				fuelBurnRate: toBaseUnit(60, 'fuel', 'lb', jetA),
+				taxiFuel: toBaseUnit(6.7, 'fuel', 'lb', jetA),
+				fuelType: 'jetA',
+			});
+			expect(
+				formDataFromBaseUnits(
+					{ fuelBurnRate: 3.785411784, taxiFuel: null, fuelType: 'jetA' },
+					unitFields,
+					units,
+					getContext
+				)
+			).toEqual({ fuelBurnRate: 6.7, taxiFuel: null, fuelType: 'jetA' });
+		});
+
+		it('round trips L → US gal → lb → kg → L exactly for both fuel types', () => {
+			const path: UnitPreferences['fuel'][] = ['l', 'usgal', 'lb', 'kg', 'l'];
+
+			for (const fuelType of ['avgas', 'jetA']) {
+				const start = { ...saved, fuelType };
+				let values = unitFormValuesFromBase(start, unitFields, withFuel('l'), getContext);
+
+				for (let round = 0; round < 50; round++) {
+					for (let i = 1; i < path.length; i++) {
+						values = changeFormDataUnits(
+							values.formData,
+							unitFields,
+							withFuel(path[i - 1]),
+							withFuel(path[i]),
+							values,
+							getContext
+						);
+					}
+				}
+
+				expect(values.formData).toEqual(start);
+				expect(values.baseFormData).toEqual(start);
+			}
+		});
+
+		it('round trips every 2-decimal amount up to 200 lb exactly', () => {
+			const path: UnitPreferences['fuel'][] = ['lb', 'l', 'usgal', 'kg', 'lb'];
+
+			for (let i = 0; i <= 20000; i++) {
+				const value = i / 100;
+				const base = { ...saved, fuelBurnRate: toBaseUnit(value, 'fuel', 'lb', avgas) };
+				let values = unitFormValuesFromBase(base, unitFields, withFuel('lb'), getContext);
+
+				for (let j = 1; j < path.length; j++) {
+					values = changeFormDataUnits(
+						values.formData,
+						unitFields,
+						withFuel(path[j - 1]),
+						withFuel(path[j]),
+						values,
+						getContext
+					);
+				}
+
+				expect(values.formData.fuelBurnRate).toBe(value);
+			}
+		});
+
+		it('saves an untouched imported calculation with the exact stored litres', () => {
+			for (const fuel of ['usgal', 'kg', 'lb'] as const) {
+				const values = unitFormValuesFromBase(
+					saved,
+					unitFields,
+					withFuel(fuel),
+					getContext
+				);
+
+				expect(
+					formDataToExactBaseUnits(
+						values.formData,
+						unitFields,
+						withFuel(fuel),
+						values,
+						getContext
+					)
+				).toEqual(saved);
+			}
+		});
+
+		it('keeps the shown mass and converts it with the new density after a fuel type change', () => {
+			const units = withFuel('kg');
+			const values = unitFormValuesFromBase(saved, unitFields, units, getContext);
+			const changed = { ...values.formData, fuelType: 'jetA' };
+			const base = formDataToExactBaseUnits(changed, unitFields, units, values, getContext);
+
+			// 30 L of AVGAS shown in kg, then read as kg of Jet A.
+			expect(changed.fuelBurnRate).toBe(Number((30 * AVGAS).toPrecision(12)));
+			expect(base.fuelBurnRate).toBe(Number(changed.fuelBurnRate) / JET_A);
+			expect(base.fuelBurnRate).toBeCloseTo((30 * AVGAS) / JET_A, 9);
+			expect(base.taxiFuel).toBe(Number(changed.taxiFuel) / JET_A);
+		});
+
+		it('restores the exact litres when the fuel type is changed back', () => {
+			const units = withFuel('lb');
+			const values = unitFormValuesFromBase(saved, unitFields, units, getContext);
+			const changed = { ...values.formData, fuelType: 'jetA' };
+			const changedBack = { ...changed, fuelType: 'avgas' };
+
+			expect(
+				formDataToExactBaseUnits(changed, unitFields, units, values, getContext)
+					.fuelBurnRate
+			).not.toBe(30);
+			expect(
+				formDataToExactBaseUnits(changedBack, unitFields, units, values, getContext)
+			).toEqual(saved);
+		});
+
+		it('keeps the exact litres after a fuel type change in volume units', () => {
+			const units = withFuel('usgal');
+			const values = unitFormValuesFromBase(saved, unitFields, units, getContext);
+
+			expect(
+				formDataToExactBaseUnits(
+					{ ...values.formData, fuelType: 'jetA' },
+					unitFields,
+					units,
+					values,
+					getContext
+				)
+			).toEqual({ ...saved, fuelType: 'jetA' });
+		});
+
+		it('changes units after a fuel type change with the new density', () => {
+			const values = unitFormValuesFromBase(saved, unitFields, withFuel('lb'), getContext);
+			const changed = { ...values.formData, fuelType: 'jetA' };
+			const inLitres = changeFormDataUnits(
+				changed,
+				unitFields,
+				withFuel('lb'),
+				withFuel('l'),
+				values,
+				getContext
+			);
+
+			expect(inLitres.baseFormData.fuelBurnRate).toBe(
+				toBaseUnit(Number(changed.fuelBurnRate), 'fuel', 'lb', jetA)
+			);
+			expect(inLitres.formData.fuelType).toBe('jetA');
+		});
+
+		it('converts a typed value with the current fuel type', () => {
+			const units = withFuel('lb');
+			const values = unitFormValuesFromBase(saved, unitFields, units, getContext);
+
+			expect(
+				formDataToExactBaseUnits(
+					{ ...values.formData, fuelBurnRate: '67', fuelType: 'jetA' },
+					unitFields,
+					units,
+					values,
+					getContext
+				).fuelBurnRate
+			).toBeCloseTo(10 * 3.785411784, 9);
+		});
+	});
+});
+
 describe('temperature differences', () => {
 	it('converts without the 32 °F offset', () => {
 		expect(fromBaseTemperatureDifference(10, 'f')).toBe(18);
@@ -138,14 +404,17 @@ describe('base units', () => {
 	});
 
 	it('round trips every option of every quantity', () => {
+		const context = { fuelDensityKgPerL: 0.8 };
+
 		for (const { value: quantity } of unitQuantities) {
 			for (const option of unitOptions[quantity]) {
 				for (const value of [-40, 0, 1, 12.5, 41000]) {
 					expect(
 						fromBaseUnit(
-							toBaseUnit(value, quantity, option.value),
+							toBaseUnit(value, quantity, option.value, context),
 							quantity,
-							option.value
+							option.value,
+							context
 						)
 					).toBeCloseTo(value, 9);
 				}
@@ -336,6 +605,7 @@ describe('withDefaultUnitPreferences', () => {
 			altitude: 'ft',
 			temperature: 'c',
 			pressure: 'hpa',
+			fuel: 'l',
 		});
 	});
 
@@ -346,10 +616,21 @@ describe('withDefaultUnitPreferences', () => {
 		});
 	});
 
-	it('adds the default pressure to preferences saved before it existed', () => {
+	it('adds the default pressure and fuel to preferences saved before they existed', () => {
 		expect(
 			withDefaultUnitPreferences({ speed: 'kmh', altitude: 'm', temperature: 'f' })
-		).toEqual({ speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'hpa' });
+		).toEqual({ speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'hpa', fuel: 'l' });
+	});
+
+	it('keeps the other choices when only fuel is missing', () => {
+		expect(
+			withDefaultUnitPreferences({
+				speed: 'mph',
+				altitude: 'm',
+				temperature: 'f',
+				pressure: 'inhg',
+			})
+		).toEqual({ speed: 'mph', altitude: 'm', temperature: 'f', pressure: 'inhg', fuel: 'l' });
 	});
 
 	it('falls back to the default for invalid values', () => {

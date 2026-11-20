@@ -1074,10 +1074,23 @@ describe('densityAltitudeFormDataSchema', () => {
 });
 
 describe('unitPreferencesSchema', () => {
-	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg' };
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg', fuel: 'lb' };
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every fuel unit', () => {
+		for (const fuel of ['l', 'usgal', 'kg', 'lb']) {
+			expect(unitPreferencesSchema.parse({ ...base, fuel }).fuel).toBe(fuel);
+		}
+	});
+
+	it('rejects imperial gallons', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, fuel: 'impgal' });
+
+		expect(issueFields(result)).toEqual(['fuel']);
+		expect(issueMessages(result)).toEqual(['Invalid fuel unit']);
 	});
 
 	it('rejects an unknown unit', () => {
@@ -1094,7 +1107,7 @@ describe('userPreferencesSchema', () => {
 	const base = {
 		theme: 'dark',
 		currency: 'eur',
-		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa' },
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa', fuel: 'l' },
 	};
 
 	it('accepts valid input', () => {

@@ -5,13 +5,22 @@ const FOOT_IN_METRES = 0.3048;
 const SECONDS_IN_HOUR = 3600;
 // NIST SP 811 App. B.9: 1 inHg (conventional) = 3386.389 Pa, rounded to 33.8639 hPa.
 const INCH_OF_MERCURY_IN_HECTOPASCALS = 33.8639;
+// Exact by definition: US gallon = 231 in³ with 1 in = 2.54 cm; international pound.
+export const US_GALLON_IN_LITRES = 3.785411784;
+export const POUND_IN_KILOGRAMS = 0.45359237;
+
+// Values the conversion depends on besides the unit, e.g. the fuel density for fuel masses.
+export interface UnitContext {
+	fuelDensityKgPerL?: number;
+}
 
 export interface UnitOption {
 	readonly value: string;
 	readonly label: string;
 	readonly symbol: string;
-	readonly toBase: (value: number) => number;
-	readonly fromBase: (value: number) => number;
+	readonly kind?: 'volume' | 'mass';
+	readonly toBase: (value: number, context?: UnitContext) => number;
+	readonly fromBase: (value: number, context?: UnitContext) => number;
 }
 
 export const unitQuantities = [
@@ -19,11 +28,22 @@ export const unitQuantities = [
 	{ value: 'altitude', label: 'Altitude' },
 	{ value: 'temperature', label: 'Temperature' },
 	{ value: 'pressure', label: 'Pressure' },
+	{ value: 'fuel', label: 'Fuel' },
 ] as const;
 
 export type UnitQuantity = (typeof unitQuantities)[number]['value'];
 
 const identity = (value: number) => value;
+
+const getFuelDensityFromContext = (context?: UnitContext) => {
+	const density = context?.fuelDensityKgPerL;
+
+	if (density === undefined || !(density > 0)) {
+		throw new Error('Fuel mass units need a fuel density');
+	}
+
+	return density;
+};
 
 export const unitOptions = {
 	speed: [
@@ -86,6 +106,44 @@ export const unitOptions = {
 			fromBase: (value: number) => value / INCH_OF_MERCURY_IN_HECTOPASCALS,
 		},
 	],
+	fuel: [
+		{
+			value: 'l',
+			label: 'Litres (L)',
+			symbol: 'L',
+			kind: 'volume',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'usgal',
+			label: 'US gallons (US gal)',
+			symbol: 'US gal',
+			kind: 'volume',
+			toBase: (value: number) => value * US_GALLON_IN_LITRES,
+			fromBase: (value: number) => value / US_GALLON_IN_LITRES,
+		},
+		{
+			value: 'kg',
+			label: 'Kilograms (kg)',
+			symbol: 'kg',
+			kind: 'mass',
+			toBase: (value: number, context?: UnitContext) =>
+				value / getFuelDensityFromContext(context),
+			fromBase: (value: number, context?: UnitContext) =>
+				value * getFuelDensityFromContext(context),
+		},
+		{
+			value: 'lb',
+			label: 'Pounds (lb)',
+			symbol: 'lb',
+			kind: 'mass',
+			toBase: (value: number, context?: UnitContext) =>
+				(value * POUND_IN_KILOGRAMS) / getFuelDensityFromContext(context),
+			fromBase: (value: number, context?: UnitContext) =>
+				(value * getFuelDensityFromContext(context)) / POUND_IN_KILOGRAMS,
+		},
+	],
 } as const satisfies Record<UnitQuantity, readonly UnitOption[]>;
 
 export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number]['value'];
@@ -96,6 +154,7 @@ export const BASE_UNITS: UnitPreferences = {
 	altitude: 'ft',
 	temperature: 'c',
 	pressure: 'hpa',
+	fuel: 'l',
 };
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
@@ -104,6 +163,7 @@ export const unitFractionDigits: Record<UnitQuantity, number> = {
 	altitude: 0,
 	temperature: 2,
 	pressure: 2,
+	fuel: 2,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
@@ -120,11 +180,26 @@ const getUnitOption = (quantity: UnitQuantity, unit: string) => {
 };
 
 // Temperatures are absolute; temperature differences must not use these.
-export const toBaseUnit = (value: number, quantity: UnitQuantity, unit: string): number =>
-	getUnitOption(quantity, unit).toBase(value);
+export const toBaseUnit = (
+	value: number,
+	quantity: UnitQuantity,
+	unit: string,
+	context?: UnitContext
+): number => getUnitOption(quantity, unit).toBase(value, context);
 
-export const fromBaseUnit = (value: number, quantity: UnitQuantity, unit: string): number =>
-	getUnitOption(quantity, unit).fromBase(value);
+export const fromBaseUnit = (
+	value: number,
+	quantity: UnitQuantity,
+	unit: string,
+	context?: UnitContext
+): number => getUnitOption(quantity, unit).fromBase(value, context);
+
+// The fuel unit of the other kind for showing a total both ways: L ↔ kg, US gal ↔ lb.
+export const getPairedFuelUnit = (unit: UnitValue<'fuel'>): UnitValue<'fuel'> => {
+	const pairs = { l: 'kg', kg: 'l', usgal: 'lb', lb: 'usgal' } as const;
+
+	return pairs[unit];
+};
 
 export const getUnitSymbol = (quantity: UnitQuantity, unit: string): string =>
 	getUnitOption(quantity, unit).symbol;
@@ -146,8 +221,12 @@ export const formatUnitValue = (
 	return `${formatted} ${getUnitSymbol(quantity, unit)}`;
 };
 
-export const formatBaseValue = (baseValue: number, quantity: UnitQuantity, unit: string): string =>
-	formatUnitValue(fromBaseUnit(baseValue, quantity, unit), quantity, unit);
+export const formatBaseValue = (
+	baseValue: number,
+	quantity: UnitQuantity,
+	unit: string,
+	context?: UnitContext
+): string => formatUnitValue(fromBaseUnit(baseValue, quantity, unit, context), quantity, unit);
 
 // A difference has no offset: 10 °C warmer is 18 °F warmer, not 50 °F.
 export const fromBaseTemperatureDifference = (valueC: number, unit: string): number =>
@@ -204,6 +283,9 @@ export const withDefaultUnitPreferences = (
 
 export type UnitFields<TFormData> = Partial<Record<keyof TFormData, UnitQuantity>>;
 
+// Gets the context from the record's own fields (e.g. its fuel type), in any units.
+export type GetUnitContext<TFormData> = (formData: TFormData) => UnitContext;
+
 const convertFormData = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
@@ -231,21 +313,27 @@ const convertFormData = <T extends object>(
 export const formDataToBaseUnits = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
-	units: UnitPreferences
+	units: UnitPreferences,
+	getContext?: GetUnitContext<T>
 ): T => {
+	const context = getContext?.(formData);
+
 	return convertFormData(formData, unitFields, (value, quantity) =>
-		toBaseUnit(value, quantity, units[quantity])
+		toBaseUnit(value, quantity, units[quantity], context)
 	);
 };
 
 export const formDataFromBaseUnits = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
-	units: UnitPreferences
+	units: UnitPreferences,
+	getContext?: GetUnitContext<T>
 ): T => {
+	const context = getContext?.(formData);
+
 	// Form values are display values, so float noise (e.g. 18.520000000000003) is stripped.
 	return convertFormData(formData, unitFields, (value, quantity) =>
-		Number(fromBaseUnit(value, quantity, units[quantity]).toPrecision(12))
+		Number(fromBaseUnit(value, quantity, units[quantity], context).toPrecision(12))
 	);
 };
 
@@ -258,25 +346,38 @@ export interface UnitFormValues<T> {
 export const unitFormValuesFromBase = <T extends object>(
 	baseFormData: T,
 	unitFields: UnitFields<T>,
-	units: UnitPreferences
+	units: UnitPreferences,
+	getContext?: GetUnitContext<T>
 ): UnitFormValues<T> => ({
-	formData: formDataFromBaseUnits(baseFormData, unitFields, units),
+	formData: formDataFromBaseUnits(baseFormData, unitFields, units, getContext),
 	baseFormData,
 });
 
 // Unedited fields (still equal to the values set from base units) use their exact base value;
 // converting the rounded form value would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
+// A changed context also counts as an edit (e.g. kg after a fuel type change).
 export const formDataToExactBaseUnits = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
 	units: UnitPreferences,
-	values: UnitFormValues<T> | null
+	values: UnitFormValues<T> | null,
+	getContext?: GetUnitContext<T>
 ): T => {
-	const baseFormData = formDataToBaseUnits(formData, unitFields, units);
+	const baseFormData = formDataToBaseUnits(formData, unitFields, units, getContext);
 
 	if (values) {
+		const prevBaseFormData = formDataToBaseUnits(
+			values.formData,
+			unitFields,
+			units,
+			getContext
+		);
+
 		for (const field of Object.keys(unitFields) as (keyof T)[]) {
-			if (formData[field] === values.formData[field]) {
+			if (
+				formData[field] === values.formData[field] &&
+				Object.is(baseFormData[field], prevBaseFormData[field])
+			) {
 				baseFormData[field] = values.baseFormData[field];
 			}
 		}
@@ -290,11 +391,13 @@ export const changeFormDataUnits = <T extends object>(
 	unitFields: UnitFields<T>,
 	prevUnits: UnitPreferences,
 	units: UnitPreferences,
-	prevValues: UnitFormValues<T> | null
+	prevValues: UnitFormValues<T> | null,
+	getContext?: GetUnitContext<T>
 ): UnitFormValues<T> => {
 	return unitFormValuesFromBase(
-		formDataToExactBaseUnits(formData, unitFields, prevUnits, prevValues),
+		formDataToExactBaseUnits(formData, unitFields, prevUnits, prevValues, getContext),
 		unitFields,
-		units
+		units,
+		getContext
 	);
 };
