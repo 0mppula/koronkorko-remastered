@@ -255,7 +255,7 @@ rejected with a message containing `km/h`.
 - Calculations match the test table; left/right and headwind/tailwind labels are correct.
 - Both direction inputs are labelled magnetic; Info explains converting METAR (true) winds and that
   runway 09 is roughly 090°.
-- Headings show as three whole digits with north as `360°`; speeds show 1 decimal.
+- Headings show as three whole digits with north as `360°`; speeds show 2 decimals.
 - With a gust, the report also shows gust crosswind and gust headwind/tailwind; without one it
   doesn't, and saving/importing a calculation without a gust works.
 - Switching speed units converts the wind speed in the form and the report without changing the

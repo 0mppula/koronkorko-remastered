@@ -5,12 +5,25 @@ import {
 	saveCalculation,
 	updateCalculation,
 } from '@/lib/queryFns/calculations';
+import {
+	BASE_UNITS,
+	changeFormDataUnits,
+	formDataFromBaseUnits,
+	formDataToExactBaseUnits,
+	GetUnitContext,
+	UnitFields,
+	UnitFormValues,
+	unitFormValuesFromBase,
+	UnitPreferences,
+	unitQuantities,
+} from '@/lib/units';
 import { ICalculationNameFormData, IHasFormDataAndName } from '@/types/calculations';
 import { useSession } from 'next-auth/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FieldValues, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import useCalculationMutations from './useCalculationMutations';
+import useUnitsStore from './useUnits';
 
 interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 	calcFn: (formData: TFormData) => TReportProps;
@@ -18,6 +31,10 @@ interface IUseCalculator<TFormData extends FieldValues, TReportProps> {
 	form: UseFormReturn<TFormData, any, undefined>;
 	apiUrl: (typeof API_URLS)[number];
 	queryKey: (typeof QUERY_KEYS)[number];
+	// Fields entered in the user's units; defaultValues, calcFn and saved data use base units.
+	unitFields?: UnitFields<TFormData>;
+	// Must be a stable reference, like unitFields.
+	getUnitContext?: GetUnitContext<TFormData>;
 }
 
 const useCalculator = <
@@ -30,6 +47,8 @@ const useCalculator = <
 	form,
 	apiUrl,
 	queryKey,
+	unitFields,
+	getUnitContext,
 }: IUseCalculator<TFormData, TReportProps>) => {
 	const [activeCalculation, setActiveCalculation] = useState<TCalculation | null>(null);
 	const [report, setReport] = useState<TReportProps | null>(null);
@@ -38,8 +57,83 @@ const useCalculator = <
 	const [renameModalOpen, setRenameModalOpen] = useState(false);
 
 	const { status: sessionStatus } = useSession();
+	const { units } = useUnitsStore();
 
 	const isAuthenticated = sessionStatus === 'authenticated';
+
+	// The form values last set from base units, with the exact base values behind them.
+	const unitFormValuesRef = useRef<UnitFormValues<TFormData> | null>(null);
+
+	const toBaseUnits = useCallback(
+		(formData: TFormData) =>
+			unitFields
+				? formDataToExactBaseUnits(
+						formData,
+						unitFields,
+						units,
+						unitFormValuesRef.current,
+						getUnitContext
+					)
+				: formData,
+		[unitFields, units, getUnitContext]
+	);
+
+	const fromBaseUnits = useCallback(
+		(formData: TFormData) =>
+			unitFields
+				? formDataFromBaseUnits(formData, unitFields, units, getUnitContext)
+				: formData,
+		[unitFields, units, getUnitContext]
+	);
+
+	const formDefaultValues = useMemo(
+		() => fromBaseUnits(defaultValues),
+		[fromBaseUnits, defaultValues]
+	);
+
+	// Starts at base units so the base-unit defaults are converted on mount.
+	const prevUnitsRef = useRef<UnitPreferences>(BASE_UNITS);
+
+	const resetFormFromBase = useCallback(
+		(baseFormData: TFormData) => {
+			if (!unitFields) {
+				form.reset(baseFormData);
+				return;
+			}
+
+			const values = unitFormValuesFromBase(baseFormData, unitFields, units, getUnitContext);
+
+			unitFormValuesRef.current = values;
+			form.reset(values.formData);
+		},
+		[unitFields, units, form, getUnitContext]
+	);
+
+	// Keep the same physical values in the form when the user changes units.
+	useEffect(() => {
+		if (!unitFields) return;
+
+		const prevUnits = prevUnitsRef.current;
+		prevUnitsRef.current = units;
+
+		if (
+			unitQuantities.every(({ value: quantity }) => prevUnits[quantity] === units[quantity])
+		) {
+			return;
+		}
+
+		const values = changeFormDataUnits(
+			form.getValues(),
+			unitFields,
+			prevUnits,
+			units,
+			unitFormValuesRef.current,
+			getUnitContext
+		);
+
+		unitFormValuesRef.current = values;
+		form.reset(values.formData);
+	}, [unitFields, units, form, getUnitContext]);
 
 	const {
 		deleteMutation: { mutate: deleteMutate },
@@ -57,34 +151,38 @@ const useCalculator = <
 		renameMutationFn: renameCalculation,
 		saveMutationFn: saveCalculation,
 		updateMutationFn: updateCalculation,
-		defaultValues,
+		defaultValues: formDefaultValues,
 		form,
 	});
 
 	const onCalculate = useCallback(
 		(formData: TFormData) => {
-			setReport(calcFn(formData));
+			setReport(calcFn(toBaseUnits(formData)));
 		},
-		[setReport, calcFn]
+		[setReport, calcFn, toBaseUnits]
 	);
 
 	const resetForm = useCallback(() => {
 		setReport(null);
 		toast.success('Calculator cleared');
 
-		form.reset(defaultValues);
-	}, [setReport, defaultValues, form]);
+		resetFormFromBase(defaultValues);
+	}, [setReport, resetFormFromBase, defaultValues]);
 
 	const handleSaveUpdateStart = useCallback(async () => {
 		const startIfFormIsValid = (_: TFormData) => {
 			if (activeCalculation) {
-				// Only update if the form data has changed
+				// Only update if the form data has changed (compared in the user's units)
 				if (
-					JSON.stringify(activeCalculation.formData) !== JSON.stringify(form.getValues())
+					JSON.stringify(fromBaseUnits(activeCalculation.formData)) !==
+					JSON.stringify(form.getValues())
 				) {
 					updateMutate({
 						apiUrl,
-						updatedCalculation: { ...activeCalculation, formData: form.getValues() },
+						updatedCalculation: {
+							...activeCalculation,
+							formData: toBaseUnits(form.getValues()),
+						},
 					});
 				} else {
 					toast.success('Calculation updated');
@@ -100,7 +198,16 @@ const useCalculator = <
 		} else {
 			toast.error('Please login to save calculation');
 		}
-	}, [activeCalculation, updateMutate, apiUrl, form, setSaveModalOpen, isAuthenticated]);
+	}, [
+		activeCalculation,
+		updateMutate,
+		apiUrl,
+		form,
+		setSaveModalOpen,
+		isAuthenticated,
+		fromBaseUnits,
+		toBaseUnits,
+	]);
 
 	const closeSaveModal = useCallback(() => {
 		setSaveModalOpen(false);
@@ -119,10 +226,10 @@ const useCalculator = <
 			saveMutate({
 				apiUrl,
 				name: data.name,
-				formData: form.getValues(),
+				formData: toBaseUnits(form.getValues()),
 			});
 		},
-		[saveMutate, apiUrl, form]
+		[saveMutate, apiUrl, form, toBaseUnits]
 	);
 
 	const handleRename = useCallback(
@@ -144,9 +251,9 @@ const useCalculator = <
 	const handleClose = useCallback(() => {
 		setActiveCalculation(null);
 		setReport(null);
-		form.reset(defaultValues);
+		resetFormFromBase(defaultValues);
 		toast.success('Calculation closed');
-	}, [setActiveCalculation, setReport, form, defaultValues]);
+	}, [setActiveCalculation, setReport, resetFormFromBase, defaultValues]);
 
 	const handleDelete = useCallback(
 		(id: string) => {
@@ -161,7 +268,7 @@ const useCalculator = <
 
 			setActiveCalculation(calculation);
 			setImportModalOpen(false);
-			form.reset(formData);
+			resetFormFromBase(formData);
 
 			// Stored values may be invalid (e.g. saved before stricter validation), so only
 			// calculate if they pass the form schema. Otherwise show the field errors to fix.
@@ -173,7 +280,7 @@ const useCalculator = <
 				setReport(null);
 			}
 		},
-		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form]
+		[setActiveCalculation, setImportModalOpen, setReport, calcFn, form, resetFormFromBase]
 	);
 
 	const handleImportStart = useCallback(() => {

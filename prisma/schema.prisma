@@ -26,9 +26,18 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+type unitPreferences {
+  speed       String?
+  altitude    String?
+  temperature String?
+  pressure    String?
+  fuel        String?
+}
+
 type preferences {
   theme    String
   currency String
+  units    unitPreferences?
 }
 
 model User {
@@ -56,6 +65,10 @@ model User {
   Subscription                     Subscription?
   LiquidationPriceCalculation      LiquidationPriceCalculation[]
   DividendYieldCalculation         DividendYieldCalculation[]
+  CrosswindCalculations            CrosswindCalculation[]
+  WindTriangleCalculations         WindTriangleCalculation[]
+  DensityAltitudeCalculations      DensityAltitudeCalculation[]
+  FuelPlanningCalculations         FuelPlanningCalculation[]
 }
 
 enum Plan {
@@ -293,6 +306,84 @@ model DividendYieldCalculation {
   formData  DividendYieldCalculationFormData
   createdAt DateTime                         @default(now())
   updatedAt DateTime                         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type CrosswindCalculationFormData {
+  runwayHeading Float
+  windDirection Float
+  windSpeed     Float
+  gustSpeed     Float?
+}
+
+model CrosswindCalculation {
+  id        String                       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                       @db.ObjectId
+  name      String
+  formData  CrosswindCalculationFormData
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type WindTriangleCalculationFormData {
+  trueCourse    Float
+  trueAirspeed  Float
+  windDirection Float
+  windSpeed     Float
+}
+
+model WindTriangleCalculation {
+  id        String                          @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                          @db.ObjectId
+  name      String
+  formData  WindTriangleCalculationFormData
+  createdAt DateTime                        @default(now())
+  updatedAt DateTime                        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type DensityAltitudeCalculationFormData {
+  fieldElevation        Float
+  qnh                   Float
+  outsideAirTemperature Float
+}
+
+model DensityAltitudeCalculation {
+  id        String                             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                             @db.ObjectId
+  name      String
+  formData  DensityAltitudeCalculationFormData
+  createdAt DateTime                           @default(now())
+  updatedAt DateTime                           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum FuelType {
+  avgas
+  jetA
+}
+
+type FuelPlanningCalculationFormData {
+  fuelBurnRate Float
+  flightTime   Float
+  reserveTime  Float
+  taxiFuel     Float?
+  extraFuel    Float?
+  fuelType     FuelType
+}
+
+model FuelPlanningCalculation {
+  id        String                          @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                          @db.ObjectId
+  name      String
+  formData  FuelPlanningCalculationFormData
+  createdAt DateTime                        @default(now())
+  updatedAt DateTime                        @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

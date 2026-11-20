@@ -47,15 +47,15 @@ limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator.
 
 Each feature has its own plan file and branch. Update this checklist in the feature's PR.
 
-- [ ] **01 Foundation** – `01-foundation.md` – `feature/aviation-foundation`
+- [x] **01 Foundation** – `01-foundation.md` – `feature/aviation-foundation`
       (categories + landing sections, units store/modal/sync, `lib/units.ts`, unit-aware input,
       disclaimer, AGENTS.md checklist, copy)
-- [ ] **02 Crosswind Calculator** – `02-crosswind-calculator.md` – `feature/crosswind-calculator`
-- [ ] **03 Wind Triangle Calculator** – `03-wind-triangle-calculator.md` –
+- [x] **02 Crosswind Calculator** – `02-crosswind-calculator.md` – `feature/crosswind-calculator`
+- [x] **03 Wind Triangle Calculator** – `03-wind-triangle-calculator.md` –
       `feature/wind-triangle-calculator`
-- [ ] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
+- [x] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
       `feature/density-altitude-calculator` (adds the pressure unit)
-- [ ] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
+- [x] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
       `feature/fuel-planning-calculator` (adds the fuel unit: L, US gal, kg, lb)
 
 01 must be merged first. 02–05 depend on 01; 03 reuses angle helpers added in 02. 04 and 05 are

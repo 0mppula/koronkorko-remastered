@@ -1,6 +1,7 @@
 import ReportSection from '@/components/Report/ReportSection';
 import ReportSource from '@/components/Report/ReportSource';
 import TypographyH3 from '@/components/TypographyH3';
+import { calculatorDisclaimers } from '@/constants/data';
 
 const Info = () => {
 	return (
@@ -32,6 +33,8 @@ const Info = () => {
 					</li>
 				</ul>
 			</div>
+
+			<p>{calculatorDisclaimers.finance}</p>
 
 			<ReportSource href="https://en.wikipedia.org/wiki/Probability" text="Wikipedia" />
 		</ReportSection>

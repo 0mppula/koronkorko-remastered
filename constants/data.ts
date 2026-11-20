@@ -1,3 +1,4 @@
+import { type CalculatorCategory } from '@/constants/calculators';
 import { FaCode, FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
 
 export const appName = 'KoronKorko';
@@ -10,6 +11,13 @@ export const XlScreen = 1280;
 export const XxlScreen = 1536;
 
 export const FREE_PLAN_CALCULATION_LIMIT = 3;
+
+export const themes = ['light', 'dark', 'system'] as const;
+
+export const calculatorDisclaimers: Record<CalculatorCategory, string> = {
+	finance: 'For informational and educational purposes only. Not financial advice.',
+	aviation: 'For training and educational use only. Not for flight planning or navigation.',
+};
 
 export const featuredApps = [
 	{
@@ -198,6 +206,12 @@ export const compoundFrequencies = [
 	// The value represents the compound frequency per year in given option
 	{ value: 1, label: 'Annualy' },
 	{ value: 12, label: 'Monthly' },
+] as const;
+
+// lb/US gal × kg/lb ÷ L/US gal. FAA-H-8083-1B: AVGAS 6 lb/US gal; Jet A 6.68 at 59 °F (Fig. 3-4).
+export const fuelTypes = [
+	{ value: 'avgas', label: 'AVGAS', densityKgPerL: (6.0 * 0.45359237) / 3.785411784 },
+	{ value: 'jetA', label: 'Jet A', densityKgPerL: (6.68 * 0.45359237) / 3.785411784 },
 ] as const;
 
 export const plans = [

@@ -1,6 +1,7 @@
 import ReportSection from '@/components/Report/ReportSection';
 import ReportSource from '@/components/Report/ReportSource';
 import TypographyH3 from '@/components/TypographyH3';
+import { calculatorDisclaimers } from '@/constants/data';
 
 const Info = () => {
 	return (
@@ -39,6 +40,8 @@ const Info = () => {
 					</li>
 				</ul>
 			</div>
+
+			<p>{calculatorDisclaimers.finance}</p>
 
 			<ReportSource
 				href="https://www.investopedia.com/terms/t/timehorizon.asp#toc-what-is-an-investment-time-horizon"

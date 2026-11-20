@@ -6,6 +6,7 @@ import Logo from './Logo';
 import PreferredCurrencyToggler from './PreferredCurrencyToggler';
 import PremiumModal from './PremiumModal';
 import ThemeToggler from './ThemeToggler';
+import UnitPreferencesModal from './UnitPreferencesModal';
 import UserAccountNav from './UserAccountNav';
 
 const Nav = async () => {
@@ -17,14 +18,14 @@ const Nav = async () => {
 				<Logo />
 
 				<div className="gap-2 hidden md:flex">
-					<Button variant="link">
+					<Button variant="link" className="px-2 lg:px-4">
 						<Link href="/">Calculators</Link>
 					</Button>
 
 					<PremiumModal />
 
 					{session?.user && (
-						<Button variant="link">
+						<Button variant="link" className="px-2 lg:px-4">
 							<Link
 								rel="noreferrer"
 								target="_blank"
@@ -37,6 +38,8 @@ const Nav = async () => {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<UnitPreferencesModal />
+
 					<PreferredCurrencyToggler />
 
 					<ThemeToggler />

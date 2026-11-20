@@ -1,3 +1,4 @@
+import { UnitPreferences } from '@/lib/units';
 import { User } from '@prisma/client';
 import axios from 'axios';
 
@@ -26,6 +27,7 @@ export const updateUserPreferences = async (variables: {
 	sessionStatus: 'loading' | 'authenticated' | 'unauthenticated';
 	theme: string;
 	currency: string;
+	units: UnitPreferences;
 }) => {
 	if (variables.sessionStatus !== 'authenticated') {
 		return null;
@@ -36,6 +38,7 @@ export const updateUserPreferences = async (variables: {
 		{
 			theme: variables.theme,
 			currency: variables.currency,
+			units: variables.units,
 		},
 		{
 			headers: {

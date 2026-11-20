@@ -40,7 +40,8 @@ density. Adds the **fuel** unit preference (L, US gal, kg, lb).
 - `schemas/index.ts`: `unitNumberFieldSchema(fieldName, quantity, unit, { min, max, minExclusive })`
   (limits in base units, messages in the user's unit), `positiveNumberFieldSchemaWithMax`.
 - `hooks/useCalculator.ts` `unitFields`; `NumberInputWithIcon iconType="unit"`;
-  `AviationDisclaimer`; `category` in `constants/calculators.ts`.
+  `CalculatorDisclaimer` (`category="aviation"`) and `calculatorDisclaimers.aviation`; `category`
+  in `constants/calculators.ts`.
 - Select pattern: "Distribution Frequency" in
   `app/(calculators)/dividend-yield-calculator/Calculator.tsx` (`Select` with `String(field.value)`).
 - `app/(calculators)/crosswind-calculator/` as the closest aviation example.
@@ -97,8 +98,8 @@ getFuelDensity(data.fuelType) })`.
 - Other-kind pairing for the report (decided): L ↔ kg and US gal ↔ lb (a volume unit shows the
   total mass in its paired mass unit and vice versa). Add `getPairedFuelUnit(unit)` to
   `lib/units.ts`.
-- Defaults (decided): `fuel: 'l'`. Display precision: 1 decimal for fuel amounts and rates, as
-  `formatUnitValue`'s default for `fuel`.
+- Defaults (decided): `fuel: 'l'`. Display precision: 2 decimals for fuel amounts and rates (like
+  speed and temperature), as `formatUnitValue`'s default for `fuel`.
 - `prisma/schema.prisma` `type UnitPreferences`: add `fuel String?`. Run `npx prisma generate`.
 
 ## Fuel types and densities
@@ -108,15 +109,18 @@ Add to `constants/data.ts` (mirrors `contributionFrequencies`):
 ```ts
 export const fuelTypes = [
 	{ value: 'avgas', label: 'AVGAS', densityKgPerL: (6.0 * 0.45359237) / 3.785411784 },
-	{ value: 'jetA', label: 'Jet A', densityKgPerL: (6.7 * 0.45359237) / 3.785411784 },
+	{ value: 'jetA', label: 'Jet A', densityKgPerL: (6.68 * 0.45359237) / 3.785411784 },
 ] as const;
 ```
 
 **Decided:** fixed standard densities in v1, not user-adjustable:
 
-- AVGAS **6.0 lb/US gal** (≈ 0.71896 kg/L) and Jet A **6.7 lb/US gal** (≈ 0.80284 kg/L).
-- Source: FAA standard fuel weights, FAA Aircraft Weight and Balance Handbook (FAA-H-8083-1).
-  Cite it in a one-line comment next to `fuelTypes` and in `Info.tsx`.
+- AVGAS **6.0 lb/US gal** (≈ 0.71896 kg/L) and Jet A **6.68 lb/US gal** (≈ 0.80044 kg/L).
+- Sources (both read): AVGAS 6 lb/US gal is stated in the PHAK (FAA-H-8083-25C, weight and
+  balance chapter) and the Weight and Balance Handbook (FAA-H-8083-1B, chapter 3). Jet A 6.68
+  lb/US gal is FAA-H-8083-1B Figure 3-4 at 59 °F (15 °C, ISA); it is often rounded to 6.7, and no
+  FAA handbook states 6.7 as a standard. Cite them in a one-line comment next to `fuelTypes` and
+  in `Info.tsx`, which also says that the actual density varies with temperature.
 - Define them with the expressions above (lb/US gal × kg per lb ÷ L per US gal) so results in
   lb and US gal come out exact.
 - Add `getFuelDensity(fuelType)` (in `lib/units.ts` or `lib/utils.ts`) returning `densityKgPerL`.
@@ -168,7 +172,7 @@ export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_
   `extraFuel` (when given) to base with `toBaseUnit(value, 'fuel', units.fuel, {
 fuelDensityKgPerL: getFuelDensity(data.fuelType) })` and, if above 10,000 (with the 01
   tolerance), add an issue on that field showing the limit in the user's unit, e.g. `"Fuel burn rate
-cannot be greater than 2,641.7 US gal/h"`, `"Taxi fuel cannot be greater than 2,641.7 US gal"`.
+cannot be greater than 2,641.72 US gal/h"`, `"Taxi fuel cannot be greater than 2,641.72 US gal"`.
   Skip these checks if `fuelType` is invalid (its own issue is reported).
 - Taxi and extra fuel: optional (empty = none), not negative, at most 10,000 L.
 - `fuelType` enum values come from `fuelTypes`.
@@ -192,15 +196,17 @@ fuelType: 'avgas' }`. Pass `unitFields` and `getUnitContext` to `useCalculator`.
 - `Report.tsx`: inputs (fuel type with density, burn rate, flight time as `"1 h 30 min"`, reserve
   time), `ReportDivider`, Trip Fuel, Reserve Fuel, Taxi Fuel and Extra Fuel (only when given),
   Total Fuel in the user's fuel unit, then the total in the paired unit of the other kind, labelled
-  "Total Fuel (mass)" or "Total Fuel (volume)" (e.g. `90.0 L` and `64.7 kg`; `25.0 US gal` and
-  `150.0 lb`), then `<AviationDisclaimer />`.
+  "Total Fuel (mass)" or "Total Fuel (volume)" (e.g. `90.00 L` and `64.71 kg`; `25.00 US gal` and
+  `150.00 lb`), then `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: trip, reserve, taxi and extra fuel; typical reserve values (e.g. 30 min for VFR by
   day, 45 min at night or under IFR) and that pilots must check the rules that apply to them
   (country, type of operation, aircraft); why density matters (fuel is loaded by volume, weight
   and balance uses mass); that density varies with temperature and the calculator uses fixed FAA
-  standard weights (AVGAS 6.0 lb/US gal, Jet A 6.7 lb/US gal, FAA-H-8083-1); the disclaimer
-  sentence; `ReportSource` to the FAA handbook page
-  (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
+  weights (AVGAS 6.0 lb/US gal from the PHAK and FAA-H-8083-1B; Jet A 6.68 lb/US gal from
+  FAA-H-8083-1B Figure 3-4 at 59 °F / 15 °C, often rounded to 6.7);
+  `<p>{calculatorDisclaimers.aviation}</p>`; `ReportSource` to the FAA aviation handbooks index
+  page (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation`), which lists both
+  the PHAK and the Weight and Balance Handbook (FAA-H-8083-1B, named in the Info text).
 
 ## Files to create or change
 
@@ -208,7 +214,8 @@ Follow "Adding a calculator" and "Adding an aviation calculator" in AGENTS.md:
 
 1. `prisma/schema.prisma`: `fuel String?` on `UnitPreferences`;
    `type FuelPlanningCalculationFormData { fuelBurnRate Float flightTime Float reserveTime Float
-taxiFuel Float? extraFuel Float? fuelType String }`, `model FuelPlanningCalculation`,
+taxiFuel Float? extraFuel Float? fuelType FuelType }` (Prisma `enum FuelType { avgas jetA }`, so
+   the generated type matches the zod enum), `model FuelPlanningCalculation`,
    `FuelPlanningCalculations FuelPlanningCalculation[]` on `User`. Run `npx prisma generate`.
 2. `lib/units.ts` + `lib/units.test.ts`: fuel unit, density context, `getPairedFuelUnit`,
    `getFuelDensity`. `hooks/useCalculator.ts`: optional `getUnitContext`.
@@ -231,8 +238,8 @@ IFuelPlanningFormData { fuelDensity; tripFuel; reserveFuel; totalFuel; totalFuel
     and `extraFuel` only when given).
 12. `app/(calculators)/fuel-planning-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
     `Info.tsx`.
-13. `README.md` aviation entry and units sentence (fuel), `AGENTS.md` Project list, check off 05
-    in `00-epic.md`.
+13. `README.md` aviation entry and units sentence (fuel), check off 05 in `00-epic.md` (the
+    calculator is not listed in `AGENTS.md`).
 
 ## Test cases
 
@@ -241,7 +248,7 @@ Units (`lib/units.test.ts`), exact definitions (`d_avgas`, `d_jetA` = the `fuelT
 - `fromBaseUnit(3.785411784, 'fuel', 'usgal')` → `1`; `toBaseUnit(1, 'fuel', 'usgal')` →
   `3.785411784`.
 - `toBaseUnit(6, 'fuel', 'lb', { fuelDensityKgPerL: d_avgas })` → `3.785411784` (6 lb of AVGAS is
-  1 US gal by definition); `toBaseUnit(6.7, 'fuel', 'lb', { fuelDensityKgPerL: d_jetA })` →
+  1 US gal by definition); `toBaseUnit(6.68, 'fuel', 'lb', { fuelDensityKgPerL: d_jetA })` →
   `3.785411784`.
 - `toBaseUnit(d_avgas, 'fuel', 'kg', { fuelDensityKgPerL: d_avgas })` → `1`.
 - Mass unit without a density throws; volume units ignore the context.
@@ -264,10 +271,10 @@ Unit round trips (form values converted with `formDataToBaseUnits`, results with
 `toBeCloseTo(x, 6)`:
 
 - US gal: burn 10 US gal/h, 2 h, reserve 30 min, AVGAS → total 25 US gal; other kind 150 lb
-  (25 × 6.0). Jet A → 25 US gal and 167.5 lb (25 × 6.7).
+  (25 × 6.0). Jet A → 25 US gal and 167 lb (25 × 6.68).
 - lb: burn 60 lb/h AVGAS (= 10 US gal/h), 2 h, reserve 30 min → trip 120 lb, reserve 30 lb,
-  total 150 lb; other kind 25 US gal. Burn 67 lb/h Jet A → total 167.5 lb, 25 US gal.
-- Fuel type change: the same 150 lb total is 25 US gal of AVGAS but `150 / 6.7` US gal of Jet A.
+  total 150 lb; other kind 25 US gal. Burn 66.8 lb/h Jet A → total 167 lb, 25 US gal.
+- Fuel type change: the same 150 lb total is 25 US gal of AVGAS but `150 / 6.68` US gal of Jet A.
 - Inputs are returned unchanged in the report; missing taxi/extra fuel count as 0.
 
 Schema: valid input passes; missing required fields; taxi/extra missing or `''` pass, negative

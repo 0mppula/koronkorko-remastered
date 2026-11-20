@@ -1,3 +1,4 @@
+import CalculatorDisclaimer from '@/components/Report/CalculatorDisclaimer';
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
@@ -69,6 +70,8 @@ const Report = ({ report }: ReportProps) => {
 			<ReportGroup header="Total Return %" value={formatPercentage(totalReturnPercent)} />
 
 			<ReportGroup header="Total Return (APY)" value={formatPercentage(totalReturn)} />
+
+			<CalculatorDisclaimer category="finance" />
 		</ReportSection>
 	);
 };

@@ -1,3 +1,19 @@
+import { currencies, fuelTypes, themes } from '@/constants/data';
+import {
+	BASE_UNITS,
+	formatUnitValue,
+	fromBaseUnit,
+	getUnitOptions,
+	signedAngleDifference,
+	toBaseUnit,
+	toRadians,
+	UnitContext,
+	unitFractionDigits,
+	UnitPreferences,
+	UnitQuantity,
+	UnitValue,
+} from '@/lib/units';
+import { FuelType, getFuelDensity } from '@/lib/utils';
 import { z } from 'zod';
 
 export const calculationNameStringSchema = z
@@ -64,6 +80,83 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 	return positiveNumberFieldSchema(fieldName).max(max, {
 		message: `${fieldName} cannot be greater than ${max}`,
 	});
+};
+
+const UNIT_LIMIT_TOLERANCE = 1e-9;
+
+// Limits are in base units and checked in base units, so the form and the API agree.
+const createUnitLimits = (
+	quantity: UnitQuantity,
+	unit: string,
+	{ context, symbolSuffix = '' }: { context?: UnitContext; symbolSuffix?: string } = {}
+) => {
+	const digits = unitFractionDigits[quantity];
+	const step = 10 ** -digits;
+
+	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
+	const tolerance = (limit: number) => UNIT_LIMIT_TOLERANCE * Math.max(1, Math.abs(limit));
+	const toBase = (value: number) => toBaseUnit(value, quantity, unit, context);
+	const isAtLeast = (limit: number) => (value: number) =>
+		toBase(value) >= limit - tolerance(limit);
+	const isAtMost = (limit: number) => (value: number) =>
+		toBase(value) <= limit + tolerance(limit);
+	const round = (value: number) => Number(value.toFixed(digits)) || 0;
+
+	// Shown limits are rounded inwards, so every value up to the shown limit passes.
+	const formatShownLimit = (
+		limit: number,
+		isWithinLimit: (value: number) => boolean,
+		inward: number
+	) => {
+		const nearest = round(fromBaseUnit(limit, quantity, unit, context));
+		const shown = isWithinLimit(nearest) ? nearest : round(nearest + inward);
+
+		return `${formatUnitValue(shown, quantity, unit)}${symbolSuffix}`;
+	};
+
+	return {
+		toBase,
+		tolerance,
+		isAtLeast,
+		isAtMost,
+		formatShownMin: (min: number) => formatShownLimit(min, isAtLeast(min), step),
+		formatShownMax: (max: number) => formatShownLimit(max, isAtMost(max), -step),
+	};
+};
+
+export const unitNumberFieldSchema = (
+	fieldName: string,
+	quantity: UnitQuantity,
+	unit: string,
+	limits: { min?: number; max?: number; minExclusive?: boolean }
+) => {
+	const { min, max, minExclusive } = limits;
+	const { toBase, tolerance, isAtLeast, isAtMost, formatShownMin, formatShownMax } =
+		createUnitLimits(quantity, unit);
+
+	let schema: z.ZodType<number, z.ZodTypeDef, number> = numberFieldSchema(fieldName);
+
+	if (min !== undefined) {
+		const shownMin = formatShownMin(min);
+
+		schema = minExclusive
+			? schema.refine((value) => toBase(value) > min + tolerance(min), {
+					message: `${fieldName} must be greater than ${shownMin}`,
+				})
+			: schema.refine(isAtLeast(min), {
+					message: `${fieldName} cannot be lower than ${shownMin}`,
+				});
+	}
+
+	if (max !== undefined) {
+		const shownMax = formatShownMax(max);
+
+		schema = schema.refine(isAtMost(max), {
+			message: `${fieldName} cannot be greater than ${shownMax}`,
+		});
+	}
+
+	return schema;
 };
 
 export const markupFormDataSchema = z.object({
@@ -187,4 +280,198 @@ export const dividendYieldFormDataSchema = z.object({
 	dividendAmount: positiveNumberFieldSchema('Dividend amount'),
 	distributionFrequency: positiveNumberFieldSchema('Distribution frequency'),
 	sharePrice: greaterThanZeroNumberFieldSchema('Share price'),
+});
+
+// North is 360, not 0.
+export const headingFieldSchema = (fieldName: string) =>
+	numberFieldSchema(fieldName)
+		.min(1, { message: `${fieldName} must be between 1 and 360` })
+		.max(360, { message: `${fieldName} must be between 1 and 360` });
+
+export const createCrosswindFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			runwayHeading: headingFieldSchema('Runway heading'),
+			windDirection: headingFieldSchema('Wind direction'),
+			windSpeed: unitNumberFieldSchema('Wind speed', 'speed', units.speed, {
+				min: 0,
+				max: 200,
+			}),
+			// Nullish to match Prisma's optional field; empty input means no gust.
+			gustSpeed: z.preprocess(
+				(value) => (value === '' || value === null ? undefined : value),
+				unitNumberFieldSchema('Gust speed', 'speed', units.speed, {
+					min: 0,
+					max: 200,
+				}).nullish()
+			),
+		})
+		.superRefine((data, ctx) => {
+			if (data.gustSpeed != null && data.gustSpeed <= data.windSpeed) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['gustSpeed'],
+					message: 'Gust speed must be greater than wind speed',
+				});
+			}
+		});
+
+export const crosswindFormDataSchema = createCrosswindFormDataSchema(BASE_UNITS);
+
+const GROUNDSPEED_TOLERANCE = 1e-9;
+
+export const createWindTriangleFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			trueCourse: headingFieldSchema('True course'),
+			trueAirspeed: unitNumberFieldSchema('True airspeed', 'speed', units.speed, {
+				min: 0,
+				minExclusive: true,
+				max: 600,
+			}),
+			windDirection: headingFieldSchema('Wind direction'),
+			windSpeed: unitNumberFieldSchema('Wind speed', 'speed', units.speed, {
+				min: 0,
+				max: 200,
+			}),
+		})
+		.superRefine((data, ctx) => {
+			const { trueCourse, trueAirspeed, windDirection, windSpeed } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (!(trueAirspeed > 0) || !(windSpeed >= 0)) return;
+
+			// Both speeds are in the same unit, so these checks hold in any unit.
+			const windAngle = toRadians(signedAngleDifference(windDirection, trueCourse));
+			const crosswind = windSpeed * Math.sin(windAngle);
+
+			if (Math.abs(crosswind) > trueAirspeed) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message:
+						"The wind's crosswind component exceeds the true airspeed, so this course can't be flown",
+				});
+
+				return;
+			}
+
+			const groundspeed =
+				Math.sqrt(trueAirspeed ** 2 - crosswind ** 2) - windSpeed * Math.cos(windAngle);
+
+			if (groundspeed <= trueAirspeed * GROUNDSPEED_TOLERANCE) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message: 'The wind is too strong: groundspeed would be zero or negative',
+				});
+			}
+		});
+
+export const windTriangleFormDataSchema = createWindTriangleFormDataSchema(BASE_UNITS);
+
+export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
+	z.object({
+		fieldElevation: unitNumberFieldSchema('Field elevation', 'altitude', units.altitude, {
+			min: -1500,
+			max: 20000,
+		}),
+		qnh: unitNumberFieldSchema('QNH', 'pressure', units.pressure, { min: 900, max: 1100 }),
+		outsideAirTemperature: unitNumberFieldSchema(
+			'Outside air temperature',
+			'temperature',
+			units.temperature,
+			{ min: -60, max: 60 }
+		),
+	});
+
+export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
+
+const FUEL_MAX_LITRES = 10000;
+
+// Nullish to match Prisma's optional field; empty input means none.
+const optionalFuelAmountSchema = (fieldName: string) =>
+	z.preprocess(
+		(value) => (value === '' || value === null ? undefined : value),
+		positiveNumberFieldSchema(fieldName).nullish()
+	);
+
+const fuelMaxFields = [
+	{ field: 'fuelBurnRate', fieldName: 'Fuel burn rate', symbolSuffix: '/h' },
+	{ field: 'taxiFuel', fieldName: 'Taxi fuel', symbolSuffix: '' },
+	{ field: 'extraFuel', fieldName: 'Extra fuel', symbolSuffix: '' },
+] as const;
+
+export const createFuelPlanningFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			fuelBurnRate: greaterThanZeroNumberFieldSchema('Fuel burn rate'),
+			flightTime: positiveNumberFieldSchema('Flight time').max(1440, {
+				message: 'Flight time cannot be greater than 24 h',
+			}),
+			reserveTime: positiveNumberFieldSchema('Reserve time').max(180, {
+				message: 'Reserve time cannot be greater than 180 min',
+			}),
+			taxiFuel: optionalFuelAmountSchema('Taxi fuel'),
+			extraFuel: optionalFuelAmountSchema('Extra fuel'),
+			fuelType: z.enum(fuelTypes.map((t) => t.value) as [FuelType, ...FuelType[]], {
+				errorMap: () => ({ message: 'Fuel type must be AVGAS or Jet A' }),
+			}),
+		})
+		// Mass units convert through the fuel type's density, so the maxima are checked here.
+		.superRefine((data, ctx) => {
+			const density = getFuelDensity(data.fuelType);
+
+			if (density === undefined) return;
+
+			for (const { field, fieldName, symbolSuffix } of fuelMaxFields) {
+				const value = data[field];
+
+				// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+				if (value == null || !Number.isFinite(value)) continue;
+
+				const { isAtMost, formatShownMax } = createUnitLimits('fuel', units.fuel, {
+					context: { fuelDensityKgPerL: density },
+					symbolSuffix,
+				});
+
+				if (!isAtMost(FUEL_MAX_LITRES)(value)) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: [field],
+						message: `${fieldName} cannot be greater than ${formatShownMax(FUEL_MAX_LITRES)}`,
+					});
+				}
+			}
+		});
+
+export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_UNITS);
+
+const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
+	const values = getUnitOptions(quantity).map((o) => o.value);
+
+	return z.enum(values as unknown as [UnitValue<Q>, ...UnitValue<Q>[]], {
+		errorMap: () => ({ message: `Invalid ${quantity} unit` }),
+	});
+};
+
+export const unitPreferencesSchema = z.object(
+	{
+		speed: unitValueSchema('speed'),
+		altitude: unitValueSchema('altitude'),
+		temperature: unitValueSchema('temperature'),
+		pressure: unitValueSchema('pressure'),
+		fuel: unitValueSchema('fuel'),
+	},
+	{ required_error: 'Unit preferences are required' }
+) satisfies z.ZodType<UnitPreferences>;
+
+type CurrencyValue = (typeof currencies)[number]['value'];
+
+export const userPreferencesSchema = z.object({
+	theme: z.enum(themes, { errorMap: () => ({ message: 'Invalid theme' }) }),
+	currency: z.enum(currencies.map((c) => c.value) as [CurrencyValue, ...CurrencyValue[]], {
+		errorMap: () => ({ message: 'Invalid currency' }),
+	}),
+	units: unitPreferencesSchema,
 });

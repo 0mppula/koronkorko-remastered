@@ -4,29 +4,37 @@ import {
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	crosswindFormDataSchema,
+	densityAltitudeFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
+	fuelPlanningFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	windTriangleFormDataSchema,
 } from '@/schemas';
 import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
+	CrosswindCalculation,
+	DensityAltitudeCalculation,
 	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
+	FuelPlanningCalculation,
 	InvestmentTimeCalculation,
 	LiquidationPriceCalculation,
 	MarkupCalculation,
 	PresentValueCalculation,
 	PriceToEarningsRatioCalculation,
+	WindTriangleCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
 
@@ -159,6 +167,47 @@ export interface DividendYieldReportProps extends IDividendYieldFormData {
 	dividendYieldPercent: number;
 }
 
+// Crosswind Calculation
+export type ICrosswindFormData = z.infer<typeof crosswindFormDataSchema>;
+
+export interface CrosswindReportProps extends ICrosswindFormData {
+	windAngle: number;
+	crosswind: number;
+	headwind: number;
+	gustCrosswind?: number;
+	gustHeadwind?: number;
+}
+
+// Wind Triangle Calculation
+export type IWindTriangleFormData = z.infer<typeof windTriangleFormDataSchema>;
+
+export interface WindTriangleReportProps extends IWindTriangleFormData {
+	windCorrectionAngle: number;
+	trueHeading: number;
+	groundspeed: number;
+}
+
+// Density Altitude Calculation
+export type IDensityAltitudeFormData = z.infer<typeof densityAltitudeFormDataSchema>;
+
+export interface DensityAltitudeReportProps extends IDensityAltitudeFormData {
+	pressureAltitude: number;
+	isaTemperature: number;
+	isaDeviation: number;
+	densityAltitude: number;
+}
+
+// Fuel Planning Calculation
+export type IFuelPlanningFormData = z.infer<typeof fuelPlanningFormDataSchema>;
+
+export interface FuelPlanningReportProps extends IFuelPlanningFormData {
+	fuelDensity: number;
+	tripFuel: number;
+	reserveFuel: number;
+	totalFuel: number;
+	totalFuelMass: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -171,4 +220,8 @@ export type CalculationType =
 	| DollarCostAverageCalculation
 	| EnterpriseValueCalculation
 	| LiquidationPriceCalculation
-	| DividendYieldCalculation;
+	| DividendYieldCalculation
+	| CrosswindCalculation
+	| WindTriangleCalculation
+	| DensityAltitudeCalculation
+	| FuelPlanningCalculation;

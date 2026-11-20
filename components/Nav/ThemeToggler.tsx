@@ -10,6 +10,7 @@ import {
 import { USER_QUERY_KEY } from '@/constants/api';
 import useCurrencyStore from '@/hooks/useCurrency';
 import useLoadingStore from '@/hooks/useLoadingStore';
+import useUnitsStore from '@/hooks/useUnits';
 import { updateUserPreferences } from '@/lib/queryFns/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Laptop, Moon, Sun } from 'lucide-react';
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 
 const ThemeToggler = () => {
 	const { currency } = useCurrencyStore();
+	const { units } = useUnitsStore();
 	const queryClient = useQueryClient();
 	const { status: sessionStatus } = useSession();
 	const { theme, setTheme } = useTheme();
@@ -48,7 +50,7 @@ const ThemeToggler = () => {
 		setTheme(themeParam);
 
 		if (sessionStatus === 'authenticated') {
-			mutate({ sessionStatus, theme: themeParam, currency });
+			mutate({ sessionStatus, theme: themeParam, currency, units });
 		}
 	};
 

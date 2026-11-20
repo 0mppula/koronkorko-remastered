@@ -1,21 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
+import { BASE_UNITS, formDataFromBaseUnits, fromBaseUnit, toBaseUnit } from '@/lib/units';
+import { getFuelUnitContext } from '@/lib/utils';
 import {
 	annualizedReturnFormDataSchema,
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
+	createCrosswindFormDataSchema,
+	createDensityAltitudeFormDataSchema,
+	createFuelPlanningFormDataSchema,
+	createWindTriangleFormDataSchema,
+	crosswindFormDataSchema,
+	densityAltitudeFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
+	fuelPlanningFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	unitPreferencesSchema,
+	unitNumberFieldSchema,
+	userPreferencesSchema,
+	windTriangleFormDataSchema,
 } from '@/schemas';
 
 // Expected behavior is based on what each calculator needs for a meaningful result.
@@ -685,5 +698,766 @@ describe('dividendYieldFormDataSchema', () => {
 		expect(dividendYieldFormDataSchema.safeParse({ ...base, sharePrice: 0 }).success).toBe(
 			false
 		);
+	});
+});
+
+describe('crosswindFormDataSchema', () => {
+	const base = { runwayHeading: 60, windDirection: 90, windSpeed: 20 };
+	const withGust = { ...base, gustSpeed: 30 };
+
+	it('accepts valid input', () => {
+		expect(crosswindFormDataSchema.parse(base)).toEqual(base);
+		expect(crosswindFormDataSchema.parse(withGust)).toEqual(withGust);
+	});
+
+	itRejectsMissingFields(crosswindFormDataSchema, base);
+	itRejectsNegativeFields(crosswindFormDataSchema, withGust, Object.keys(withGust));
+
+	it.each([undefined, '', null])('treats a gust of %j as no gust', (gustSpeed) => {
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.gustSpeed).toBeUndefined();
+	});
+
+	it.each(['runwayHeading', 'windDirection'])('accepts %s of 1 and 360', (field) => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 1 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 360 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, [field]: 87.5 }).success).toBe(true);
+	});
+
+	it.each([
+		['runwayHeading', 'Runway heading'],
+		['windDirection', 'Wind direction'],
+	])('rejects %s of 0 and 360.1', (field, label) => {
+		for (const value of [0, 360.1]) {
+			const result = crosswindFormDataSchema.safeParse({ ...base, [field]: value });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([`${label} must be between 1 and 360`]);
+		}
+	});
+
+	it('accepts a wind speed of 0 and 200 kt and rejects 200.1 kt', () => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, windSpeed: 0 }).success).toBe(true);
+		expect(crosswindFormDataSchema.safeParse({ ...base, windSpeed: 200 }).success).toBe(true);
+
+		const result = crosswindFormDataSchema.safeParse({ ...base, windSpeed: 200.1 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 200.00 kt']);
+	});
+
+	it.each([20, 15])('rejects a gust of %d kt with a 20 kt wind', (gustSpeed) => {
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed });
+
+		expect(issueFields(result)).toEqual(['gustSpeed']);
+		expect(issueMessages(result)).toEqual(['Gust speed must be greater than wind speed']);
+	});
+
+	it('accepts a gust of 200 kt and rejects a gust above 200 kt', () => {
+		expect(crosswindFormDataSchema.safeParse({ ...base, gustSpeed: 200 }).success).toBe(true);
+
+		const result = crosswindFormDataSchema.safeParse({ ...base, gustSpeed: 200.1 });
+
+		expect(issueFields(result)).toContain('gustSpeed');
+		expect(issueMessages(result)).toContain('Gust speed cannot be greater than 200.00 kt');
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			crosswindFormDataSchema.parse({
+				runwayHeading: '087',
+				windDirection: '120',
+				windSpeed: '12.5',
+				gustSpeed: '25',
+			})
+		).toEqual({ runwayHeading: 87, windDirection: 120, windSpeed: 12.5, gustSpeed: 25 });
+	});
+
+	it('checks speed limits in base units and shows them in km/h', () => {
+		const schema = createCrosswindFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+
+		// 200 kt × 1.852 = 370.4 km/h
+		expect(schema.safeParse({ ...base, windSpeed: 370.4 }).success).toBe(true);
+
+		const result = schema.safeParse({ ...base, windSpeed: 371 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.40 km/h']);
+	});
+
+	// The input shows 230.16 mph, which is above 200 kt; the form holds the unrounded value.
+	it('accepts the form value of a 200 kt wind in mph', () => {
+		const units = { ...BASE_UNITS, speed: 'mph' } as const;
+		const formData = formDataFromBaseUnits(
+			{ ...base, windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			units
+		);
+
+		expect(createCrosswindFormDataSchema(units).safeParse(formData).success).toBe(true);
+		expect(
+			createCrosswindFormDataSchema(units).safeParse({ ...base, windSpeed: 230.16 }).success
+		).toBe(false);
+	});
+});
+
+describe('windTriangleFormDataSchema', () => {
+	const base = { trueCourse: 90, trueAirspeed: 100, windDirection: 45, windSpeed: 20 };
+	const CROSSWIND_MESSAGE =
+		"The wind's crosswind component exceeds the true airspeed, so this course can't be flown";
+	const WIND_MESSAGE = 'The wind is too strong: groundspeed would be zero or negative';
+
+	it('accepts valid input', () => {
+		expect(windTriangleFormDataSchema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(windTriangleFormDataSchema, base);
+	itRejectsNegativeFields(windTriangleFormDataSchema, base, Object.keys(base));
+
+	it.each(['trueCourse', 'windDirection'])('accepts %s of 1 and 360', (field) => {
+		expect(windTriangleFormDataSchema.safeParse({ ...base, [field]: 1 }).success).toBe(true);
+		expect(windTriangleFormDataSchema.safeParse({ ...base, [field]: 360 }).success).toBe(true);
+	});
+
+	it.each([
+		['trueCourse', 'True course'],
+		['windDirection', 'Wind direction'],
+	])('rejects %s of 0 and 360.1', (field, label) => {
+		for (const value of [0, 360.1]) {
+			const result = windTriangleFormDataSchema.safeParse({ ...base, [field]: value });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([`${label} must be between 1 and 360`]);
+		}
+	});
+
+	it('rejects a TAS of 0 with only the TAS message', () => {
+		const result = windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 0 });
+
+		expect(issueFields(result)).toEqual(['trueAirspeed']);
+		expect(issueMessages(result)).toEqual(['True airspeed must be greater than 0.00 kt']);
+	});
+
+	it('accepts a TAS of 600 kt and rejects 600.1 kt', () => {
+		expect(windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 600 }).success).toBe(
+			true
+		);
+
+		const result = windTriangleFormDataSchema.safeParse({ ...base, trueAirspeed: 600.1 });
+
+		expect(issueFields(result)).toEqual(['trueAirspeed']);
+		expect(issueMessages(result)).toEqual(['True airspeed cannot be greater than 600.00 kt']);
+	});
+
+	it('accepts a wind speed of 0 and 200 kt and rejects 200.1 kt', () => {
+		const fast = { ...base, trueAirspeed: 600 };
+
+		expect(windTriangleFormDataSchema.safeParse({ ...base, windSpeed: 0 }).success).toBe(true);
+		expect(windTriangleFormDataSchema.safeParse({ ...fast, windSpeed: 200 }).success).toBe(
+			true
+		);
+
+		const result = windTriangleFormDataSchema.safeParse({ ...fast, windSpeed: 200.1 });
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 200.00 kt']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			windTriangleFormDataSchema.parse({
+				trueCourse: '090',
+				trueAirspeed: '100',
+				windDirection: '045',
+				windSpeed: '20.5',
+			})
+		).toEqual({ trueCourse: 90, trueAirspeed: 100, windDirection: 45, windSpeed: 20.5 });
+	});
+
+	// sin 90° = 1, so the crosswind component is the full wind speed.
+	it('rejects a crosswind component above the TAS on windSpeed', () => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: 360,
+			trueAirspeed: 100,
+			windDirection: 90,
+			windSpeed: 150,
+		});
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual([CROSSWIND_MESSAGE]);
+	});
+
+	it.each([
+		{ case: 'a headwind equal to the TAS', tc: 90, wd: 90, ws: 100 },
+		{ case: 'a headwind above the TAS', tc: 90, wd: 90, ws: 120 },
+		{ case: 'a pure crosswind equal to the TAS', tc: 360, wd: 90, ws: 100 },
+	])('rejects $case (groundspeed ≤ 0) on windSpeed', ({ tc, wd, ws }) => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: tc,
+			trueAirspeed: 100,
+			windDirection: wd,
+			windSpeed: ws,
+		});
+
+		expect(issueFields(result)).toEqual(['windSpeed']);
+		expect(issueMessages(result)).toEqual([WIND_MESSAGE]);
+	});
+
+	// GS = 0 + 100·cos 45° > 0: heading at 90° to the course, carried along by the tailwind.
+	it('accepts a crosswind component equal to the TAS with a tailwind', () => {
+		const result = windTriangleFormDataSchema.safeParse({
+			trueCourse: 360,
+			trueAirspeed: 100 * Math.SQRT1_2,
+			windDirection: 135,
+			windSpeed: 100,
+		});
+
+		expect(result.success).toBe(true);
+	});
+
+	describe('in km/h', () => {
+		const schema = createWindTriangleFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+		// 100 kt = 185.2 km/h, 20 kt = 37.04 km/h
+		const kmhBase = { ...base, trueAirspeed: 185.2, windSpeed: 37.04 };
+
+		it('accepts valid input', () => {
+			expect(schema.safeParse(kmhBase).success).toBe(true);
+		});
+
+		it('checks the limits in base units and shows them in km/h', () => {
+			// 600 kt = 1111.2 km/h, 200 kt = 370.4 km/h
+			expect(schema.safeParse({ ...kmhBase, trueAirspeed: 1111.2 }).success).toBe(true);
+			expect(issueMessages(schema.safeParse({ ...kmhBase, trueAirspeed: 0 }))).toEqual([
+				'True airspeed must be greater than 0.00 km/h',
+			]);
+			expect(issueMessages(schema.safeParse({ ...kmhBase, trueAirspeed: 1112 }))).toEqual([
+				'True airspeed cannot be greater than 1,111.20 km/h',
+			]);
+
+			const fast = { ...kmhBase, trueAirspeed: 1111.2 };
+
+			expect(schema.safeParse({ ...fast, windSpeed: 370.4 }).success).toBe(true);
+			expect(issueMessages(schema.safeParse({ ...fast, windSpeed: 371 }))).toEqual([
+				'Wind speed cannot be greater than 370.40 km/h',
+			]);
+		});
+
+		it('rejects unsolvable winds with the same messages', () => {
+			const crosswind = schema.safeParse({
+				trueCourse: 360,
+				trueAirspeed: 185.2,
+				windDirection: 90,
+				windSpeed: 277.8,
+			});
+			const headwind = schema.safeParse({
+				trueCourse: 90,
+				trueAirspeed: 185.2,
+				windDirection: 90,
+				windSpeed: 185.2,
+			});
+
+			expect(issueMessages(crosswind)).toEqual([CROSSWIND_MESSAGE]);
+			expect(issueMessages(headwind)).toEqual([WIND_MESSAGE]);
+		});
+	});
+});
+
+describe('densityAltitudeFormDataSchema', () => {
+	const base = { fieldElevation: 5000, qnh: 1013.25, outsideAirTemperature: 30 };
+
+	it('accepts valid input', () => {
+		expect(densityAltitudeFormDataSchema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(densityAltitudeFormDataSchema, base);
+
+	it('accepts a negative elevation and temperature', () => {
+		const input = { fieldElevation: -1200, qnh: 1020, outsideAirTemperature: -25.5 };
+
+		expect(densityAltitudeFormDataSchema.parse(input)).toEqual(input);
+	});
+
+	it.each([
+		['fieldElevation', -1500, -1500.1, 'Field elevation cannot be lower than -1,500 ft'],
+		['qnh', 900, 899.99, 'QNH cannot be lower than 900.00 hPa'],
+		[
+			'outsideAirTemperature',
+			-60,
+			-60.01,
+			'Outside air temperature cannot be lower than -60.00 °C',
+		],
+		['fieldElevation', 20000, 20000.1, 'Field elevation cannot be greater than 20,000 ft'],
+		['qnh', 1100, 1100.01, 'QNH cannot be greater than 1100.00 hPa'],
+		[
+			'outsideAirTemperature',
+			60,
+			60.01,
+			'Outside air temperature cannot be greater than 60.00 °C',
+		],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		expect(densityAltitudeFormDataSchema.safeParse({ ...base, [field]: limit }).success).toBe(
+			true
+		);
+
+		const result = densityAltitudeFormDataSchema.safeParse({ ...base, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			densityAltitudeFormDataSchema.parse({
+				fieldElevation: '-500',
+				qnh: '1013.25',
+				outsideAirTemperature: '-5',
+			})
+		).toEqual({ fieldElevation: -500, qnh: 1013.25, outsideAirTemperature: -5 });
+	});
+
+	describe('in m, inHg and °F', () => {
+		const units = { ...BASE_UNITS, altitude: 'm', pressure: 'inhg', temperature: 'f' } as const;
+		const schema = createDensityAltitudeFormDataSchema(units);
+		// 1524 m = 5000 ft, 29.92 inHg ≈ 1013.21 hPa, 86 °F = 30 °C
+		const userBase = { fieldElevation: 1524, qnh: 29.92, outsideAirTemperature: 86 };
+
+		it('accepts valid input', () => {
+			expect(schema.safeParse(userBase).success).toBe(true);
+		});
+
+		// −1500 ft = −457.2 m, 20000 ft = 6096 m, 900 hPa ≈ 26.577 inHg, 1100 hPa ≈ 32.483 inHg,
+		// −60 °C = −76 °F, 60 °C = 140 °F. Shown limits are rounded inwards.
+		it.each([
+			['fieldElevation', -457, -458, 'Field elevation cannot be lower than -457 m'],
+			['fieldElevation', 6096, 6097, 'Field elevation cannot be greater than 6,096 m'],
+			['qnh', 26.58, 26.57, 'QNH cannot be lower than 26.58 inHg'],
+			['qnh', 32.48, 32.49, 'QNH cannot be greater than 32.48 inHg'],
+			[
+				'outsideAirTemperature',
+				-76,
+				-76.1,
+				'Outside air temperature cannot be lower than -76.00 °F',
+			],
+			[
+				'outsideAirTemperature',
+				140,
+				140.1,
+				'Outside air temperature cannot be greater than 140.00 °F',
+			],
+		])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+			expect(schema.safeParse({ ...userBase, [field]: limit }).success).toBe(true);
+
+			const result = schema.safeParse({ ...userBase, [field]: beyond });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			for (const baseValues of [
+				{ fieldElevation: -1500, qnh: 900, outsideAirTemperature: -60 },
+				{ fieldElevation: 20000, qnh: 1100, outsideAirTemperature: 60 },
+			]) {
+				const formData = formDataFromBaseUnits(
+					baseValues,
+					{
+						fieldElevation: 'altitude',
+						qnh: 'pressure',
+						outsideAirTemperature: 'temperature',
+					},
+					units
+				);
+
+				expect(schema.safeParse(formData).success).toBe(true);
+			}
+		});
+	});
+});
+
+describe('createFuelPlanningFormDataSchema', () => {
+	const base = { fuelBurnRate: 30, flightTime: 60, reserveTime: 30, fuelType: 'avgas' };
+	const schemaIn = (fuel: 'l' | 'usgal' | 'kg' | 'lb') =>
+		createFuelPlanningFormDataSchema({ ...BASE_UNITS, fuel });
+
+	it('accepts valid input', () => {
+		expect(fuelPlanningFormDataSchema.parse({ ...base, taxiFuel: 5, extraFuel: 10 })).toEqual({
+			...base,
+			taxiFuel: 5,
+			extraFuel: 10,
+		});
+	});
+
+	itRejectsMissingFields(fuelPlanningFormDataSchema, base);
+
+	it('treats missing, empty and null taxi and extra fuel as none', () => {
+		for (const value of [undefined, '', null]) {
+			const result = fuelPlanningFormDataSchema.parse({
+				...base,
+				taxiFuel: value,
+				extraFuel: value,
+			});
+
+			expect(result.taxiFuel).toBeUndefined();
+			expect(result.extraFuel).toBeUndefined();
+		}
+	});
+
+	it('accepts zero taxi and extra fuel', () => {
+		expect(
+			fuelPlanningFormDataSchema.parse({ ...base, taxiFuel: 0, extraFuel: 0 })
+		).toMatchObject({ taxiFuel: 0, extraFuel: 0 });
+	});
+
+	itRejectsNegativeFields(fuelPlanningFormDataSchema, { ...base, taxiFuel: 0, extraFuel: 0 }, [
+		'flightTime',
+		'reserveTime',
+		'taxiFuel',
+		'extraFuel',
+	]);
+
+	it('shows the negative fuel message', () => {
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, taxiFuel: -1 }))
+		).toEqual(['Taxi fuel cannot be negative']);
+	});
+
+	it('rejects a burn rate of 0 with one issue', () => {
+		const result = fuelPlanningFormDataSchema.safeParse({ ...base, fuelBurnRate: 0 });
+
+		expect(issueMessages(result)).toEqual(['Fuel burn rate must be greater than 0']);
+	});
+
+	it('accepts a flight time of 24 h and rejects more', () => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, flightTime: 1440 }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, flightTime: 1441 }))
+		).toEqual(['Flight time cannot be greater than 24 h']);
+	});
+
+	it('accepts a reserve of 180 min and rejects more', () => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, reserveTime: 180 }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, reserveTime: 181 }))
+		).toEqual(['Reserve time cannot be greater than 180 min']);
+	});
+
+	it.each([
+		['fuelBurnRate', 'Fuel burn rate cannot be greater than 10,000.00 L/h'],
+		['taxiFuel', 'Taxi fuel cannot be greater than 10,000.00 L'],
+		['extraFuel', 'Extra fuel cannot be greater than 10,000.00 L'],
+	])('accepts 10,000 L for %s and rejects more', (field, message) => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, [field]: 10000 }).success).toBe(
+			true
+		);
+
+		const result = fuelPlanningFormDataSchema.safeParse({ ...base, [field]: 10001 });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	// 10,000 L ÷ 3.785411784 L/US gal = 2,641.7205 US gal
+	it('shows the limits in US gal', () => {
+		const schema = schemaIn('usgal');
+
+		expect(
+			schema.safeParse({ ...base, fuelBurnRate: 2641.72, taxiFuel: 2641.72 }).success
+		).toBe(true);
+		expect(
+			issueMessages(schema.safeParse({ ...base, fuelBurnRate: 2641.73, taxiFuel: 2641.73 }))
+		).toEqual([
+			'Fuel burn rate cannot be greater than 2,641.72 US gal/h',
+			'Taxi fuel cannot be greater than 2,641.72 US gal',
+		]);
+	});
+
+	// 10,000 L × 0.7189586 kg/L (AVGAS) = 7,189.586 kg; × 0.8004405 kg/L (Jet A) = 8,004.405 kg
+	it('shows the limit in kg for the selected fuel type', () => {
+		const schema = schemaIn('kg');
+
+		expect(schema.safeParse({ ...base, fuelBurnRate: 7189.58 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...base, fuelBurnRate: 7189.59 }))).toEqual([
+			'Fuel burn rate cannot be greater than 7,189.58 kg/h',
+		]);
+
+		const jetA = { ...base, fuelType: 'jetA' };
+
+		expect(schema.safeParse({ ...jetA, fuelBurnRate: 7189.59 }).success).toBe(true);
+		expect(schema.safeParse({ ...jetA, fuelBurnRate: 8004.4 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...jetA, fuelBurnRate: 8004.41 }))).toEqual([
+			'Fuel burn rate cannot be greater than 8,004.40 kg/h',
+		]);
+	});
+
+	// 10,000 L ÷ 3.785411784 × 6 lb/US gal = 15,850.323 lb of AVGAS
+	it('shows the limit in lb', () => {
+		const schema = schemaIn('lb');
+
+		expect(schema.safeParse({ ...base, extraFuel: 15850.32 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...base, extraFuel: 15850.33 }))).toEqual([
+			'Extra fuel cannot be greater than 15,850.32 lb',
+		]);
+	});
+
+	it('accepts imported values at the limit in every fuel unit and type', () => {
+		for (const fuel of ['l', 'usgal', 'kg', 'lb'] as const) {
+			for (const fuelType of ['avgas', 'jetA']) {
+				const stored = { ...base, fuelType, fuelBurnRate: 10000, taxiFuel: 10000 };
+				const formData = formDataFromBaseUnits(
+					stored,
+					{ fuelBurnRate: 'fuel', taxiFuel: 'fuel' },
+					{ ...BASE_UNITS, fuel },
+					getFuelUnitContext
+				);
+
+				expect(schemaIn(fuel).safeParse(formData).success).toBe(true);
+			}
+		}
+	});
+
+	it('rejects an unknown fuel type with one issue, also with mass units', () => {
+		for (const fuel of ['l', 'kg', 'lb'] as const) {
+			const result = schemaIn(fuel).safeParse({ ...base, fuelType: 'diesel' });
+
+			expect(issueFields(result)).toEqual(['fuelType']);
+			expect(issueMessages(result)).toEqual(['Fuel type must be AVGAS or Jet A']);
+		}
+	});
+
+	it('reports an infinite value once', () => {
+		for (const field of ['fuelBurnRate', 'taxiFuel']) {
+			const result = schemaIn('kg').safeParse({ ...base, [field]: '1e400' });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)[0]).toMatch(/has to be a finite number$/);
+		}
+	});
+
+	it('does not check a raw optional value skipped after an earlier issue', () => {
+		const result = schemaIn('kg').safeParse({ ...base, fuelBurnRate: 0, taxiFuel: '1e400' });
+
+		expect(issueMessages(result)).toEqual(['Fuel burn rate must be greater than 0']);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid taxi fuel together with an invalid burn rate', () => {
+		const result = fuelPlanningFormDataSchema.safeParse({
+			...base,
+			fuelBurnRate: 0,
+			taxiFuel: -1,
+		});
+
+		expect(issueFields(result)).toEqual(['fuelBurnRate', 'taxiFuel']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			fuelPlanningFormDataSchema.parse({
+				fuelBurnRate: '30.5',
+				flightTime: '90',
+				reserveTime: '45',
+				taxiFuel: '5',
+				extraFuel: '',
+				fuelType: 'jetA',
+			})
+		).toEqual({
+			fuelBurnRate: 30.5,
+			flightTime: 90,
+			reserveTime: 45,
+			taxiFuel: 5,
+			extraFuel: undefined,
+			fuelType: 'jetA',
+		});
+	});
+});
+
+describe('unitPreferencesSchema', () => {
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg', fuel: 'lb' };
+
+	it('accepts valid input', () => {
+		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every fuel unit', () => {
+		for (const fuel of ['l', 'usgal', 'kg', 'lb']) {
+			expect(unitPreferencesSchema.parse({ ...base, fuel }).fuel).toBe(fuel);
+		}
+	});
+
+	it('rejects imperial gallons', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, fuel: 'impgal' });
+
+		expect(issueFields(result)).toEqual(['fuel']);
+		expect(issueMessages(result)).toEqual(['Invalid fuel unit']);
+	});
+
+	it('rejects an unknown unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, speed: 'furlongs' });
+
+		expect(issueFields(result)).toEqual(['speed']);
+		expect(issueMessages(result)).toEqual(['Invalid speed unit']);
+	});
+
+	itRejectsMissingFields(unitPreferencesSchema, base);
+});
+
+describe('userPreferencesSchema', () => {
+	const base = {
+		theme: 'dark',
+		currency: 'eur',
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa', fuel: 'l' },
+	};
+
+	it('accepts valid input', () => {
+		expect(userPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('drops unknown keys', () => {
+		expect(userPreferencesSchema.parse({ ...base, isAdmin: true })).toEqual(base);
+	});
+
+	it('rejects missing units', () => {
+		const result = userPreferencesSchema.safeParse({ theme: 'dark', currency: 'eur' });
+
+		expect(issueMessages(result)).toEqual(['Unit preferences are required']);
+	});
+
+	it('rejects an unknown unit value', () => {
+		const result = userPreferencesSchema.safeParse({
+			...base,
+			units: { ...base.units, temperature: 'k' },
+		});
+
+		expect(issueMessages(result)).toEqual(['Invalid temperature unit']);
+	});
+
+	it('rejects an unknown currency', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, currency: 'btc' });
+
+		expect(issueMessages(result)).toEqual(['Invalid currency']);
+	});
+
+	it('rejects an unknown theme', () => {
+		const result = userPreferencesSchema.safeParse({ ...base, theme: 'neon' });
+
+		expect(issueMessages(result)).toEqual(['Invalid theme']);
+	});
+});
+
+// Speed limits in kt: 200 kt = 370.4 km/h (1 NM = 1852 m) ≈ 230.1558 mph (1 mi = 1609.344 m).
+describe('unitNumberFieldSchema', () => {
+	const windSpeed = (unit: string) =>
+		unitNumberFieldSchema('Wind speed', 'speed', unit, { min: 0, max: 200 });
+
+	it('accepts values within the limits in base units', () => {
+		expect(windSpeed('kt').parse(200)).toBe(200);
+		expect(windSpeed('kt').parse(0)).toBe(0);
+	});
+
+	it('accepts the limit in a non-base unit', () => {
+		expect(windSpeed('kmh').parse(370.4)).toBe(370.4);
+	});
+
+	it('rejects values above the limit with the limit in the user unit', () => {
+		const result = windSpeed('kmh').safeParse(370.5);
+
+		expect(result.success).toBe(false);
+		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.40 km/h']);
+	});
+
+	it('rounds a shown maximum down in the user unit', () => {
+		// 230.16 mph ≈ 200.0004 kt is above the limit, so the shown limit is 230.15 mph.
+		expect(issueMessages(windSpeed('mph').safeParse(230.16))).toEqual([
+			'Wind speed cannot be greater than 230.15 mph',
+		]);
+	});
+
+	it('accepts the shown maximum in the user unit and in base units', () => {
+		expect(windSpeed('mph').safeParse(230.15).success).toBe(true);
+		expect(windSpeed('kt').safeParse(toBaseUnit(230.15, 'speed', 'mph')).success).toBe(true);
+	});
+
+	it('accepts a value saved at the limit after converting it to the user unit', () => {
+		expect(windSpeed('mph').safeParse(fromBaseUnit(200, 'speed', 'mph')).success).toBe(true);
+
+		const { windSpeed: imported } = formDataFromBaseUnits(
+			{ windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			{ ...BASE_UNITS, speed: 'mph' }
+		);
+
+		expect(windSpeed('mph').safeParse(imported).success).toBe(true);
+	});
+
+	it('rounds a shown minimum up in the user unit', () => {
+		// 15 kt ≈ 17.2617 mph, so the shown minimum is 17.27 mph.
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'mph', { min: 15 });
+
+		expect(issueMessages(trueAirspeed.safeParse(17.26))).toEqual([
+			'True airspeed cannot be lower than 17.27 mph',
+		]);
+		expect(trueAirspeed.safeParse(17.27).success).toBe(true);
+	});
+
+	it('rejects values below an inclusive minimum', () => {
+		// -60 °C = -76 °F
+		const temperature = unitNumberFieldSchema('Temperature', 'temperature', 'f', { min: -60 });
+
+		expect(temperature.parse(-76)).toBe(-76);
+		expect(issueMessages(temperature.safeParse(-76.1))).toEqual([
+			'Temperature cannot be lower than -76.00 °F',
+		]);
+	});
+
+	it('rejects the minimum when it is exclusive', () => {
+		const trueAirspeed = unitNumberFieldSchema('True airspeed', 'speed', 'kt', {
+			min: 0,
+			minExclusive: true,
+		});
+
+		expect(trueAirspeed.parse(0.1)).toBe(0.1);
+		expect(issueMessages(trueAirspeed.safeParse(0))).toEqual([
+			'True airspeed must be greater than 0.00 kt',
+		]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(windSpeed('kmh').parse('18.52')).toBe(18.52);
+	});
+
+	it('keeps the number field messages', () => {
+		expect(issueMessages(windSpeed('kt').safeParse('abc'))).toEqual([
+			'Wind speed has to be a number',
+		]);
+	});
+
+	it('shows limits with a dot regardless of the default locale', () => {
+		const NumberFormat = Intl.NumberFormat;
+
+		// Simulates a Finnish browser: Intl.NumberFormat without a locale formats as fi-FI.
+		vi.stubGlobal(
+			'Intl',
+			Object.create(Intl, {
+				NumberFormat: {
+					value: function (locales?: string, options?: Intl.NumberFormatOptions) {
+						return new NumberFormat(locales ?? 'fi-FI', options);
+					},
+				},
+			})
+		);
+
+		try {
+			expect(issueMessages(windSpeed('kmh').safeParse(371))).toEqual([
+				'Wind speed cannot be greater than 370.40 km/h',
+			]);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 });

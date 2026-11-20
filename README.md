@@ -15,9 +15,11 @@
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
 
-[KoronKorko][site] is a full-stack finance web-app developed by [Omar Kraidié][dev]. KoronKorko has different types of finance calculators. All the available calculators are listed below in this `README.md` file.
+[KoronKorko][site] is a full-stack web-app developed by [Omar Kraidié][dev]. KoronKorko has finance and aviation calculators. All the available calculators are listed below in this `README.md` file.
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
+
+Users can also choose their preferred units (speed, altitude, temperature, pressure and fuel) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 
@@ -97,6 +99,28 @@ Calculate the liquidation price of an asset, given its entry price and the lever
 ### [Dividend Yield Calculator][12]
 
 Calculate the dividend yield of a stock, given its dividend amount, frequency, and share price.
+
+---
+
+## Aviation Calculators
+
+Calculators for pilots and student pilots. Values can be entered and shown in the units chosen in the unit preferences.
+
+### [Crosswind Calculator][13]
+
+Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed, including gust components when a gust speed is given.
+
+### [Wind Triangle Calculator][14]
+
+Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed.
+
+### [Density Altitude Calculator][15]
+
+Calculate the pressure altitude, ISA temperature deviation and density altitude, given the field elevation, QNH and outside air temperature.
+
+### [Fuel Planning Calculator][16]
+
+Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type (AVGAS or Jet A).
 
 ---
 
@@ -232,5 +256,9 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [10]: https://www.koronkorko.com/enterprise-value-calculator
 [11]: https://www.koronkorko.com/liquidation-price-calculator
 [12]: https://www.koronkorko.com/dividend-yield-calculator
+[13]: https://www.koronkorko.com/crosswind-calculator
+[14]: https://www.koronkorko.com/wind-triangle-calculator
+[15]: https://www.koronkorko.com/density-altitude-calculator
+[16]: https://www.koronkorko.com/fuel-planning-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

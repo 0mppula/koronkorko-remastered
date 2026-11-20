@@ -2,28 +2,44 @@ import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
+	CrosswindReportProps,
+	DensityAltitudeReportProps,
 	DividendYieldReportProps,
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
+	FuelPlanningReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
+	ICrosswindFormData,
+	IDensityAltitudeFormData,
 	IDividendYieldFormData,
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
+	IFuelPlanningFormData,
 	IInvestmentTimeFormData,
 	ILiquidationPriceFormData,
 	IMarkupFormData,
 	IPresentValueFormData,
 	IPriceToEarningsRatioFormData,
+	IWindTriangleFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
+	WindTriangleReportProps,
 } from '@/types/calculations';
+import {
+	fromBaseUnit,
+	normalizeDegrees,
+	signedAngleDifference,
+	toBaseUnit,
+	toRadians,
+} from '@/lib/units';
+import { getFuelDensity } from '@/lib/utils';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
@@ -317,5 +333,105 @@ export const calculateDividendYield = (
 		sharePrice,
 		annualizedDividend,
 		dividendYieldPercent,
+	};
+};
+
+export const calculateCrosswind = (formData: ICrosswindFormData): CrosswindReportProps => {
+	const { runwayHeading, windDirection, windSpeed, gustSpeed } = formData;
+
+	// Wind components (FAA PHAK, FAA-H-8083-25, Aircraft Performance): XW = V·sin θ, HW = V·cos θ
+	const windAngle = signedAngleDifference(windDirection, runwayHeading);
+	const sin = Math.sin(toRadians(windAngle));
+	const cos = Math.cos(toRadians(windAngle));
+	const hasGust = gustSpeed !== undefined && gustSpeed !== null;
+
+	return {
+		...formData,
+		windAngle,
+		crosswind: windSpeed * sin,
+		headwind: windSpeed * cos,
+		gustCrosswind: hasGust ? gustSpeed * sin : undefined,
+		gustHeadwind: hasGust ? gustSpeed * cos : undefined,
+	};
+};
+
+export const calculateWindTriangle = (formData: IWindTriangleFormData): WindTriangleReportProps => {
+	const { trueCourse, trueAirspeed, windDirection, windSpeed } = formData;
+
+	// Wind triangle (FAA PHAK, FAA-H-8083-25, Navigation; Ed Williams, Aviation Formulary)
+	const windAngle = toRadians(signedAngleDifference(windDirection, trueCourse));
+	// Clamped against unit-conversion noise at the crosswind = TAS limit.
+	const sinCorrection = Math.max(
+		-1,
+		Math.min(1, (windSpeed * Math.sin(windAngle)) / trueAirspeed)
+	);
+	const windCorrectionAngle = (Math.asin(sinCorrection) * 180) / Math.PI;
+
+	return {
+		...formData,
+		windCorrectionAngle,
+		trueHeading: normalizeDegrees(trueCourse + windCorrectionAngle),
+		groundspeed:
+			trueAirspeed * Math.sqrt(1 - sinCorrection ** 2) - windSpeed * Math.cos(windAngle),
+	};
+};
+
+// ICAO Standard Atmosphere (Doc 7488/3), troposphere constants.
+const ISA_SEA_LEVEL_TEMPERATURE_C = 15;
+const ISA_SEA_LEVEL_TEMPERATURE_K = 288.15;
+const ISA_SEA_LEVEL_PRESSURE_HPA = 1013.25;
+const ISA_LAPSE_RATE_K_PER_M = 0.0065;
+const STANDARD_GRAVITY = 9.80665;
+const DRY_AIR_GAS_CONSTANT = 287.05287;
+const CELSIUS_TO_KELVIN = 273.15;
+const ISA_PRESSURE_EXPONENT = STANDARD_GRAVITY / (DRY_AIR_GAS_CONSTANT * ISA_LAPSE_RATE_K_PER_M);
+const ISA_SEA_LEVEL_DENSITY =
+	(ISA_SEA_LEVEL_PRESSURE_HPA * 100) / (DRY_AIR_GAS_CONSTANT * ISA_SEA_LEVEL_TEMPERATURE_K);
+const ISA_SCALE_HEIGHT_M = ISA_SEA_LEVEL_TEMPERATURE_K / ISA_LAPSE_RATE_K_PER_M;
+
+export const calculateDensityAltitude = (
+	formData: IDensityAltitudeFormData
+): DensityAltitudeReportProps => {
+	const { fieldElevation, qnh, outsideAirTemperature } = formData;
+
+	// ISA barometric relations: an altimeter set to QNH reads the field elevation.
+	const elevationM = fromBaseUnit(fieldElevation, 'altitude', 'm');
+	const stationPressure = qnh * (1 - elevationM / ISA_SCALE_HEIGHT_M) ** ISA_PRESSURE_EXPONENT;
+	const pressureAltitudeM =
+		ISA_SCALE_HEIGHT_M *
+		(1 - (stationPressure / ISA_SEA_LEVEL_PRESSURE_HPA) ** (1 / ISA_PRESSURE_EXPONENT));
+	const isaTemperature = ISA_SEA_LEVEL_TEMPERATURE_C - ISA_LAPSE_RATE_K_PER_M * pressureAltitudeM;
+	const density =
+		(stationPressure * 100) /
+		(DRY_AIR_GAS_CONSTANT * (outsideAirTemperature + CELSIUS_TO_KELVIN));
+	const densityAltitudeM =
+		ISA_SCALE_HEIGHT_M *
+		(1 - (density / ISA_SEA_LEVEL_DENSITY) ** (1 / (ISA_PRESSURE_EXPONENT - 1)));
+
+	return {
+		...formData,
+		pressureAltitude: toBaseUnit(pressureAltitudeM, 'altitude', 'm'),
+		isaTemperature,
+		isaDeviation: outsideAirTemperature - isaTemperature,
+		densityAltitude: toBaseUnit(densityAltitudeM, 'altitude', 'm'),
+	};
+};
+
+export const calculateFuelPlanning = (formData: IFuelPlanningFormData): FuelPlanningReportProps => {
+	const { fuelBurnRate, flightTime, reserveTime, taxiFuel, extraFuel, fuelType } = formData;
+
+	// Fuel = burn rate × time (FAA PHAK, FAA-H-8083-25C, ch. 16 Basic Calculations); mass = L × kg/L.
+	const fuelDensity = getFuelDensity(fuelType) ?? NaN;
+	const tripFuel = (fuelBurnRate * flightTime) / 60;
+	const reserveFuel = (fuelBurnRate * reserveTime) / 60;
+	const totalFuel = tripFuel + reserveFuel + (taxiFuel ?? 0) + (extraFuel ?? 0);
+
+	return {
+		...formData,
+		fuelDensity,
+		tripFuel,
+		reserveFuel,
+		totalFuel,
+		totalFuelMass: totalFuel * fuelDensity,
 	};
 };

@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
 		name: 'KoronKorko',
 		short_name: 'KoronKorko',
 		description:
-			'KoronKorko is a finance web-application with various types of easy to use finance calculators.',
+			'KoronKorko is a web-application with easy to use finance and aviation calculators.',
 		start_url: '/',
 		display: 'standalone',
 		background_color: '#1B181F',

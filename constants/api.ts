@@ -17,6 +17,10 @@ export const ENTERPRICE_VALUE_CALCULATIONS_API_URL = '/api/enterprise-value-calc
 export const LIQUIDATION_PRICE_CALCULATIONS_API_URL =
 	'/api/liquidation-price-calculations' as const;
 export const DIVIDEND_YIELD_CALCULATIONS_API_URL = '/api/dividend-yield-calculations' as const;
+export const CROSSWIND_CALCULATIONS_API_URL = '/api/crosswind-calculations' as const;
+export const WIND_TRIANGLE_CALCULATIONS_API_URL = '/api/wind-triangle-calculations' as const;
+export const DENSITY_ALTITUDE_CALCULATIONS_API_URL = '/api/density-altitude-calculations' as const;
+export const FUEL_PLANNING_CALCULATIONS_API_URL = '/api/fuel-planning-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -31,6 +35,10 @@ export const API_URLS = [
 	ENTERPRICE_VALUE_CALCULATIONS_API_URL,
 	LIQUIDATION_PRICE_CALCULATIONS_API_URL,
 	DIVIDEND_YIELD_CALCULATIONS_API_URL,
+	CROSSWIND_CALCULATIONS_API_URL,
+	WIND_TRIANGLE_CALCULATIONS_API_URL,
+	DENSITY_ALTITUDE_CALCULATIONS_API_URL,
+	FUEL_PLANNING_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -50,6 +58,10 @@ export const DOLLAR_COST_AVERAGE_CALCULATIONS_QUERY_KEY =
 export const ENTERPRICE_VALUE_CALCULATIONS_QUERY_KEY = 'enterprise-value-calculations' as const;
 export const LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY = 'liquidation-price-calculations' as const;
 export const DIVIDEND_YIELD_CALCULATIONS_QUERY_KEY = 'dividend-yield-calculations' as const;
+export const CROSSWIND_CALCULATIONS_QUERY_KEY = 'crosswind-calculations' as const;
+export const WIND_TRIANGLE_CALCULATIONS_QUERY_KEY = 'wind-triangle-calculations' as const;
+export const DENSITY_ALTITUDE_CALCULATIONS_QUERY_KEY = 'density-altitude-calculations' as const;
+export const FUEL_PLANNING_CALCULATIONS_QUERY_KEY = 'fuel-planning-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -64,4 +76,8 @@ export const QUERY_KEYS = [
 	ENTERPRICE_VALUE_CALCULATIONS_QUERY_KEY,
 	LIQUIDATION_PRICE_CALCULATIONS_QUERY_KEY,
 	DIVIDEND_YIELD_CALCULATIONS_QUERY_KEY,
+	CROSSWIND_CALCULATIONS_QUERY_KEY,
+	WIND_TRIANGLE_CALCULATIONS_QUERY_KEY,
+	DENSITY_ALTITUDE_CALCULATIONS_QUERY_KEY,
+	FUEL_PLANNING_CALCULATIONS_QUERY_KEY,
 ] as const;
