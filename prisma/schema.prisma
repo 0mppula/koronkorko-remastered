@@ -66,6 +66,7 @@ model User {
   DividendYieldCalculation         DividendYieldCalculation[]
   CrosswindCalculations            CrosswindCalculation[]
   WindTriangleCalculations         WindTriangleCalculation[]
+  DensityAltitudeCalculations      DensityAltitudeCalculation[]
 }
 
 enum Plan {
@@ -339,6 +340,23 @@ model WindTriangleCalculation {
   formData  WindTriangleCalculationFormData
   createdAt DateTime                        @default(now())
   updatedAt DateTime                        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type DensityAltitudeCalculationFormData {
+  fieldElevation        Float
+  qnh                   Float
+  outsideAirTemperature Float
+}
+
+model DensityAltitudeCalculation {
+  id        String                             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                             @db.ObjectId
+  name      String
+  formData  DensityAltitudeCalculationFormData
+  createdAt DateTime                           @default(now())
+  updatedAt DateTime                           @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

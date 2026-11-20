@@ -5,6 +5,7 @@ import {
 	calculationNameStringSchema,
 	compoundInterestFormDataSchema,
 	crosswindFormDataSchema,
+	densityAltitudeFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -21,6 +22,7 @@ import {
 	BreakEvenPointCalculation,
 	CompoundInterestCalculation,
 	CrosswindCalculation,
+	DensityAltitudeCalculation,
 	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
@@ -183,6 +185,16 @@ export interface WindTriangleReportProps extends IWindTriangleFormData {
 	groundspeed: number;
 }
 
+// Density Altitude Calculation
+export type IDensityAltitudeFormData = z.infer<typeof densityAltitudeFormDataSchema>;
+
+export interface DensityAltitudeReportProps extends IDensityAltitudeFormData {
+	pressureAltitude: number;
+	isaTemperature: number;
+	isaDeviation: number;
+	densityAltitude: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -197,4 +209,5 @@ export type CalculationType =
 	| LiquidationPriceCalculation
 	| DividendYieldCalculation
 	| CrosswindCalculation
-	| WindTriangleCalculation;
+	| WindTriangleCalculation
+	| DensityAltitudeCalculation;

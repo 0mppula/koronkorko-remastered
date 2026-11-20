@@ -114,6 +114,10 @@ Calculate the crosswind and headwind or tailwind components for a runway, given 
 
 Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed.
 
+### [Density Altitude Calculator][15]
+
+Calculate the pressure altitude, ISA temperature deviation and density altitude, given the field elevation, QNH and outside air temperature.
+
 ---
 
 ## How to set up the project locally
@@ -250,5 +254,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [12]: https://www.koronkorko.com/dividend-yield-calculator
 [13]: https://www.koronkorko.com/crosswind-calculator
 [14]: https://www.koronkorko.com/wind-triangle-calculator
+[15]: https://www.koronkorko.com/density-altitude-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

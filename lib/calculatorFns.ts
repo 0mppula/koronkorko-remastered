@@ -3,6 +3,7 @@ import {
 	BreakEvenPointReportProps,
 	CompoundInterestReportProps,
 	CrosswindReportProps,
+	DensityAltitudeReportProps,
 	DividendYieldReportProps,
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
@@ -11,6 +12,7 @@ import {
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
 	ICrosswindFormData,
+	IDensityAltitudeFormData,
 	IDividendYieldFormData,
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
@@ -28,7 +30,13 @@ import {
 	PriceToEarningsRatioReportProps,
 	WindTriangleReportProps,
 } from '@/types/calculations';
-import { normalizeDegrees, signedAngleDifference, toRadians } from '@/lib/units';
+import {
+	fromBaseUnit,
+	normalizeDegrees,
+	signedAngleDifference,
+	toBaseUnit,
+	toRadians,
+} from '@/lib/units';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
@@ -362,5 +370,46 @@ export const calculateWindTriangle = (formData: IWindTriangleFormData): WindTria
 		trueHeading: normalizeDegrees(trueCourse + windCorrectionAngle),
 		groundspeed:
 			trueAirspeed * Math.sqrt(1 - sinCorrection ** 2) - windSpeed * Math.cos(windAngle),
+	};
+};
+
+// ICAO Standard Atmosphere (Doc 7488/3), troposphere constants.
+const ISA_SEA_LEVEL_TEMPERATURE_C = 15;
+const ISA_SEA_LEVEL_TEMPERATURE_K = 288.15;
+const ISA_SEA_LEVEL_PRESSURE_HPA = 1013.25;
+const ISA_LAPSE_RATE_K_PER_M = 0.0065;
+const STANDARD_GRAVITY = 9.80665;
+const DRY_AIR_GAS_CONSTANT = 287.05287;
+const CELSIUS_TO_KELVIN = 273.15;
+const ISA_PRESSURE_EXPONENT = STANDARD_GRAVITY / (DRY_AIR_GAS_CONSTANT * ISA_LAPSE_RATE_K_PER_M);
+const ISA_SEA_LEVEL_DENSITY =
+	(ISA_SEA_LEVEL_PRESSURE_HPA * 100) / (DRY_AIR_GAS_CONSTANT * ISA_SEA_LEVEL_TEMPERATURE_K);
+const ISA_SCALE_HEIGHT_M = ISA_SEA_LEVEL_TEMPERATURE_K / ISA_LAPSE_RATE_K_PER_M;
+
+export const calculateDensityAltitude = (
+	formData: IDensityAltitudeFormData
+): DensityAltitudeReportProps => {
+	const { fieldElevation, qnh, outsideAirTemperature } = formData;
+
+	// ISA barometric relations: an altimeter set to QNH reads the field elevation.
+	const elevationM = fromBaseUnit(fieldElevation, 'altitude', 'm');
+	const stationPressure = qnh * (1 - elevationM / ISA_SCALE_HEIGHT_M) ** ISA_PRESSURE_EXPONENT;
+	const pressureAltitudeM =
+		ISA_SCALE_HEIGHT_M *
+		(1 - (stationPressure / ISA_SEA_LEVEL_PRESSURE_HPA) ** (1 / ISA_PRESSURE_EXPONENT));
+	const isaTemperature = ISA_SEA_LEVEL_TEMPERATURE_C - ISA_LAPSE_RATE_K_PER_M * pressureAltitudeM;
+	const density =
+		(stationPressure * 100) /
+		(DRY_AIR_GAS_CONSTANT * (outsideAirTemperature + CELSIUS_TO_KELVIN));
+	const densityAltitudeM =
+		ISA_SCALE_HEIGHT_M *
+		(1 - (density / ISA_SEA_LEVEL_DENSITY) ** (1 / (ISA_PRESSURE_EXPONENT - 1)));
+
+	return {
+		...formData,
+		pressureAltitude: toBaseUnit(pressureAltitudeM, 'altitude', 'm'),
+		isaTemperature,
+		isaDeviation: outsideAirTemperature - isaTemperature,
+		densityAltitude: toBaseUnit(densityAltitudeM, 'altitude', 'm'),
 	};
 };

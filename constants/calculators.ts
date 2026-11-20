@@ -104,4 +104,11 @@ export const calculators = [
 		description:
 			'Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Density Altitude Calculator',
+		url: 'density-altitude-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the pressure altitude, ISA temperature deviation and density altitude, given the field elevation, QNH and outside air temperature. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

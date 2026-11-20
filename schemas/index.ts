@@ -350,6 +350,23 @@ export const createWindTriangleFormDataSchema = (units: UnitPreferences) =>
 
 export const windTriangleFormDataSchema = createWindTriangleFormDataSchema(BASE_UNITS);
 
+export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
+	z.object({
+		fieldElevation: unitNumberFieldSchema('Field elevation', 'altitude', units.altitude, {
+			min: -1500,
+			max: 20000,
+		}),
+		qnh: unitNumberFieldSchema('QNH', 'pressure', units.pressure, { min: 900, max: 1100 }),
+		outsideAirTemperature: unitNumberFieldSchema(
+			'Outside air temperature',
+			'temperature',
+			units.temperature,
+			{ min: -60, max: 60 }
+		),
+	});
+
+export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
+
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);
 
