@@ -73,19 +73,36 @@ other to avoid conflicts in `lib/units.ts`, `prisma/schema.prisma` and the units
 
 ## Definition of done
 
-- All 4 calculators (02–05) and the foundation (01) are merged into `epic/aviation-calculators`.
-- `npm run lint`, `npm run typecheck`, `npm run format:check` and `npm test` pass on the epic.
-- The epic's Vercel preview has been tested manually:
-    - Landing page shows Finance and Aviation sections; search works across both; Featured Apps
-      unchanged.
-    - Each aviation calculator calculates correctly in every unit combination offered.
-    - Signed in: save, rename, update, import and delete work; importing after switching units
-      shows the same physical values in the new units; free-plan limit is enforced.
-    - Unit preferences persist after reload (signed out, localStorage) and across devices (signed
-      in, `User.preferences`); changing theme or currency does not reset unit preferences.
-    - Disclaimer appears under every aviation report and in every aviation `Info.tsx`.
-    - Finance calculators behave exactly as before.
-- Final PR from the epic into `master` is open.
+- [x] All 4 calculators (02–05) and the foundation (01) are merged into
+      `epic/aviation-calculators`.
+- [x] `npm run lint`, `npm run typecheck`, `npm run format:check` and `npm test` pass on the epic.
+- [x] The epic's Vercel preview has been tested manually:
+    - [x] Landing page shows Finance and Aviation sections; search works across both; Featured
+          Apps unchanged.
+    - [x] Each aviation calculator calculates correctly in every unit combination offered.
+    - [x] Signed in: save, rename, update, import and delete work; importing after switching
+          units shows the same physical values in the new units; free-plan limit is enforced.
+    - [x] Unit preferences persist after reload (signed out, localStorage) and across devices
+          (signed in, `User.preferences`); changing theme or currency does not reset unit
+          preferences.
+    - [x] Disclaimer appears under every aviation report and in every aviation `Info.tsx`.
+    - [x] Finance calculators behave exactly as before.
+- [x] The epic is merged into `master` (via the fuel planning PR, which included the whole epic).
+
+## Outcome
+
+All 4 calculators (crosswind, wind triangle, density altitude, fuel planning) and the foundation
+shipped to `master` in November 2026. The epic is closed.
+
+Follow-ups found during the epic (not part of it):
+
+- Finance inputs and reports follow the browser locale.
+- A zod `preprocess` quirk, documented as a `BUG:` test.
+- An `<a>` inside a `<button>` in the nav (invalid HTML).
+- The not-signed-in check in `getUsersSubscriptionData` is a no-op (`null;` instead of
+  returning).
+- A second wave of aviation calculators: true airspeed, descent planning, cloud base and turn
+  performance.
 
 ## Preview database
 
