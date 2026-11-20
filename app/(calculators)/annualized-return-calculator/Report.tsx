@@ -1,3 +1,4 @@
+import CalculatorDisclaimer from '@/components/Report/CalculatorDisclaimer';
 import ReportDivider from '@/components/Report/ReportDivider';
 import ReportGroup from '@/components/Report/ReportGroup';
 import ReportSection from '@/components/Report/ReportSection';
@@ -52,6 +53,8 @@ const Report = ({ report }: ReportProps) => {
 				header="Annualized Return"
 				value={isFinite(annualizedReturn) ? formatPercentage(annualizedReturn) : 'N/A'}
 			/>
+
+			<CalculatorDisclaimer category="finance" />
 		</ReportSection>
 	);
 };

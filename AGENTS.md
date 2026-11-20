@@ -36,8 +36,8 @@ in persisted Zustand stores (localStorage) and synced to `User.preferences` for 
 - `app/actions/` – `auth.ts` (`authOptions`, `getAuthSession`), `subscription.ts` (server action)
 - `components/` – shared components by area (`Form/`, `Report/`, `Modals/`, `Nav/`, `providers/`);
   shadcn/ui in `components/ui/`. `Nav/UnitPreferencesModal.tsx` (units button + modal),
-  `Report/AviationDisclaimer.tsx`
-- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list + categories), `data.ts` (currencies, limits, disclaimer)
+  `Report/CalculatorDisclaimer.tsx`
+- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list + categories), `data.ts` (currencies, limits, `calculatorDisclaimers` per category)
 - `hooks/` – `useCalculator`, `useCalculationMutations`, Zustand stores (`useUnits` for unit preferences), misc hooks
 - `lib/` – `calculatorFns.ts`, `utils.ts` (formatting, `cn`), `units.ts` (unit definitions and
   conversions), `db.ts`, `stripe.ts`, `queryFns/`
@@ -70,7 +70,9 @@ in persisted Zustand stores (localStorage) and synced to `User.preferences` for 
    `[id]/route.ts` (`PUT`, `DELETE`, scoped by `userId`). Parse bodies with the zod schemas.
 10. `app/(calculators)/<x>-calculator/`: `page.tsx` (metadata via `getCalculatorWithPathname`),
     `Calculator.tsx` (form + `useCalculator` + `useQuery(getCalculations)` + `FormControlsTop`),
-    `Report.tsx` (`ReportSection`/`ReportGroup`), `Info.tsx` (static explanation + `ReportSource`).
+    `Report.tsx` (`ReportSection`/`ReportGroup`, ending with
+    `<CalculatorDisclaimer category="<category>" />`), `Info.tsx` (static explanation, then
+    `<p>{calculatorDisclaimers.<category>}</p>`, then `ReportSource`).
 
 ## Adding an aviation calculator
 
@@ -94,9 +96,9 @@ Follow "Adding a calculator" with these differences:
    and use `NumberInputWithIcon iconType="unit"` with `getUnitSymbol(...)` (`unitSymbol="°"` for
    directions; `min0={false}` for inputs that may be negative).
 6. `Report.tsx`: format unit values with `formatBaseValue` in the user's units, never
-   `formatUnitValue` directly on base values; end with `<AviationDisclaimer />`.
-7. `Info.tsx`: explain the formula and sources, include the disclaimer sentence, end with
-   `ReportSource`.
+   `formatUnitValue` directly on base values; end with `<CalculatorDisclaimer category="aviation" />`.
+7. `Info.tsx`: explain the formula and sources, then `<p>{calculatorDisclaimers.aviation}</p>`,
+   then `ReportSource`.
 8. `constants/calculators.ts`: `category: 'aviation'`. Add the calculator to README's aviation
    section.
 9. Tests: formula tests with expected values from ICAO/FAA/E6B worked examples or exact
@@ -109,6 +111,10 @@ Follow "Adding a calculator" with these differences:
   currency); `currency` from `useCurrencyStore`.
 - Format aviation values with `formatBaseValue(value, quantity, units[quantity])` from `lib/units`
   (`value` in base units); `units` from `useUnitsStore`.
+- Every calculator's `Report.tsx` ends with `<CalculatorDisclaimer category="<category>" />`, and
+  every `Info.tsx` includes `<p>{calculatorDisclaimers.<category>}</p>` before `ReportSource`.
+  Adding a category to `calculatorCategories` requires adding its text to `calculatorDisclaimers`
+  in `constants/data.ts` (a missing category is a type error).
 - `PUT /api/auth/preferences` replaces the whole preferences object: every
   `updateUserPreferences` call sends `theme`, `currency` and `units`.
 - Keep the free-plan limit checks: client-side (`checkCalculationLimit` in `lib/queryFns`) and

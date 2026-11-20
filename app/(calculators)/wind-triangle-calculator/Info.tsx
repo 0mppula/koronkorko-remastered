@@ -1,7 +1,7 @@
 import ReportSection from '@/components/Report/ReportSection';
 import ReportSource from '@/components/Report/ReportSource';
 import TypographyH3 from '@/components/TypographyH3';
-import { AVIATION_DISCLAIMER } from '@/constants/data';
+import { calculatorDisclaimers } from '@/constants/data';
 
 const Info = () => {
 	return (
@@ -82,7 +82,7 @@ const Info = () => {
 				</ul>
 			</div>
 
-			<p>{AVIATION_DISCLAIMER}</p>
+			<p>{calculatorDisclaimers.aviation}</p>
 
 			<ReportSource
 				href="https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak"

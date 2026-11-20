@@ -40,7 +40,8 @@ density. Adds the **fuel** unit preference (L, US gal, kg, lb).
 - `schemas/index.ts`: `unitNumberFieldSchema(fieldName, quantity, unit, { min, max, minExclusive })`
   (limits in base units, messages in the user's unit), `positiveNumberFieldSchemaWithMax`.
 - `hooks/useCalculator.ts` `unitFields`; `NumberInputWithIcon iconType="unit"`;
-  `AviationDisclaimer`; `category` in `constants/calculators.ts`.
+  `CalculatorDisclaimer` (`category="aviation"`) and `calculatorDisclaimers.aviation`; `category`
+  in `constants/calculators.ts`.
 - Select pattern: "Distribution Frequency" in
   `app/(calculators)/dividend-yield-calculator/Calculator.tsx` (`Select` with `String(field.value)`).
 - `app/(calculators)/crosswind-calculator/` as the closest aviation example.
@@ -193,13 +194,13 @@ fuelType: 'avgas' }`. Pass `unitFields` and `getUnitContext` to `useCalculator`.
   time), `ReportDivider`, Trip Fuel, Reserve Fuel, Taxi Fuel and Extra Fuel (only when given),
   Total Fuel in the user's fuel unit, then the total in the paired unit of the other kind, labelled
   "Total Fuel (mass)" or "Total Fuel (volume)" (e.g. `90.0 L` and `64.7 kg`; `25.0 US gal` and
-  `150.0 lb`), then `<AviationDisclaimer />`.
+  `150.0 lb`), then `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: trip, reserve, taxi and extra fuel; typical reserve values (e.g. 30 min for VFR by
   day, 45 min at night or under IFR) and that pilots must check the rules that apply to them
   (country, type of operation, aircraft); why density matters (fuel is loaded by volume, weight
   and balance uses mass); that density varies with temperature and the calculator uses fixed FAA
-  standard weights (AVGAS 6.0 lb/US gal, Jet A 6.7 lb/US gal, FAA-H-8083-1); the disclaimer
-  sentence; `ReportSource` to the FAA handbook page
+  standard weights (AVGAS 6.0 lb/US gal, Jet A 6.7 lb/US gal, FAA-H-8083-1);
+  `<p>{calculatorDisclaimers.aviation}</p>`; `ReportSource` to the FAA handbook page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
 
 ## Files to create or change

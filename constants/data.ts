@@ -1,3 +1,4 @@
+import { type CalculatorCategory } from '@/constants/calculators';
 import { FaCode, FaEnvelope, FaGithub, FaLinkedin } from 'react-icons/fa';
 
 export const appName = 'KoronKorko';
@@ -13,8 +14,10 @@ export const FREE_PLAN_CALCULATION_LIMIT = 3;
 
 export const themes = ['light', 'dark', 'system'] as const;
 
-export const AVIATION_DISCLAIMER =
-	'For training and educational use only. Not for flight planning or navigation.';
+export const calculatorDisclaimers: Record<CalculatorCategory, string> = {
+	finance: 'For informational and educational purposes only. Not financial advice.',
+	aviation: 'For training and educational use only. Not for flight planning or navigation.',
+};
 
 export const featuredApps = [
 	{
