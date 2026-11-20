@@ -28,14 +28,19 @@ plus the same components for the gust when one is given.
 
 - `lib/units.ts`: `UnitPreferences`, `BASE_UNITS`, `UnitFields<T>`, `toBaseUnit`, `fromBaseUnit`,
   `getUnitSymbol(quantity, unit)`, `formatUnitValue(value, quantity, unit, fractionDigits?)`,
-  `formDataToBaseUnits`, `formDataFromBaseUnits`.
+  `formatBaseValue(baseValue, quantity, unit)` (converts from base units, used by reports),
+  `unitFractionDigits`, `formDataToBaseUnits`, `formDataFromBaseUnits`.
 - `hooks/useUnits.ts`: `useUnitsStore()` → `{ units }`.
 - `schemas/index.ts`: `unitNumberFieldSchema(fieldName, quantity, unit, { min, max })` with limits
-  in base units and messages in the user's unit; existing private helper `numberFieldSchema`.
+  checked in base units and messages rounded inwards in the user's unit; existing private helper
+  `numberFieldSchema`.
 - `hooks/useCalculator.ts`: optional `unitFields`; with it, `defaultValues` are base units and all
-  conversions (calculate, save, update, import, reset, units change) happen inside the hook.
-- `components/Form/NumberInputWithIcon.tsx`: `iconType="unit"` + `unitSymbol`.
-- `components/Report/AviationDisclaimer.tsx` and `AVIATION_DISCLAIMER` in `constants/data.ts`.
+  conversions (calculate, save, update, import, reset, units change) happen inside the hook, with
+  exact base values kept for untouched fields.
+- `components/Form/NumberInputWithIcon.tsx`: `iconType="unit"` + `unitSymbol` (a `type="text"`
+  input with dot decimals, display rounded to 2 decimals).
+- `components/Report/CalculatorDisclaimer.tsx` (`category="aviation"`) and
+  `calculatorDisclaimers.aviation` in `constants/data.ts`.
 - `constants/calculators.ts`: `category` field.
 
 If any name differs in the merged code, follow the code.
@@ -47,7 +52,7 @@ If any name differs in the merged code, follow the code.
 | `runwayHeading` (input)  | degrees   | none       | magnetic runway heading (e.g. 087), 1–360                   |
 | `windDirection` (input)  | degrees   | none       | magnetic, direction the wind blows **from**, 1–360          |
 | `windSpeed` (input)      | kt        | speed      | 0–200                                                       |
-| `gustSpeed` (input)      | kt        | speed      | optional; > `windSpeed`, ≤ 200                              |
+| `gustSpeed` (input)      | kt        | speed      | optional (`null` when empty); > `windSpeed`, ≤ 200          |
 | `windAngle` (output)     | degrees   | none       | signed, (−180, 180]; positive = wind from the right         |
 | `crosswind` (output)     | kt        | speed      | signed; positive = from the right, negative = from the left |
 | `headwind` (output)      | kt        | speed      | signed; positive = headwind, negative = tailwind            |
@@ -73,7 +78,7 @@ Vector decomposition of the wind relative to the runway:
   heading, normalized to (−180, 180].
 - `crosswind = windSpeed × sin(windAngle)`
 - `headwind = windSpeed × cos(windAngle)`
-- When `gustSpeed` is given: `gustCrosswind = gustSpeed × sin(windAngle)`,
+- When `gustSpeed` is given (not `undefined` or `null`): `gustCrosswind = gustSpeed × sin(windAngle)`,
   `gustHeadwind = gustSpeed × cos(windAngle)` (same direction, gust speed). Otherwise both are
   `undefined`.
 
@@ -88,10 +93,10 @@ the `calculateCrosswind` comment and in `Info.tsx`.
 - `signedAngleDifference(a, b)` → `a − b` normalized to (−180, 180].
   `(10, 350) = 20`, `(350, 10) = -20`, `(240, 60) = 180`.
 - `toRadians(degrees)`.
-- `formatDegrees(value)` → whole degrees, three digits and `°`, e.g. `"087°"`, `"005°"`. For
-  headings, north is shown as `"360°"` (a value that rounds to 0 or 360 displays as `360°`).
-  For angles (e.g. the wind angle) pass the absolute value; an angle of 0 displays as `"000°"`.
-  Use an option such as `formatDegrees(value, { heading: true })` to choose.
+- `formatDegrees(value, { heading = false } = {})` → whole degrees, three digits and `°`, e.g.
+  `"087°"`, `"005°"`. With `{ heading: true }` the value is normalized and north is shown as
+  `"360°"` (a value that rounds to 0 or 360 displays as `360°`). Without it (angles, e.g. the
+  wind correction angle in 03) the absolute value is shown; an angle of 0 displays as `"000°"`.
 
 ## Zod schema rules (`schemas/index.ts`)
 
@@ -107,22 +112,27 @@ export const createCrosswindFormDataSchema = (units: UnitPreferences) =>
 			runwayHeading: headingFieldSchema('Runway heading'),
 			windDirection: headingFieldSchema('Wind direction'),
 			windSpeed: unitNumberFieldSchema('Wind speed', 'speed', units.speed, { min: 0, max: 200 }),
+			// Nullish to match Prisma's optional field; empty input means no gust.
 			gustSpeed: z.preprocess(
 				(value) => (value === '' || value === null ? undefined : value),
-				unitNumberFieldSchema('Gust speed', 'speed', units.speed, { min: 0, max: 200 }).optional()
+				unitNumberFieldSchema('Gust speed', 'speed', units.speed, { min: 0, max: 200 }).nullish()
 			),
 		})
-		.superRefine((data, ctx) => { ... }); // gust must be greater than wind speed
+		.superRefine((data, ctx) => { ... }); // gust (when != null) must be greater than wind speed
 
 export const crosswindFormDataSchema = createCrosswindFormDataSchema(BASE_UNITS);
 ```
 
 - Headings/directions: 1–360 inclusive (north is 360, not 0), decimals allowed. `headingFieldSchema`
   is exported for reuse by 03.
-- Wind speed: 0 to 200 kt (limit in base units); messages in the user's unit, e.g.
-  `"Wind speed cannot be greater than 370.4 km/h"`.
+- Wind speed: 0 to 200 kt (limit in base units); messages in the user's unit, rounded inwards,
+  e.g. `"Wind speed cannot be greater than 370.40 km/h"`, `"... 230.15 mph"`.
 - Gust speed (decided): optional (empty input = no gust); same 200 kt limit; when given it must be greater
   than the wind speed, issue on `gustSpeed`: `"Gust speed must be greater than wind speed"`.
+- **`.nullish()`, not `.optional()` (decided):** Prisma types the optional composite field as
+  `number | null`, and `useCalculator` requires the Prisma calculation's `formData` to match the
+  form type. Stored calculations without a gust come back as `null`, so the form type, the
+  default value and `calculateCrosswind` all accept `null`.
 - Every valid input has a result.
 
 ## Unit preferences
@@ -132,37 +142,40 @@ Uses speed (from 01). Adds none.
 ## UI
 
 - `Calculator.tsx` (`'use client'`): mirror `dividend-yield-calculator/Calculator.tsx`.
-  `defaultValues` (base units): `{ runwayHeading: 360, windDirection: 360, windSpeed: 0,
-gustSpeed: undefined }` (proposal; calm wind is speed 0 with any direction).
-  Schema via `useMemo(() => createCrosswindFormDataSchema(units), [units])`. Pass
-  `unitFields: crosswindUnitFields` to `useCalculator`. Inputs:
-    - `FormGroup`: "Runway Heading (magnetic)" (`iconType="unit" unitSymbol="°"`), "Wind
-      Direction (magnetic, from)" (`°`). Use `DynamicFormLabel` with short labels ("Runway",
-      "Wind Direction") if the long ones don't fit on small screens.
-    - `FormGroup`: "Wind Speed" (`unitSymbol={getUnitSymbol('speed', units.speed)}`), "Gust
-      Speed (optional)" (same symbol; bind `value={field.value ?? ''}`; no `ifFieldIsEmpty` reset
-      to 0, empty means no gust).
-    - Runway heading placeholder `"087"`.
+  Module-level `crosswindUnitFields` and `defaultValues` (base units): `{ runwayHeading: 360,
+windDirection: 360, windSpeed: 0, gustSpeed: null }` (calm wind is speed 0 with any
+  direction). Schema via `useMemo(() => createCrosswindFormDataSchema(units), [units])`. Pass
+  `unitFields: crosswindUnitFields` to `useCalculator`. Inputs (all `NumberInputWithIcon
+iconType="unit"`):
+    - `FormGroup`: "Runway Heading (magnetic)" (`unitSymbol="°"`, placeholder `"087"`), "Wind
+      Direction (magnetic, from)" (`°`), both with `DynamicFormLabel` and the short labels
+      "Runway" and "Wind Direction" for small screens.
+    - `FormGroup`: "Wind Speed" (`unitSymbol={getUnitSymbol('speed', units.speed)}`, an empty
+      field is set to 0 on blur with `ifFieldIsEmpty`), "Gust Speed (optional)" (same symbol;
+      `value={field.value ?? ''}`, `placeholder=""`; no `ifFieldIsEmpty` reset to 0, empty means
+      no gust).
 - `Report.tsx` (`'use client'`): `ReportSection` with
     - `ReportGroup` "Runway Heading" → `formatDegrees(runwayHeading, { heading: true })`.
-    - `ReportGroup` "Wind" → `` `${formatDegrees(windDirection, { heading: true })} at ${formatUnitValue(windSpeed, 'speed', units.speed)}` ``,
-      plus `` ` gusting ${formatUnitValue(gustSpeed, ...)}` `` when a gust is given.
+    - `ReportGroup` "Wind" → `` `${formatDegrees(windDirection, { heading: true })} at ${formatBaseValue(windSpeed, 'speed', units.speed)}` ``,
+      plus `` ` gusting ${formatBaseValue(gustSpeed, ...)}` `` when a gust is given (not
+      `undefined` or `null`).
     - `ReportDivider`.
-    - `ReportGroup` "Crosswind" → absolute value + `"from the right"`/`"from the left"` (no side
+    - `ReportGroup` "Crosswind" → absolute value + `" from the right"`/`" from the left"` (no side
       when it displays as 0).
-    - `ReportGroup` "Headwind" or "Tailwind" → absolute value; pick the label from the value
-      rounded to display precision so a −0.0 never shows as "Tailwind".
+    - `ReportGroup` "Headwind" or "Tailwind" → absolute value. The side and the label come from
+      the value converted to the user's unit and rounded to `unitFractionDigits.speed`, so a
+      −0.00 never shows as "Tailwind" or gets a side.
     - When a gust is given: `ReportGroup` "Gust Crosswind" and "Gust Headwind"/"Gust Tailwind"
       with the same rules.
-    - `<AviationDisclaimer />` last.
+    - `<CalculatorDisclaimer category="aviation" />` last.
 - `Info.tsx` (server component): what crosswind/headwind components are, why they matter (aircraft
   crosswind limits, tailwind effect on takeoff/landing distance), the formula; that the runway
   input is the runway heading and runway 09 is roughly 090°; that the gust components use the gust
   speed with the same wind direction; that wind direction
   is where the wind blows from and that both inputs must be magnetic (tower/ATIS winds and runway
   headings are magnetic, METAR winds are true and must first be converted with the local magnetic
-  variation); the disclaimer sentence, `ReportSource` to the FAA handbook page
-  (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`, text
+  variation); `<p>{calculatorDisclaimers.aviation}</p>`, then `ReportSource` to the FAA handbook
+  page (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`, text
   `"FAA Pilot's Handbook of Aeronautical Knowledge"`).
 
 ## Files to create or change
@@ -206,11 +219,12 @@ gustCrosswind?; gustHeadwind? }`, add `CrosswindCalculation` to `CalculationType
 10. `app/api/crosswind-calculations/route.ts` (`POST` with session + free-plan check, `GET`) and
     `[id]/route.ts` (`PUT`, `DELETE` scoped by `userId`), copied from the dividend yield routes
     with `db.crosswindCalculation` and `crosswindFormDataSchema`. The `POST` destructures and saves
-    `gustSpeed` too (omitted when not given).
+    `gustSpeed` too, as `gustSpeed ?? undefined` (omitted when empty). The `PUT` replaces the whole
+    `formData`, so a removed gust is removed from the document.
 11. `app/(calculators)/crosswind-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
     `Info.tsx`.
-12. `README.md`: aviation section entry. `AGENTS.md`: list the calculator in Project.
-    `docs/plans/aviation/00-epic.md`: check off 02.
+12. `README.md`: aviation section entry. `docs/plans/aviation/00-epic.md`: check off 02 (not
+    `AGENTS.md`: it points to `constants/calculators.ts` for the aviation calculators).
 
 ## Test cases
 
@@ -243,11 +257,13 @@ Angle helpers: the examples in "Angle helpers" above, plus `formatDegrees`: `87`
 `"000°"`.
 
 Schema (`crosswindFormDataSchema`): valid input passes; each required field missing → issue on that
-field; gust missing or `''` passes; negative speed rejected; direction 0 and 360.1 rejected, 1 and
-360 accepted (message "… must be between 1 and 360"); wind speed 200 accepted, 200.1 rejected;
-gust equal to or below wind speed rejected on `gustSpeed`; gust above 200 rejected; numeric strings
+field; gust `undefined`, `''` or `null` passes as no gust; negative speed rejected; direction 0 and
+360.1 rejected, 1 and 360 accepted (message "… must be between 1 and 360"); wind speed 0 and 200
+accepted, 200.1 rejected (`"Wind speed cannot be greater than 200.00 kt"`); gust equal to or below
+wind speed rejected on `gustSpeed`; gust 200 accepted, above 200 rejected; numeric strings
 coerced. `createCrosswindFormDataSchema({ ...BASE_UNITS, speed: 'kmh' })`: 370.4 accepted, 371
-rejected with a message containing `km/h`.
+rejected with `"Wind speed cannot be greater than 370.40 km/h"`; the form value of a 200 kt wind in
+mph is accepted.
 
 ## Acceptance criteria
 
@@ -259,8 +275,8 @@ rejected with a message containing `km/h`.
 - With a gust, the report also shows gust crosswind and gust headwind/tailwind; without one it
   doesn't, and saving/importing a calculation without a gust works.
 - Switching speed units converts the wind speed in the form and the report without changing the
-  physical value; saved calculations store kt (check in the API response) and import correctly in
-  any unit.
+  physical value (toggling back gives the exact original value); saved calculations store kt
+  (check in the API response) and import correctly in any unit.
 - Save, rename, update, import, delete and the free-plan limit work like finance calculators.
 - Validation messages show limits in the selected speed unit.
 - Disclaimer under the report and in Info.
