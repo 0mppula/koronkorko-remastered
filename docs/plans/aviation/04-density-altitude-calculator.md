@@ -14,9 +14,11 @@ the density altitude. Adds the **pressure** unit preference.
 
 - Full-stack calculator like `dividend-yield-calculator`: Prisma model, API routes, save, rename,
   update, import, delete, free-plan limit, tests.
-- Pressure unit preference (hPa, inHg) in `lib/units.ts`, Prisma `UnitPreferences`, units modal
-  (automatic via `unitQuantities`).
-- Temperature difference conversion helper.
+- Pressure unit preference (hPa, inHg) in `lib/units.ts`, Prisma `unitPreferences`,
+  `unitPreferencesSchema`, units modal (automatic via `unitQuantities`).
+- Temperature difference conversion and formatting helpers.
+- Replace the aviation-only disclaimer with `CalculatorDisclaimer`/`calculatorDisclaimers` for
+  every calculator, finance included (see 01, section 7).
 
 ## Out of scope
 
@@ -27,16 +29,18 @@ the density altitude. Adds the **pressure** unit preference.
 
 ## Foundation you rely on (from 01)
 
-- `lib/units.ts`: `unitQuantities`, `unitOptions`, `UnitPreferences`, `BASE_UNITS`,
-  `DEFAULT_UNIT_PREFERENCES`, `UnitFields<T>`, `toBaseUnit`, `fromBaseUnit`, `getUnitSymbol`,
-  `formatUnitValue`, `withDefaultUnitPreferences`, `formDataToBaseUnits`, `formDataFromBaseUnits`.
-  Adding an entry to `unitQuantities`/`unitOptions` automatically adds a select to the units modal
-  (`components/Nav/UnitPreferencesModal.tsx`) and a value to `unitPreferencesSchema`; the persisted
-  store (`hooks/useUnits.ts`) and `User.preferences.units` fill missing quantities with defaults.
-- `schemas/index.ts`: `unitNumberFieldSchema(fieldName, quantity, unit, { min, max })` (limits in
-  base units, messages in the user's unit).
+- `lib/units.ts`: `unitQuantities`, `unitOptions`, `unitFractionDigits`, `UnitPreferences`,
+  `BASE_UNITS`, `DEFAULT_UNIT_PREFERENCES`, `UnitFields<T>`, `toBaseUnit`, `fromBaseUnit`,
+  `getUnitSymbol`, `formatUnitValue`, `formatBaseValue`, `withDefaultUnitPreferences`,
+  `formDataToBaseUnits`, `formDataFromBaseUnits`. Adding an entry to
+  `unitQuantities`/`unitOptions` automatically adds a select to the units modal
+  (`components/Nav/UnitPreferencesModal.tsx`); `unitPreferencesSchema` is an explicit object, so
+  the quantity must be added there too (a missing one is a type error). The persisted store
+  (`hooks/useUnits.ts`) and `User.preferences.units` fill missing quantities with defaults.
+- `schemas/index.ts`: `unitNumberFieldSchema(fieldName, quantity, unit, { min, max })` (limits
+  checked in base units, messages rounded inwards in the user's unit).
 - `hooks/useCalculator.ts` `unitFields`; `NumberInputWithIcon iconType="unit"` (`min0={false}` for
-  negative values); `AviationDisclaimer`; `category` in `constants/calculators.ts`.
+  negative values); `category` in `constants/calculators.ts`.
 - `app/(calculators)/crosswind-calculator/` as the closest example.
 
 If any name differs in the merged code, follow the code.
@@ -61,15 +65,25 @@ outsideAirTemperature: 'temperature' }`.
 - `unitQuantities`: add `{ value: 'pressure', label: 'Pressure' }`.
 - `unitOptions.pressure`: `{ value: 'hpa', label: 'Hectopascals (hPa)', symbol: 'hPa' }`
   (identity) and `{ value: 'inhg', label: 'Inches of mercury (inHg)', symbol: 'inHg' }` with
-  **`hPa = inHg × 33.8639`** (decided).
+  **`hPa = inHg × 33.8639`** (decided; NIST SP 811 App. B.9: 1 inHg (conventional) =
+  3386.389 Pa, rounded to 33.8639 hPa, cited in a comment on `INCH_OF_MERCURY_IN_HECTOPASCALS`).
 - `BASE_UNITS.pressure = 'hpa'`; default `'hpa'` (decided, ICAO).
-- `prisma/schema.prisma` `type UnitPreferences`: add `pressure String?`. Run `npx prisma generate`.
-- Display: hPa with 0–2 decimals (no trailing zeros, so `1013.25 hPa`, `1013 hPa`), inHg with 2
-  decimals (`29.92 inHg`). Pass `fractionDigits` per unit.
+- `unitPreferencesSchema`: add `pressure: unitValueSchema('pressure')`.
+- `prisma/schema.prisma` `type unitPreferences`: add `pressure String?`. Run `npx prisma generate`.
+- Display (decided): `unitFractionDigits.pressure = 2` for both units (`1013.25 hPa`,
+  `1013.00 hPa`, `29.92 inHg`), and `formatUnitValue` writes pressures without thousands
+  separators (`useGrouping: false`), as altimeter settings are usually written. In the QNH input
+  the default 1013.25 hPa shows as `29.92` in inHg (display rounding), while the exact
+  1013.25 hPa is kept for calculating and saving unless the field is edited.
 
-Temperature difference helper (add to `lib/units.ts`):
-`fromBaseTemperatureDifference(valueC, unit)` → `valueC` for °C, `valueC × 9/5` for °F (no
-offset). Use it for `isaDeviation`; never use `fromBaseUnit` on a difference.
+Temperature difference helpers (add to `lib/units.ts`):
+
+- `fromBaseTemperatureDifference(valueC, unit)` → `valueC` for °C, `valueC × 9/5` for °F (no
+  offset). Use it for `isaDeviation`; never use `fromBaseUnit` on a difference.
+- `formatTemperatureDifference(baseValue, unit)` → signed with 2 decimals and the symbol
+  (`Intl.NumberFormat('en-US', { signDisplay: 'exceptZero' })`), e.g. `"+19.90 °C"`,
+  `"+18.00 °F"`, `"-5.00 °C"`; values that round to zero show `"0.00 °C"` without a sign. `NaN` is
+  formatted as `0`.
 
 ## Formulas
 
@@ -93,7 +107,11 @@ Work in metres, convert to feet with `ft = m / 0.3048`:
 6. Density altitude: `DA = (T0 / L) × (1 − (ρ / ρ0)^(1/(n − 1)))`.
 
 Steps 2 and 6 are the ISA pressure–altitude and density–altitude relations solved for altitude.
-Verify each equation and constant against ICAO Doc 7488 before implementing.
+In `calculateDensityAltitude` the constants are named constants next to the function
+(`ISA_SEA_LEVEL_TEMPERATURE_K`, `ISA_LAPSE_RATE_K_PER_M`, `DRY_AIR_GAS_CONSTANT`, ...,
+`ISA_SCALE_HEIGHT_M = T0 / L`) under a one-line ICAO Doc 7488/3 comment; feet convert to metres
+and back with `fromBaseUnit`/`toBaseUnit` (`altitude`, `m`). The tests check the forward
+relations against a published ISA table (see "Test cases").
 
 ### Rule of thumb (`Info.tsx` only)
 
@@ -123,39 +141,43 @@ export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema
 ```
 
 Limits (decided, base units): elevation −1,500 to 20,000 ft, QNH 900–1,100 hPa, OAT −60 to +60 °C.
-Messages show the user's unit, e.g. `"QNH cannot be lower than 26.58 inHg"` (900 ÷ 33.8639),
-`"Outside air temperature cannot be greater than 140.0 °F"`.
+Messages show the user's unit, rounded inwards, e.g. `"QNH cannot be lower than 26.58 inHg"`
+(900 ÷ 33.8639 = 26.5770, and 26.58 inHg is still ≥ 900 hPa), `"QNH cannot be greater than 32.48
+inHg"`, `"Field elevation cannot be lower than -457 m"`, `"Field elevation cannot be greater than
+6,096 m"`, `"Outside air temperature cannot be greater than 140.00 °F"`.
 Every input inside the limits must give a finite result; if one doesn't, add an `it.fails` test
-named `BUG: ...`.
+named `BUG: ...`. (All do: the corners and a grid of the limits are tested.)
 
 ## UI
 
-- `Calculator.tsx`: mirror the crosswind calculator. `defaultValues` (base units):
-  `{ fieldElevation: 0, qnh: 1013.25, outsideAirTemperature: 15 }` (ISA sea level). Inputs: "Field
-  Elevation" (altitude symbol, `min0={false}`), "QNH / Altimeter Setting" (pressure symbol, `step`
-  0.01), "Outside Air Temperature" (temperature symbol, `min0={false}`).
+- `Calculator.tsx`: mirror the crosswind calculator. Module-level `densityAltitudeUnitFields` and
+  `defaultValues` (base units): `{ fieldElevation: 0, qnh: 1013.25, outsideAirTemperature: 15 }`
+  (ISA sea level). Inputs: "Field Elevation" (altitude symbol, `min0={false}`), "QNH / Altimeter
+  Setting" (`DynamicFormLabel`, short label "QNH"; pressure symbol), "Outside Air Temperature"
+  (temperature symbol, `min0={false}`).
 - `Report.tsx`: inputs (elevation, QNH, OAT), `ReportDivider`, Pressure Altitude, ISA Temperature,
-  ISA Deviation (signed, e.g. `"+19.9 °C"`, using the difference helper), Density Altitude,
-  `<AviationDisclaimer />`. Altitudes as whole feet/metres, temperatures 2 decimals (01).
+  ISA Deviation (`formatTemperatureDifference`, e.g. `"+19.90 °C"`), Density Altitude,
+  `<CalculatorDisclaimer category="aviation" />`. All other values use `formatBaseValue`:
+  altitudes as whole feet/metres, temperatures and pressures with 2 decimals.
 - `Info.tsx`: what pressure and density altitude are, why high density altitude reduces aircraft
   performance (PHAK), that the calculator uses the exact ICAO Standard Atmosphere formulas (pressure
   altitude from QNH, then density altitude from air density), the rule of thumb of about 120 ft per
   °C of ISA deviation as a mental check only, that the calculation assumes dry air and humidity
-  raises density altitude slightly, the disclaimer sentence, `ReportSource`
-  to the FAA handbook page
-  (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`).
+  raises density altitude slightly, `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to
+  the FAA handbook page (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`,
+  text `"FAA Pilot's Handbook of Aeronautical Knowledge"`).
 
 ## Files to create or change
 
 Follow "Adding a calculator" and "Adding an aviation calculator" in AGENTS.md:
 
-1. `prisma/schema.prisma`: `pressure String?` on `UnitPreferences`;
+1. `prisma/schema.prisma`: `pressure String?` on `unitPreferences`;
    `type DensityAltitudeCalculationFormData { fieldElevation Float qnh Float outsideAirTemperature
 Float }`, `model DensityAltitudeCalculation`, `DensityAltitudeCalculations
 DensityAltitudeCalculation[]` on `User`. Run `npx prisma generate`.
-2. `lib/units.ts` + `lib/units.test.ts`: pressure unit, temperature difference helper.
-3. `schemas/index.ts` + `schemas/index.test.ts`: schemas above; `unitPreferencesSchema` tests
-   include `pressure`.
+2. `lib/units.ts` + `lib/units.test.ts`: pressure unit, temperature difference helpers.
+3. `schemas/index.ts` + `schemas/index.test.ts`: schemas above; `pressure` in
+   `unitPreferencesSchema` and its tests.
 4. `types/calculations.ts`: `IDensityAltitudeFormData`, `DensityAltitudeReportProps extends
 IDensityAltitudeFormData { pressureAltitude; isaTemperature; isaDeviation; densityAltitude }`,
    add to `CalculationType`.
@@ -168,8 +190,12 @@ IDensityAltitudeFormData { pressureAltitude; isaTemperature; isaDeviation; densi
 8. `app/api/density-altitude-calculations/route.ts` and `[id]/route.ts`.
 9. `app/(calculators)/density-altitude-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
    `Info.tsx`.
-10. `README.md` aviation entry and units sentence (pressure), `AGENTS.md` Project list, check off
-    04 in `00-epic.md`.
+10. `README.md` aviation entry and units sentence (pressure), check off 04 in `00-epic.md` (not
+    `AGENTS.md`: it points to `constants/calculators.ts` for the aviation calculators).
+11. Disclaimers for all calculators: `calculatorDisclaimers` in `constants/data.ts`,
+    `components/Report/CalculatorDisclaimer.tsx` (replaces `AviationDisclaimer.tsx` and
+    `AVIATION_DISCLAIMER`), used at the end of every `Report.tsx` and as
+    `<p>{calculatorDisclaimers.<category>}</p>` in every `Info.tsx`, finance included.
 
 ## Test cases
 
@@ -177,7 +203,12 @@ Units (`lib/units.test.ts`):
 
 - `fromBaseUnit(33.8639, 'pressure', 'inhg')` → `1`; `toBaseUnit(29.92, 'pressure', 'inhg')` →
   `29.92 × 33.8639` (`toBeCloseTo`).
+- `formatUnitValue(1013.25, 'pressure', 'hpa')` → `1013.25 hPa`, `1013` → `1013.00 hPa`;
+  `formatBaseValue(1013.25, 'pressure', 'inhg')` → `29.92 inHg`; the default QNH shown in inHg
+  displays `29.92` in the input and keeps 1013.25 hPa as its exact base value.
 - `fromBaseTemperatureDifference(10, 'f')` → `18`; `(10, 'c')` → `10`; `(0, 'f')` → `0`.
+- `formatTemperatureDifference`: `19.9` °C → `+19.90 °C`, `10` in °F → `+18.00 °F`, `-5` →
+  `-5.00 °C`, `0` and `-0.004` → `0.00 °C`.
 - `withDefaultUnitPreferences({ speed: 'kmh' })` now also has `pressure: 'hpa'`.
 
 `calculateDensityAltitude` — cases that follow from the ISA definition:
@@ -190,34 +221,49 @@ Units (`lib/units.test.ts`):
 - 5000 ft ISA temperature: `15 − 0.0065 × 5000 × 0.3048 = 5.094 °C` (exact from the lapse rate).
 - With standard pressure (QNH 1013.25) PA equals the elevation for any elevation in range.
 - Higher OAT at the same PA gives higher DA; higher QNH at the same elevation gives lower PA.
-- Hot-day and non-standard cases (e.g. a high-elevation field on a hot day, a low QNH): compute the
-  expected values **independently with the exact ISA formulas above** (by hand or in a
-  spreadsheet, never by running `calculateDensityAltitude`) and **cross-check each case against an
-  established density altitude calculator**, e.g. the US National Weather Service one. That
-  calculator may ask for a dew point; use the driest input it allows and note it, since humidity
-  raises its result slightly. List the sources (title/URL, inputs entered, result shown) in a
-  comment at the top of the `describe('calculateDensityAltitude')` block, and choose a tolerance
-  that covers the cross-check's rounding (state it in the comment).
-- Units: elevation 1524 m (= 5000 ft), QNH 29.92 inHg (= 1013.21 hPa, close to standard) and OAT
-  41.17 °F (= 5.094 °C) give PA ≈ DA ≈ 5000 ft; the tolerance must allow for 29.92 × 33.8639 not
-  being exactly 1013.25 (about 1 ft).
+- **Forward relations (as done):** the test writes the forward ISA relations (pressure and density
+  at an altitude) independently of `calculateDensityAltitude`, which solves them for altitude, and
+  checks them against the Engineering ToolBox "International Standard Atmosphere" table
+  (`https://www.engineeringtoolbox.com/international-standard-atmosphere-d_985.html`) at −500,
+  1000, 2000, 5000 and 10000 m. That table is at geometric altitude, so the test converts with
+  `h = r0·z / (r0 + z)`, `r0 = 6356766 m`.
+- Hot-day and non-standard cases (5000 ft / 1013.25 / 30 °C → DA 7800.73 ft, 0 / 1013.25 / 35 →
+  2275.31, 2000 / 995 / 25 → PA 2495.19, DA 4211.9, 0 / 1035 / −20 → PA −588.91, DA −5243.68,
+  7000 / 1020 / 30 → PA 6825, DA 10006.21): expected values computed independently from the exact
+  ISA formulas with 40-digit decimals (never by running `calculateDensityAltitude`); 5000 ft /
+  30 °C was also checked by hand (≈ 7801 ft). Tolerance `toBeCloseTo(x, 1)` for altitudes, `3` for
+  temperatures.
+- No online density altitude calculator could be used as a cross-check: the NWS one
+  (`https://www.weather.gov/epz/wxcalc_densityaltitude`) only runs in the browser and takes
+  station pressure and dew point, not QNH. The sources and this limitation are listed in a comment
+  at the top of the `describe('calculateDensityAltitude')` block.
+- Consistency over the limits: for the corners and a grid of elevations, QNHs and OATs, every
+  result is finite, the forward relations give back the station pressure and air density, and PA
+  and DA stay below the tropopause; the hot, high, low-pressure corner (20,000 ft, 900 hPa, 60 °C)
+  gives PA 22797.14 ft and DA 31562.89 ft.
+- Units: elevation 1524 m (= 5000 ft), QNH 29.92 inHg (= 1013.2079 hPa, not 1013.25) and OAT
+  41.17 °F (= 5.0944 °C) give PA ≈ 5001.11 ft and DA ≈ 5001.42 ft, within 2 ft of 5000 ft because
+  29.92 × 33.8639 is not exactly 1013.25.
 
 Schema: valid input passes; missing fields; elevation and OAT may be negative; each limit accepted
-at the boundary and rejected beyond it; messages in inHg/°F/m when those units are used; numeric
-strings coerced.
+at the boundary and rejected beyond it; messages in m/inHg/°F when those units are used (the shown
+limit accepted, one step beyond rejected); numeric strings coerced.
 
 ## Acceptance criteria
 
 - The units modal shows a Pressure select (hPa, inHg); existing users and localStorage without
   `pressure` get the default without losing other unit choices.
 - `/density-altitude-calculator` appears in the Aviation section and in search.
-- Results match the test cases; ISA deviation in °F is a difference (10 °C → 18 °F, not 50 °F).
-- The test file lists the cross-check sources for the hot-day cases.
+- Results match the test cases; ISA deviation in °F is a difference (10 °C → +18.00 °F, not
+  50 °F).
+- The test file lists the sources used to check the ISA relations and how the hot-day cases were
+  computed.
 - Info mentions the rule of thumb (about 120 ft per °C) and that humidity raises density altitude
   slightly.
 - Switching altitude, pressure or temperature units converts the form and report without changing
   physical values; storage is ft/hPa/°C.
-- Save, rename, update, import, delete and free-plan limit work. Disclaimer present.
+- Save, rename, update, import, delete and free-plan limit work. Disclaimer present under every
+  report and in every `Info.tsx`, finance included.
 - Lint, typecheck, format check and tests pass.
 
 ## Open questions

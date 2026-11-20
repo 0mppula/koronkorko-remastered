@@ -23,22 +23,33 @@ limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator.
 3. **Base units.** Storage, API and math use base units only: speed **kt**, altitude/elevation
    **ft**, distance **NM**, pressure **hPa**, temperature **°C**, mass **kg**, volume **L**,
    angles/directions **degrees**. User unit preferences only affect input and display. Stored
-   values are never rounded; only displayed values are.
+   values are never rounded; only displayed values are (reports, messages, and unit inputs, which
+   show 2 decimals while the form keeps the unrounded value).
 4. **Unit-aware forms.** Forms show the user's unit next to each input, convert input to base units
    before calculating and saving, and convert base units back to the user's units when importing a
-   saved calculation. Validation error messages show limits in the user's unit.
+   saved calculation or changing units. Fields the user hasn't edited keep their exact base value
+   (on unit changes, calculate, save and update), so toggling units never adds rounding drift.
+   Limits are checked in base units (the same check on the client and in the API); validation
+   messages show them in the user's unit, rounded inwards so every value up to the shown limit
+   passes.
 5. **Unit preferences UI.** The currency toggler (`components/Nav/PreferredCurrencyToggler.tsx`)
    stays unchanged. A new Nav button with the lucide `SlidersHorizontal` icon, shown on every page
    and screen size, opens a unit preferences modal (existing `components/ui/dialog.tsx` and
    `components/ui/select.tsx` styling) with a Save button. It starts with **speed, altitude and
    temperature**. Other unit preferences (pressure, fuel) are added only by the calculator that
-   first needs them. Defaults follow ICAO: kt, ft, °C, and hPa once pressure exists.
+   first needs them. Defaults follow ICAO: kt, ft, °C, hPa (added by 04) and L (added by 05).
 6. **Preference storage.** Unit preferences are stored in `User.preferences` next to `theme` and
    `currency`, synced the same way as currency (`UserPreferencesProvider`, `updateUserPreferences`),
-   with defaults for users who have none. Locally they live in a persisted Zustand store.
-7. **Disclaimer.** A reusable, subtle disclaimer: a small muted line under each aviation report
-   ("For training and educational use only. Not for flight planning or navigation.") plus a
-   sentence in each aviation `Info.tsx`.
+   with defaults for users who have none. `PUT /api/auth/preferences` validates the whole object
+   with `userPreferencesSchema`. Locally they live in a persisted Zustand store.
+7. **Disclaimer.** A reusable, subtle disclaimer per calculator category: `calculatorDisclaimers`
+   in `constants/data.ts` (`Record<CalculatorCategory, string>`, so a new category without a text
+   is a type error) and `components/Report/CalculatorDisclaimer.tsx` (`category` prop), a small
+   muted line at the end of every report. Aviation: "For training and educational use only. Not
+   for flight planning or navigation."; finance: "For informational and educational purposes
+   only. Not financial advice.". Every `Info.tsx` also renders
+   `<p>{calculatorDisclaimers.<category>}</p>` before `ReportSource`. Finance calculators got
+   their disclaimer in the epic too (in 04's branch), so all calculators follow one pattern.
 8. **README.** The foundation adds an "Aviation Calculators" section to `README.md` (heading and
    a short intro). Each calculator branch adds its own entry there, in the same format as the
    existing calculator list.
@@ -56,7 +67,8 @@ Each feature has its own plan file and branch. Update this checklist in the feat
 - [x] **04 Density Altitude Calculator** – `04-density-altitude-calculator.md` –
       `feature/density-altitude-calculator` (adds the pressure unit)
 - [x] **05 Fuel Planning Calculator** – `05-fuel-planning-calculator.md` –
-      `feature/fuel-planning-calculator` (adds the fuel unit: L, US gal, kg, lb)
+      `feature/fuel-planning-calculator` (adds the fuel unit: L, US gal, kg, lb, and the fuel
+      density unit context)
 
 01 must be merged first. 02–05 depend on 01; 03 reuses angle helpers added in 02. 04 and 05 are
 independent of each other but each extends the units system, so merge one before starting the
@@ -86,7 +98,7 @@ other to avoid conflicts in `lib/units.ts`, `prisma/schema.prisma` and the units
           (signed in, `User.preferences`); changing theme or currency does not reset unit
           preferences.
     - [x] Disclaimer appears under every aviation report and in every aviation `Info.tsx`.
-    - [x] Finance calculators behave exactly as before.
+    - [x] Finance calculators behave exactly as before, apart from the new finance disclaimer.
 - [x] The epic is merged into `master` (via the fuel planning PR, which included the whole epic).
 
 ## Outcome
