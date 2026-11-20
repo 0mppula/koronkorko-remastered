@@ -6,6 +6,7 @@ import {
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
+	formatUnitInputValue,
 	formatUnitValue,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
@@ -133,6 +134,51 @@ describe('formatBaseValue', () => {
 		// 1000 ft × 0.3048 = 304.8 m
 		expect(normalize(formatBaseValue(1000, 'altitude', 'm'))).toBe('305 m');
 		expect(normalize(formatBaseValue(15, 'temperature', 'f'))).toBe('59.00 °F');
+	});
+});
+
+describe('formatUnitInputValue', () => {
+	it('rounds numbers to 2 decimals without trailing zeros', () => {
+		expect(formatUnitInputValue(29.9212849081)).toBe('29.92');
+		expect(formatUnitInputValue(304.8)).toBe('304.8');
+		expect(formatUnitInputValue(37.04)).toBe('37.04');
+		expect(formatUnitInputValue(-457.2)).toBe('-457.2');
+		expect(formatUnitInputValue(20000)).toBe('20000');
+		expect(formatUnitInputValue(115.077944802)).toBe('115.08');
+	});
+
+	it('shows values that round to zero as 0', () => {
+		expect(formatUnitInputValue(-0.001)).toBe('0');
+		expect(formatUnitInputValue(0)).toBe('0');
+	});
+
+	it('leaves typed values unchanged', () => {
+		expect(formatUnitInputValue('29.9212')).toBe('29.9212');
+		expect(formatUnitInputValue('')).toBe('');
+		expect(formatUnitInputValue('-')).toBe('-');
+		expect(formatUnitInputValue(undefined)).toBe(undefined);
+	});
+
+	describe('in a form with a 100 kt wind shown in mph', () => {
+		type FormData = { windSpeed: number | string };
+
+		const unitFields: UnitFields<FormData> = { windSpeed: 'speed' };
+		const units: UnitPreferences = { ...BASE_UNITS, speed: 'mph' };
+		const values = unitFormValuesFromBase<FormData>({ windSpeed: 100 }, unitFields, units);
+
+		it('shows 115.08 but calculates an untouched field with exactly 100 kt', () => {
+			expect(formatUnitInputValue(values.formData.windSpeed)).toBe('115.08');
+			expect(
+				formDataToExactBaseUnits(values.formData, unitFields, units, values).windSpeed
+			).toBe(100);
+		});
+
+		it('uses a typed value as typed', () => {
+			expect(
+				formDataToExactBaseUnits({ windSpeed: '115.08' }, unitFields, units, values)
+					.windSpeed
+			).toBe(toBaseUnit(115.08, 'speed', 'mph'));
+		});
 	});
 });
 

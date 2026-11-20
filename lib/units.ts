@@ -122,6 +122,12 @@ export const formatUnitValue = (
 export const formatBaseValue = (baseValue: number, quantity: UnitQuantity, unit: string): string =>
 	formatUnitValue(fromBaseUnit(baseValue, quantity, unit), quantity, unit);
 
+// Display only: form state keeps the unrounded value so validation at the limits stays exact.
+export const formatUnitInputValue = <T>(value: T): T | string =>
+	typeof value === 'number' && Number.isFinite(value)
+		? String(Number(value.toFixed(2)) || 0)
+		: value;
+
 export const normalizeDegrees = (value: number): number => ((value % 360) + 360) % 360;
 
 // a − b in (−180, 180]; positive when a is clockwise of b.

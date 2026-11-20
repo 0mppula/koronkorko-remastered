@@ -781,6 +781,21 @@ describe('crosswindFormDataSchema', () => {
 		expect(issueFields(result)).toEqual(['windSpeed']);
 		expect(issueMessages(result)).toEqual(['Wind speed cannot be greater than 370.40 km/h']);
 	});
+
+	// The input shows 230.16 mph, which is above 200 kt; the form holds the unrounded value.
+	it('accepts the form value of a 200 kt wind in mph', () => {
+		const units = { ...BASE_UNITS, speed: 'mph' } as const;
+		const formData = formDataFromBaseUnits(
+			{ ...base, windSpeed: 200 },
+			{ windSpeed: 'speed' },
+			units
+		);
+
+		expect(createCrosswindFormDataSchema(units).safeParse(formData).success).toBe(true);
+		expect(
+			createCrosswindFormDataSchema(units).safeParse({ ...base, windSpeed: 230.16 }).success
+		).toBe(false);
+	});
 });
 
 describe('windTriangleFormDataSchema', () => {
