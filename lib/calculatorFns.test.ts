@@ -759,11 +759,13 @@ describe('calculateWindTriangle', () => {
 	// - Omni Ground Speed Calculator FAQ (https://www.omnicalculator.com/physics/ground-speed):
 	//   GS = TAS + WS in a pure tailwind and TAS − WS in a pure headwind (80/20 kt), GS = TAS in
 	//   still air; confirms the rules behind rows 1, 2 and 6.
-	// Not independently verified: rows 3, 4 and 5 (no source with these numbers was found).
+	// Not found in any source: rows 3, 4 and 5. They, like every row and the Omni case, are verified
+	// by vector addition (TAS along the heading + wind = groundspeed along the course), an
+	// independent method that doesn't use the asin formula.
 	const SQRT3_2 = Math.sqrt(3) / 2;
 	const ASIN_0_1 = 5.739170477266787; // asin(0.1) in degrees
 
-	it.each([
+	const tableCases = [
 		{ tc: 90, tas: 100, wd: 90, ws: 20, wca: 0, th: 90, gs: 80 },
 		{ tc: 90, tas: 100, wd: 270, ws: 20, wca: 0, th: 90, gs: 120 },
 		{ tc: 360, tas: 100, wd: 90, ws: 50, wca: 30, th: 30, gs: 100 * SQRT3_2 },
@@ -778,18 +780,32 @@ describe('calculateWindTriangle', () => {
 			gs: Math.sqrt(9900) - 10 * Math.sqrt(3),
 		},
 		{ tc: 123, tas: 110, wd: 360, ws: 0, wca: 0, th: 123, gs: 110 },
-	])('course $tc, TAS $tas, wind $wd at $ws kt', ({ tc, tas, wd, ws, wca, th, gs }) => {
-		const result = calculateWindTriangle({
-			trueCourse: tc,
-			trueAirspeed: tas,
-			windDirection: wd,
-			windSpeed: ws,
-		});
+	];
+	const omniCase = {
+		tc: 90,
+		tas: 100,
+		wd: 45,
+		ws: 20,
+		wca: -8.1301,
+		th: 81.8699,
+		gs: 60 * Math.SQRT2,
+	};
 
-		expect(result.windCorrectionAngle).toBeCloseTo(wca, 3);
-		expect(result.trueHeading).toBeCloseTo(th, 3);
-		expect(result.groundspeed).toBeCloseTo(gs, 4);
-	});
+	it.each(tableCases)(
+		'course $tc, TAS $tas, wind $wd at $ws kt',
+		({ tc, tas, wd, ws, wca, th, gs }) => {
+			const result = calculateWindTriangle({
+				trueCourse: tc,
+				trueAirspeed: tas,
+				windDirection: wd,
+				windSpeed: ws,
+			});
+
+			expect(result.windCorrectionAngle).toBeCloseTo(wca, 3);
+			expect(result.trueHeading).toBeCloseTo(th, 3);
+			expect(result.groundspeed).toBeCloseTo(gs, 4);
+		}
+	);
 
 	it('matches the Omni worked example (course 090, TAS 100, wind 045 at 20 kt)', () => {
 		const result = calculateWindTriangle({
@@ -806,6 +822,44 @@ describe('calculateWindTriangle', () => {
 		expect(result.windCorrectionAngle).toBeCloseTo(-8.1301, 3);
 		expect(result.groundspeed).toBeCloseTo(60 * Math.SQRT2, 4);
 	});
+
+	// Vectors as (east, north); a bearing b points along (sin b, cos b).
+	const bearingVector = (bearing: number, length: number) => {
+		const radians = (bearing * Math.PI) / 180;
+
+		return { east: length * Math.sin(radians), north: length * Math.cos(radians) };
+	};
+
+	it.each([...tableCases, omniCase])(
+		'adds up as vectors: course $tc, TAS $tas, wind $wd at $ws kt',
+		({ tc, tas, wd, ws, th, gs }) => {
+			const result = calculateWindTriangle({
+				trueCourse: tc,
+				trueAirspeed: tas,
+				windDirection: wd,
+				windSpeed: ws,
+			});
+
+			// Checks both the expected table values and the calculated result.
+			for (const { heading, groundspeed } of [
+				{ heading: th, groundspeed: gs },
+				{ heading: result.trueHeading, groundspeed: result.groundspeed },
+			]) {
+				const air = bearingVector(heading, tas);
+				// The wind blows toward the opposite of the direction it comes from.
+				const wind = bearingVector(wd + 180, ws);
+				const ground = { east: air.east + wind.east, north: air.north + wind.north };
+				const course = bearingVector(tc, 1);
+
+				const along = ground.east * course.east + ground.north * course.north;
+				const across = ground.east * course.north - ground.north * course.east;
+
+				expect(across).toBeCloseTo(0, 4);
+				expect(along).toBeCloseTo(groundspeed, 4);
+				expect(Math.hypot(ground.east, ground.north)).toBeCloseTo(groundspeed, 4);
+			}
+		}
+	);
 
 	it('keeps the heading in [0, 360) when it wraps across north', () => {
 		const left = calculateWindTriangle({
