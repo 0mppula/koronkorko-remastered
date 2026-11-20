@@ -6,11 +6,13 @@ import {
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
+	formatTemperatureDifference,
 	formatUnitInputValue,
 	formatUnitValue,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
 	formDataToExactBaseUnits,
+	fromBaseTemperatureDifference,
 	fromBaseUnit,
 	getUnitSymbol,
 	normalizeDegrees,
@@ -66,6 +68,64 @@ describe('temperature conversions', () => {
 	])('converts %d °C to and from %d °F', (celsius, fahrenheit) => {
 		expect(fromBaseUnit(celsius, 'temperature', 'f')).toBeCloseTo(fahrenheit, 10);
 		expect(toBaseUnit(fahrenheit, 'temperature', 'f')).toBeCloseTo(celsius, 10);
+	});
+});
+
+describe('pressure conversions', () => {
+	it('converts hPa to and from inHg (1 inHg = 33.8639 hPa)', () => {
+		expect(fromBaseUnit(33.8639, 'pressure', 'inhg')).toBe(1);
+		expect(toBaseUnit(29.92, 'pressure', 'inhg')).toBeCloseTo(29.92 * 33.8639, 10);
+		expect(toBaseUnit(29.92, 'pressure', 'inhg')).toBeCloseTo(1013.2079, 4);
+		expect(fromBaseUnit(1013.25, 'pressure', 'inhg')).toBeCloseTo(29.9212, 4);
+	});
+
+	it('formats pressures with 2 decimals and no grouping', () => {
+		expect(normalize(formatUnitValue(1013.25, 'pressure', 'hpa'))).toBe('1013.25 hPa');
+		expect(normalize(formatUnitValue(1013, 'pressure', 'hpa'))).toBe('1013.00 hPa');
+		expect(normalize(formatBaseValue(1013.25, 'pressure', 'inhg'))).toBe('29.92 inHg');
+	});
+
+	describe('in a form with the default QNH shown in inHg', () => {
+		type FormData = { qnh: number | string };
+
+		const unitFields: UnitFields<FormData> = { qnh: 'pressure' };
+		const units: UnitPreferences = { ...BASE_UNITS, pressure: 'inhg' };
+		const values = unitFormValuesFromBase<FormData>({ qnh: 1013.25 }, unitFields, units);
+
+		it('shows 29.92 but calculates an untouched QNH with exactly 1013.25 hPa', () => {
+			expect(formatUnitInputValue(values.formData.qnh)).toBe('29.92');
+			expect(formDataToExactBaseUnits(values.formData, unitFields, units, values).qnh).toBe(
+				1013.25
+			);
+		});
+
+		it('uses a typed QNH as typed', () => {
+			expect(formDataToExactBaseUnits({ qnh: '29.92' }, unitFields, units, values).qnh).toBe(
+				29.92 * 33.8639
+			);
+		});
+	});
+});
+
+describe('temperature differences', () => {
+	it('converts without the 32 °F offset', () => {
+		expect(fromBaseTemperatureDifference(10, 'f')).toBe(18);
+		expect(fromBaseTemperatureDifference(10, 'c')).toBe(10);
+		expect(fromBaseTemperatureDifference(0, 'f')).toBe(0);
+		expect(fromBaseTemperatureDifference(-5, 'f')).toBe(-9);
+	});
+
+	it('formats differences with a sign', () => {
+		expect(normalize(formatTemperatureDifference(19.9, 'c'))).toBe('+19.90 °C');
+		expect(normalize(formatTemperatureDifference(10, 'f'))).toBe('+18.00 °F');
+		expect(normalize(formatTemperatureDifference(-5, 'c'))).toBe('-5.00 °C');
+	});
+
+	it('shows no sign for zero or values that round to zero', () => {
+		expect(normalize(formatTemperatureDifference(0, 'c'))).toBe('0.00 °C');
+		expect(normalize(formatTemperatureDifference(-0.004, 'c'))).toBe('0.00 °C');
+		// 0.002 °C = 0.0036 °F
+		expect(normalize(formatTemperatureDifference(0.002, 'f'))).toBe('0.00 °F');
 	});
 });
 
@@ -271,7 +331,12 @@ describe('withDefaultUnitPreferences', () => {
 	});
 
 	it('defaults to ICAO units', () => {
-		expect(DEFAULT_UNIT_PREFERENCES).toEqual({ speed: 'kt', altitude: 'ft', temperature: 'c' });
+		expect(DEFAULT_UNIT_PREFERENCES).toEqual({
+			speed: 'kt',
+			altitude: 'ft',
+			temperature: 'c',
+			pressure: 'hpa',
+		});
 	});
 
 	it('keeps valid values and fills the rest with defaults', () => {
@@ -279,6 +344,12 @@ describe('withDefaultUnitPreferences', () => {
 			...DEFAULT_UNIT_PREFERENCES,
 			speed: 'kmh',
 		});
+	});
+
+	it('adds the default pressure to preferences saved before it existed', () => {
+		expect(
+			withDefaultUnitPreferences({ speed: 'kmh', altitude: 'm', temperature: 'f' })
+		).toEqual({ speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'hpa' });
 	});
 
 	it('falls back to the default for invalid values', () => {
@@ -305,7 +376,7 @@ describe('formDataToBaseUnits / formDataFromBaseUnits', () => {
 	}
 
 	const unitFields: UnitFields<FormData> = { windSpeed: 'speed', elevation: 'altitude' };
-	const units: UnitPreferences = { speed: 'kmh', altitude: 'm', temperature: 'c' };
+	const units: UnitPreferences = { ...BASE_UNITS, speed: 'kmh', altitude: 'm' };
 
 	it('converts mapped fields only', () => {
 		expect(

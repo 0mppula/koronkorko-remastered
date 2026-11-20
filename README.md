@@ -19,7 +19,7 @@ Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source cod
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
-Users can also choose their preferred units (speed, altitude and temperature) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
+Users can also choose their preferred units (speed, altitude, temperature and pressure) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 

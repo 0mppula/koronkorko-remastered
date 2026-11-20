@@ -960,7 +960,7 @@ describe('windTriangleFormDataSchema', () => {
 });
 
 describe('unitPreferencesSchema', () => {
-	const base = { speed: 'kmh', altitude: 'm', temperature: 'f' };
+	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg' };
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
@@ -980,7 +980,7 @@ describe('userPreferencesSchema', () => {
 	const base = {
 		theme: 'dark',
 		currency: 'eur',
-		units: { speed: 'kt', altitude: 'ft', temperature: 'c' },
+		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa' },
 	};
 
 	it('accepts valid input', () => {

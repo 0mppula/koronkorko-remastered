@@ -5,7 +5,7 @@ import { updateUserPreferences } from '@/lib/queryFns/auth';
 
 vi.mock('axios', () => ({ default: { put: vi.fn() } }));
 
-const units = { speed: 'kmh', altitude: 'm', temperature: 'f' } as const;
+const units = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg' } as const;
 
 describe('updateUserPreferences', () => {
 	beforeEach(() => {

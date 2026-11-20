@@ -16,7 +16,7 @@ import {
 	calculatePresentValue,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
-import { formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
+import { BASE_UNITS, formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
 	IDollarCostAverageFormData,
@@ -735,7 +735,7 @@ describe('calculateCrosswind', () => {
 		const formData = formDataToBaseUnits(
 			{ runwayHeading: 60, windDirection: 90, windSpeed: 37.04 },
 			{ windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		expect(formData.windSpeed).toBeCloseTo(20, 10);
@@ -895,7 +895,7 @@ describe('calculateWindTriangle', () => {
 		const formData = formDataToBaseUnits(
 			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 92.6 },
 			{ trueAirspeed: 'speed', windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		const result = calculateWindTriangle(formData);
@@ -910,7 +910,7 @@ describe('calculateWindTriangle', () => {
 		const formData = formDataToBaseUnits(
 			{ trueCourse: 360, trueAirspeed: 185.2, windDirection: 90, windSpeed: 185.2 },
 			{ trueAirspeed: 'speed', windSpeed: 'speed' },
-			{ speed: 'kmh', altitude: 'ft', temperature: 'c' }
+			{ ...BASE_UNITS, speed: 'kmh' }
 		);
 
 		const result = calculateWindTriangle(formData);
