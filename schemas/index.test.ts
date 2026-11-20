@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { BASE_UNITS, formDataFromBaseUnits, fromBaseUnit, toBaseUnit } from '@/lib/units';
+import { getFuelUnitContext } from '@/lib/utils';
 import {
 	annualizedReturnFormDataSchema,
 	breakEvenPointFormDataSchema,
@@ -10,6 +11,7 @@ import {
 	compoundInterestFormDataSchema,
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
+	createFuelPlanningFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
@@ -17,6 +19,7 @@ import {
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
+	fuelPlanningFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -1069,6 +1072,207 @@ describe('densityAltitudeFormDataSchema', () => {
 
 				expect(schema.safeParse(formData).success).toBe(true);
 			}
+		});
+	});
+});
+
+describe('createFuelPlanningFormDataSchema', () => {
+	const base = { fuelBurnRate: 30, flightTime: 60, reserveTime: 30, fuelType: 'avgas' };
+	const schemaIn = (fuel: 'l' | 'usgal' | 'kg' | 'lb') =>
+		createFuelPlanningFormDataSchema({ ...BASE_UNITS, fuel });
+
+	it('accepts valid input', () => {
+		expect(fuelPlanningFormDataSchema.parse({ ...base, taxiFuel: 5, extraFuel: 10 })).toEqual({
+			...base,
+			taxiFuel: 5,
+			extraFuel: 10,
+		});
+	});
+
+	itRejectsMissingFields(fuelPlanningFormDataSchema, base);
+
+	it('treats missing, empty and null taxi and extra fuel as none', () => {
+		for (const value of [undefined, '', null]) {
+			const result = fuelPlanningFormDataSchema.parse({
+				...base,
+				taxiFuel: value,
+				extraFuel: value,
+			});
+
+			expect(result.taxiFuel).toBeUndefined();
+			expect(result.extraFuel).toBeUndefined();
+		}
+	});
+
+	it('accepts zero taxi and extra fuel', () => {
+		expect(
+			fuelPlanningFormDataSchema.parse({ ...base, taxiFuel: 0, extraFuel: 0 })
+		).toMatchObject({ taxiFuel: 0, extraFuel: 0 });
+	});
+
+	itRejectsNegativeFields(fuelPlanningFormDataSchema, { ...base, taxiFuel: 0, extraFuel: 0 }, [
+		'flightTime',
+		'reserveTime',
+		'taxiFuel',
+		'extraFuel',
+	]);
+
+	it('shows the negative fuel message', () => {
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, taxiFuel: -1 }))
+		).toEqual(['Taxi fuel cannot be negative']);
+	});
+
+	it('rejects a burn rate of 0 with one issue', () => {
+		const result = fuelPlanningFormDataSchema.safeParse({ ...base, fuelBurnRate: 0 });
+
+		expect(issueMessages(result)).toEqual(['Fuel burn rate must be greater than 0']);
+	});
+
+	it('accepts a flight time of 24 h and rejects more', () => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, flightTime: 1440 }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, flightTime: 1441 }))
+		).toEqual(['Flight time cannot be greater than 24 h']);
+	});
+
+	it('accepts a reserve of 180 min and rejects more', () => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, reserveTime: 180 }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(fuelPlanningFormDataSchema.safeParse({ ...base, reserveTime: 181 }))
+		).toEqual(['Reserve time cannot be greater than 180 min']);
+	});
+
+	it.each([
+		['fuelBurnRate', 'Fuel burn rate cannot be greater than 10,000.00 L/h'],
+		['taxiFuel', 'Taxi fuel cannot be greater than 10,000.00 L'],
+		['extraFuel', 'Extra fuel cannot be greater than 10,000.00 L'],
+	])('accepts 10,000 L for %s and rejects more', (field, message) => {
+		expect(fuelPlanningFormDataSchema.safeParse({ ...base, [field]: 10000 }).success).toBe(
+			true
+		);
+
+		const result = fuelPlanningFormDataSchema.safeParse({ ...base, [field]: 10001 });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	// 10,000 L ÷ 3.785411784 L/US gal = 2,641.7205 US gal
+	it('shows the limits in US gal', () => {
+		const schema = schemaIn('usgal');
+
+		expect(
+			schema.safeParse({ ...base, fuelBurnRate: 2641.72, taxiFuel: 2641.72 }).success
+		).toBe(true);
+		expect(
+			issueMessages(schema.safeParse({ ...base, fuelBurnRate: 2641.73, taxiFuel: 2641.73 }))
+		).toEqual([
+			'Fuel burn rate cannot be greater than 2,641.72 US gal/h',
+			'Taxi fuel cannot be greater than 2,641.72 US gal',
+		]);
+	});
+
+	// 10,000 L × 0.7189586 kg/L (AVGAS) = 7,189.586 kg; × 0.8004405 kg/L (Jet A) = 8,004.405 kg
+	it('shows the limit in kg for the selected fuel type', () => {
+		const schema = schemaIn('kg');
+
+		expect(schema.safeParse({ ...base, fuelBurnRate: 7189.58 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...base, fuelBurnRate: 7189.59 }))).toEqual([
+			'Fuel burn rate cannot be greater than 7,189.58 kg/h',
+		]);
+
+		const jetA = { ...base, fuelType: 'jetA' };
+
+		expect(schema.safeParse({ ...jetA, fuelBurnRate: 7189.59 }).success).toBe(true);
+		expect(schema.safeParse({ ...jetA, fuelBurnRate: 8004.4 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...jetA, fuelBurnRate: 8004.41 }))).toEqual([
+			'Fuel burn rate cannot be greater than 8,004.40 kg/h',
+		]);
+	});
+
+	// 10,000 L ÷ 3.785411784 × 6 lb/US gal = 15,850.323 lb of AVGAS
+	it('shows the limit in lb', () => {
+		const schema = schemaIn('lb');
+
+		expect(schema.safeParse({ ...base, extraFuel: 15850.32 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...base, extraFuel: 15850.33 }))).toEqual([
+			'Extra fuel cannot be greater than 15,850.32 lb',
+		]);
+	});
+
+	it('accepts imported values at the limit in every fuel unit and type', () => {
+		for (const fuel of ['l', 'usgal', 'kg', 'lb'] as const) {
+			for (const fuelType of ['avgas', 'jetA']) {
+				const stored = { ...base, fuelType, fuelBurnRate: 10000, taxiFuel: 10000 };
+				const formData = formDataFromBaseUnits(
+					stored,
+					{ fuelBurnRate: 'fuel', taxiFuel: 'fuel' },
+					{ ...BASE_UNITS, fuel },
+					getFuelUnitContext
+				);
+
+				expect(schemaIn(fuel).safeParse(formData).success).toBe(true);
+			}
+		}
+	});
+
+	it('rejects an unknown fuel type with one issue, also with mass units', () => {
+		for (const fuel of ['l', 'kg', 'lb'] as const) {
+			const result = schemaIn(fuel).safeParse({ ...base, fuelType: 'diesel' });
+
+			expect(issueFields(result)).toEqual(['fuelType']);
+			expect(issueMessages(result)).toEqual(['Fuel type must be AVGAS or Jet A']);
+		}
+	});
+
+	it('reports an infinite value once', () => {
+		for (const field of ['fuelBurnRate', 'taxiFuel']) {
+			const result = schemaIn('kg').safeParse({ ...base, [field]: '1e400' });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)[0]).toMatch(/has to be a finite number$/);
+		}
+	});
+
+	it('does not check a raw optional value skipped after an earlier issue', () => {
+		const result = schemaIn('kg').safeParse({ ...base, fuelBurnRate: 0, taxiFuel: '1e400' });
+
+		expect(issueMessages(result)).toEqual(['Fuel burn rate must be greater than 0']);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid taxi fuel together with an invalid burn rate', () => {
+		const result = fuelPlanningFormDataSchema.safeParse({
+			...base,
+			fuelBurnRate: 0,
+			taxiFuel: -1,
+		});
+
+		expect(issueFields(result)).toEqual(['fuelBurnRate', 'taxiFuel']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			fuelPlanningFormDataSchema.parse({
+				fuelBurnRate: '30.5',
+				flightTime: '90',
+				reserveTime: '45',
+				taxiFuel: '5',
+				extraFuel: '',
+				fuelType: 'jetA',
+			})
+		).toEqual({
+			fuelBurnRate: 30.5,
+			flightTime: 90,
+			reserveTime: 45,
+			taxiFuel: 5,
+			extraFuel: undefined,
+			fuelType: 'jetA',
 		});
 	});
 });

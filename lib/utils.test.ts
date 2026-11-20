@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCurrency } from '@/lib/utils';
+import {
+	formatCurrency,
+	formatHoursMinutes,
+	formatMinutes,
+	getFuelDensity,
+	getFuelTypeLabel,
+	getFuelUnitContext,
+} from '@/lib/utils';
 
 // Intl uses non-breaking spaces (e.g. fi-FI), so compare with plain spaces.
 const normalize = (value: string) => value.replace(/\s/g, ' ');
@@ -50,5 +57,66 @@ describe('formatCurrency', () => {
 	it('falls back to zero for NaN', () => {
 		expect(formatCurrency(NaN, 'usd')).toBe('$0.00');
 		expect(normalize(formatCurrency(NaN, 'eur'))).toBe('0,00 €');
+	});
+});
+
+describe('getFuelDensity', () => {
+	it('returns the FAA-H-8083-1B weights in kg/L', () => {
+		// 6.0 and 6.68 lb/US gal × 0.45359237 kg/lb ÷ 3.785411784 L/US gal
+		expect(getFuelDensity('avgas')).toBeCloseTo(0.71896, 5);
+		expect(getFuelDensity('jetA')).toBeCloseTo(0.80044, 5);
+	});
+
+	it('gives 6.0 and 6.68 lb per US gallon when converted back', () => {
+		expect((getFuelDensity('avgas')! * 3.785411784) / 0.45359237).toBeCloseTo(6, 12);
+		expect((getFuelDensity('jetA')! * 3.785411784) / 0.45359237).toBeCloseTo(6.68, 12);
+	});
+
+	it('returns undefined for an unknown fuel type', () => {
+		expect(getFuelDensity('diesel')).toBeUndefined();
+		expect(getFuelUnitContext({ fuelType: 'diesel' })).toEqual({
+			fuelDensityKgPerL: undefined,
+		});
+	});
+
+	it('gives the unit context of a fuel type', () => {
+		expect(getFuelUnitContext({ fuelType: 'jetA' })).toEqual({
+			fuelDensityKgPerL: getFuelDensity('jetA'),
+		});
+	});
+});
+
+describe('getFuelTypeLabel', () => {
+	it('returns the label of a fuel type', () => {
+		expect(getFuelTypeLabel('avgas')).toBe('AVGAS');
+		expect(getFuelTypeLabel('jetA')).toBe('Jet A');
+	});
+});
+
+describe('formatHoursMinutes', () => {
+	it('splits minutes into hours and minutes', () => {
+		expect(formatHoursMinutes(90)).toBe('1 h 30 min');
+		expect(formatHoursMinutes(45)).toBe('0 h 45 min');
+		expect(formatHoursMinutes(1440)).toBe('24 h 0 min');
+		expect(formatHoursMinutes(0)).toBe('0 h 0 min');
+		expect(formatHoursMinutes(120)).toBe('2 h 0 min');
+	});
+
+	it('rounds to whole minutes before splitting', () => {
+		expect(formatHoursMinutes(59.6)).toBe('1 h 0 min');
+		expect(formatHoursMinutes(90.4)).toBe('1 h 30 min');
+	});
+
+	it('falls back to zero for NaN', () => {
+		expect(formatHoursMinutes(NaN)).toBe('0 h 0 min');
+	});
+});
+
+describe('formatMinutes', () => {
+	it('formats minutes with up to 2 decimals', () => {
+		expect(formatMinutes(45)).toBe('45 min');
+		expect(formatMinutes(30.5)).toBe('30.5 min');
+		expect(formatMinutes(0)).toBe('0 min');
+		expect(formatMinutes(NaN)).toBe('0 min');
 	});
 });

@@ -4,7 +4,9 @@ import {
 	currencies,
 	depositFrequencies,
 	durationMultipliers,
+	fuelTypes,
 } from '@/constants/data';
+import type { UnitContext } from '@/lib/units';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -62,6 +64,37 @@ export const getContributionFrequencyLabel = (value: number, short = false) => {
 
 export const getDepositFrequencyShortLabel = (value: number) => {
 	return depositFrequencies.find((duration) => duration.value === value)?.shortLabel || 'y';
+};
+
+export type FuelType = (typeof fuelTypes)[number]['value'];
+
+// Undefined for unknown fuel types, so mass units can't convert them.
+export const getFuelDensity = (fuelType: string): number | undefined => {
+	return fuelTypes.find((type) => type.value === fuelType)?.densityKgPerL;
+};
+
+export const getFuelUnitContext = ({ fuelType }: { fuelType: string }): UnitContext => ({
+	fuelDensityKgPerL: getFuelDensity(fuelType),
+});
+
+export const getFuelTypeLabel = (value: string) => {
+	return fuelTypes.find((type) => type.value === value)?.label || 'AVGAS';
+};
+
+// Rounded to whole minutes, so 59.6 min is "1 h 0 min", not "0 h 60 min".
+export const formatHoursMinutes = (minutes: number) => {
+	const totalMinutes = Math.round(isNaN(minutes) ? 0 : minutes);
+	const hours = Math.floor(totalMinutes / 60);
+
+	return `${hours} h ${totalMinutes - hours * 60} min`;
+};
+
+export const formatMinutes = (minutes: number) => {
+	const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(
+		isNaN(minutes) ? 0 : minutes
+	);
+
+	return `${formatted} min`;
 };
 
 export const formatCurrency = (

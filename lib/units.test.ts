@@ -109,15 +109,15 @@ describe('pressure conversions', () => {
 });
 
 describe('fuel conversions', () => {
-	// Standard fuel weights by definition: 6.0 lb/US gal (AVGAS) and 6.7 lb/US gal (Jet A).
+	// FAA-H-8083-1B: AVGAS 6.0 lb/US gal; Jet A 6.68 lb/US gal at 59 °F (Figure 3-4).
 	const AVGAS = (6.0 * 0.45359237) / 3.785411784;
-	const JET_A = (6.7 * 0.45359237) / 3.785411784;
+	const JET_A = (6.68 * 0.45359237) / 3.785411784;
 	const avgas = { fuelDensityKgPerL: AVGAS };
 	const jetA = { fuelDensityKgPerL: JET_A };
 
 	it('has the expected densities in kg/L', () => {
 		expect(AVGAS).toBeCloseTo(0.71896, 5);
-		expect(JET_A).toBeCloseTo(0.80284, 5);
+		expect(JET_A).toBeCloseTo(0.80044, 5);
 	});
 
 	it('converts litres to and from US gallons (1 US gal = 3.785411784 L)', () => {
@@ -126,11 +126,11 @@ describe('fuel conversions', () => {
 	});
 
 	it('converts pounds of fuel to litres through the density', () => {
-		// 6 lb of AVGAS and 6.7 lb of Jet A are 1 US gal by definition.
+		// 6 lb of AVGAS and 6.68 lb of Jet A are 1 US gal by definition.
 		expect(toBaseUnit(6, 'fuel', 'lb', avgas)).toBeCloseTo(3.785411784, 12);
-		expect(toBaseUnit(6.7, 'fuel', 'lb', jetA)).toBeCloseTo(3.785411784, 12);
+		expect(toBaseUnit(6.68, 'fuel', 'lb', jetA)).toBeCloseTo(3.785411784, 12);
 		expect(fromBaseUnit(3.785411784, 'fuel', 'lb', avgas)).toBeCloseTo(6, 12);
-		expect(fromBaseUnit(3.785411784, 'fuel', 'lb', jetA)).toBeCloseTo(6.7, 12);
+		expect(fromBaseUnit(3.785411784, 'fuel', 'lb', jetA)).toBeCloseTo(6.68, 12);
 	});
 
 	it('converts kilograms of fuel to litres through the density', () => {
@@ -180,10 +180,10 @@ describe('fuel conversions', () => {
 		expect(normalize(formatBaseValue(90, 'fuel', 'l'))).toBe('90.00 L');
 		// 90 L × 0.71896 kg/L = 64.71 kg
 		expect(normalize(formatBaseValue(90, 'fuel', 'kg', avgas))).toBe('64.71 kg');
-		// 25 US gal × 6.0 lb/US gal and × 6.7 lb/US gal
+		// 25 US gal × 6.0 lb/US gal and × 6.68 lb/US gal
 		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'usgal'))).toBe('25.00 US gal');
 		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'lb', avgas))).toBe('150.00 lb');
-		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'lb', jetA))).toBe('167.50 lb');
+		expect(normalize(formatBaseValue(25 * 3.785411784, 'fuel', 'lb', jetA))).toBe('167.00 lb');
 	});
 
 	describe('in a form with a fuel type', () => {
@@ -206,14 +206,14 @@ describe('fuel conversions', () => {
 
 			expect(
 				formDataToBaseUnits(
-					{ fuelBurnRate: 60, taxiFuel: 6.7, fuelType: 'jetA' },
+					{ fuelBurnRate: 60, taxiFuel: 6.68, fuelType: 'jetA' },
 					unitFields,
 					units,
 					getContext
 				)
 			).toEqual({
 				fuelBurnRate: toBaseUnit(60, 'fuel', 'lb', jetA),
-				taxiFuel: toBaseUnit(6.7, 'fuel', 'lb', jetA),
+				taxiFuel: toBaseUnit(6.68, 'fuel', 'lb', jetA),
 				fuelType: 'jetA',
 			});
 			expect(
@@ -223,7 +223,7 @@ describe('fuel conversions', () => {
 					units,
 					getContext
 				)
-			).toEqual({ fuelBurnRate: 6.7, taxiFuel: null, fuelType: 'jetA' });
+			).toEqual({ fuelBurnRate: 6.68, taxiFuel: null, fuelType: 'jetA' });
 		});
 
 		it('round trips L → US gal → lb → kg → L exactly for both fuel types', () => {
@@ -362,7 +362,7 @@ describe('fuel conversions', () => {
 
 			expect(
 				formDataToExactBaseUnits(
-					{ ...values.formData, fuelBurnRate: '67', fuelType: 'jetA' },
+					{ ...values.formData, fuelBurnRate: '66.8', fuelType: 'jetA' },
 					unitFields,
 					units,
 					values,

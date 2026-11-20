@@ -68,6 +68,7 @@ model User {
   CrosswindCalculations            CrosswindCalculation[]
   WindTriangleCalculations         WindTriangleCalculation[]
   DensityAltitudeCalculations      DensityAltitudeCalculation[]
+  FuelPlanningCalculations         FuelPlanningCalculation[]
 }
 
 enum Plan {
@@ -358,6 +359,31 @@ model DensityAltitudeCalculation {
   formData  DensityAltitudeCalculationFormData
   createdAt DateTime                           @default(now())
   updatedAt DateTime                           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum FuelType {
+  avgas
+  jetA
+}
+
+type FuelPlanningCalculationFormData {
+  fuelBurnRate Float
+  flightTime   Float
+  reserveTime  Float
+  taxiFuel     Float?
+  extraFuel    Float?
+  fuelType     FuelType
+}
+
+model FuelPlanningCalculation {
+  id        String                          @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                          @db.ObjectId
+  name      String
+  formData  FuelPlanningCalculationFormData
+  createdAt DateTime                        @default(now())
+  updatedAt DateTime                        @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

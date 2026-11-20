@@ -11,17 +11,25 @@ import {
 	calculateEarningsPerShare,
 	calculateEnterpriseValue,
 	calculateEventProbability,
+	calculateFuelPlanning,
 	calculateInvestmentTime,
 	calculateLiquidationPrice,
 	calculateMarkup,
 	calculatePresentValue,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
-import { BASE_UNITS, formDataToBaseUnits, fromBaseUnit } from '@/lib/units';
+import {
+	BASE_UNITS,
+	formDataToBaseUnits,
+	fromBaseUnit,
+	UnitFields,
+	UnitPreferences,
+} from '@/lib/units';
 import {
 	ICompoundInterestFormData,
 	IDollarCostAverageFormData,
 	IEventProbabilityFormData,
+	IFuelPlanningFormData,
 } from '@/types/calculations';
 
 // Expected values come from standard formulas / published worked examples, not from running the code.
@@ -1119,5 +1127,164 @@ describe('calculateDensityAltitude', () => {
 		expect(result.pressureAltitude).toBeCloseTo(5001.11, 1);
 		expect(result.densityAltitude).toBeCloseTo(5001.42, 1);
 		expect(Math.abs(result.densityAltitude - 5000)).toBeLessThan(2);
+	});
+});
+
+describe('calculateFuelPlanning', () => {
+	// Fuel = burn rate × time; densities from FAA-H-8083-1B: AVGAS 6.0, Jet A 6.68 lb/US gal.
+	const US_GAL = 3.785411784;
+	const LB = 0.45359237;
+	const AVGAS = (6.0 * LB) / US_GAL;
+	const JET_A = (6.68 * LB) / US_GAL;
+
+	const base: IFuelPlanningFormData = {
+		fuelBurnRate: 40,
+		flightTime: 90,
+		reserveTime: 45,
+		taxiFuel: undefined,
+		extraFuel: undefined,
+		fuelType: 'avgas',
+	};
+
+	it.each([
+		// burn, flight, reserve, taxi, extra, fuel, trip, reserve, total, density
+		[40, 90, 45, undefined, undefined, 'avgas', 60, 30, 90, AVGAS],
+		[40, 90, 45, undefined, undefined, 'jetA', 60, 30, 90, JET_A],
+		[40, 90, 45, 5, 10, 'avgas', 60, 30, 105, AVGAS],
+		[30, 0, 30, undefined, undefined, 'avgas', 0, 15, 15, AVGAS],
+		[30, 60, 0, undefined, undefined, 'avgas', 30, 0, 30, AVGAS],
+	] as const)(
+		'%d L/h for %d min with %d min reserve, taxi %s, extra %s, %s',
+		(
+			fuelBurnRate,
+			flightTime,
+			reserveTime,
+			taxiFuel,
+			extraFuel,
+			fuelType,
+			trip,
+			reserve,
+			total,
+			density
+		) => {
+			const result = calculateFuelPlanning({
+				fuelBurnRate,
+				flightTime,
+				reserveTime,
+				taxiFuel,
+				extraFuel,
+				fuelType,
+			});
+
+			expect(result.tripFuel).toBeCloseTo(trip, 12);
+			expect(result.reserveFuel).toBeCloseTo(reserve, 12);
+			expect(result.totalFuel).toBeCloseTo(total, 12);
+			expect(result.fuelDensity).toBe(density);
+			expect(result.totalFuelMass).toBeCloseTo(total * density, 12);
+		}
+	);
+
+	it('gives the total mass in kg from the densities', () => {
+		// 90 L × 0.71896 kg/L and × 0.80044 kg/L
+		expect(calculateFuelPlanning(base).totalFuelMass).toBeCloseTo(64.706, 3);
+		expect(calculateFuelPlanning({ ...base, fuelType: 'jetA' }).totalFuelMass).toBeCloseTo(
+			72.04,
+			2
+		);
+	});
+
+	it('counts missing or null taxi and extra fuel as 0', () => {
+		const withNull = { ...base, taxiFuel: null, extraFuel: null };
+
+		expect(calculateFuelPlanning(withNull).totalFuel).toBe(90);
+		expect(calculateFuelPlanning(base).totalFuel).toBe(90);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { ...base, taxiFuel: 5.5, extraFuel: 0 };
+
+		expect(calculateFuelPlanning(formData)).toMatchObject(formData);
+	});
+
+	describe('with values entered in US gal and lb', () => {
+		const unitFields: UnitFields<IFuelPlanningFormData> = {
+			fuelBurnRate: 'fuel',
+			taxiFuel: 'fuel',
+			extraFuel: 'fuel',
+		};
+		const getContext = ({ fuelType }: IFuelPlanningFormData) => ({
+			fuelDensityKgPerL: fuelType === 'jetA' ? JET_A : AVGAS,
+		});
+		const withFuel = (fuel: UnitPreferences['fuel']): UnitPreferences => ({
+			...BASE_UNITS,
+			fuel,
+		});
+
+		const calculateIn = (formData: IFuelPlanningFormData, fuel: UnitPreferences['fuel']) =>
+			calculateFuelPlanning(
+				formDataToBaseUnits(formData, unitFields, withFuel(fuel), getContext)
+			);
+
+		const inUnit = (litres: number, unit: string, fuelType: string) =>
+			fromBaseUnit(litres, 'fuel', unit, {
+				fuelDensityKgPerL: fuelType === 'jetA' ? JET_A : AVGAS,
+			});
+
+		it.each([
+			['avgas', 150],
+			['jetA', 167],
+		] as const)('10 US gal/h for 2 h + 30 min of %s is 25 US gal = %d lb', (fuelType, lb) => {
+			const result = calculateIn(
+				{ ...base, fuelBurnRate: 10, flightTime: 120, reserveTime: 30, fuelType },
+				'usgal'
+			);
+
+			expect(inUnit(result.totalFuel, 'usgal', fuelType)).toBeCloseTo(25, 6);
+			expect(inUnit(result.totalFuel, 'lb', fuelType)).toBeCloseTo(lb, 6);
+			expect(result.totalFuelMass / LB).toBeCloseTo(lb, 6);
+		});
+
+		it('60 lb/h of AVGAS for 2 h + 30 min is 150 lb = 25 US gal', () => {
+			const result = calculateIn(
+				{ ...base, fuelBurnRate: 60, flightTime: 120, reserveTime: 30 },
+				'lb'
+			);
+
+			expect(inUnit(result.tripFuel, 'lb', 'avgas')).toBeCloseTo(120, 6);
+			expect(inUnit(result.reserveFuel, 'lb', 'avgas')).toBeCloseTo(30, 6);
+			expect(inUnit(result.totalFuel, 'lb', 'avgas')).toBeCloseTo(150, 6);
+			expect(inUnit(result.totalFuel, 'usgal', 'avgas')).toBeCloseTo(25, 6);
+		});
+
+		it('66.8 lb/h of Jet A for 2 h + 30 min is 167 lb = 25 US gal', () => {
+			const result = calculateIn(
+				{ ...base, fuelBurnRate: 66.8, flightTime: 120, reserveTime: 30, fuelType: 'jetA' },
+				'lb'
+			);
+
+			expect(inUnit(result.totalFuel, 'lb', 'jetA')).toBeCloseTo(167, 6);
+			expect(inUnit(result.totalFuel, 'usgal', 'jetA')).toBeCloseTo(25, 6);
+		});
+
+		it('reads the same 150 lb as 25 US gal of AVGAS but 150 / 6.68 US gal of Jet A', () => {
+			const formData = { ...base, fuelBurnRate: 60, flightTime: 120, reserveTime: 30 };
+			const avgas = calculateIn(formData, 'lb');
+			const jetA = calculateIn({ ...formData, fuelType: 'jetA' }, 'lb');
+
+			expect(avgas.totalFuel / US_GAL).toBeCloseTo(25, 9);
+			expect(jetA.totalFuel / US_GAL).toBeCloseTo(150 / 6.68, 9);
+			expect(inUnit(jetA.totalFuel, 'lb', 'jetA')).toBeCloseTo(150, 9);
+		});
+
+		it('converts taxi and extra fuel in kg with the density', () => {
+			const result = calculateIn(
+				{ ...base, fuelBurnRate: AVGAS * 40, taxiFuel: AVGAS * 5, extraFuel: AVGAS * 10 },
+				'kg'
+			);
+
+			expect(result.taxiFuel).toBeCloseTo(5, 12);
+			expect(result.extraFuel).toBeCloseTo(10, 12);
+			expect(result.totalFuel).toBeCloseTo(105, 9);
+		});
 	});
 });

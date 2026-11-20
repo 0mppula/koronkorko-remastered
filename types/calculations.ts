@@ -10,6 +10,7 @@ import {
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
+	fuelPlanningFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -27,6 +28,7 @@ import {
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
+	FuelPlanningCalculation,
 	InvestmentTimeCalculation,
 	LiquidationPriceCalculation,
 	MarkupCalculation,
@@ -195,6 +197,17 @@ export interface DensityAltitudeReportProps extends IDensityAltitudeFormData {
 	densityAltitude: number;
 }
 
+// Fuel Planning Calculation
+export type IFuelPlanningFormData = z.infer<typeof fuelPlanningFormDataSchema>;
+
+export interface FuelPlanningReportProps extends IFuelPlanningFormData {
+	fuelDensity: number;
+	tripFuel: number;
+	reserveFuel: number;
+	totalFuel: number;
+	totalFuelMass: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -210,4 +223,5 @@ export type CalculationType =
 	| DividendYieldCalculation
 	| CrosswindCalculation
 	| WindTriangleCalculation
-	| DensityAltitudeCalculation;
+	| DensityAltitudeCalculation
+	| FuelPlanningCalculation;

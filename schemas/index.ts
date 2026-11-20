@@ -1,4 +1,4 @@
-import { currencies, themes } from '@/constants/data';
+import { currencies, fuelTypes, themes } from '@/constants/data';
 import {
 	BASE_UNITS,
 	formatUnitValue,
@@ -7,11 +7,13 @@ import {
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
+	UnitContext,
 	unitFractionDigits,
 	UnitPreferences,
 	UnitQuantity,
 	UnitValue,
 } from '@/lib/units';
+import { FuelType, getFuelDensity } from '@/lib/utils';
 import { z } from 'zod';
 
 export const calculationNameStringSchema = z
@@ -83,19 +85,17 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 const UNIT_LIMIT_TOLERANCE = 1e-9;
 
 // Limits are in base units and checked in base units, so the form and the API agree.
-export const unitNumberFieldSchema = (
-	fieldName: string,
+const createUnitLimits = (
 	quantity: UnitQuantity,
 	unit: string,
-	limits: { min?: number; max?: number; minExclusive?: boolean }
+	{ context, symbolSuffix = '' }: { context?: UnitContext; symbolSuffix?: string } = {}
 ) => {
-	const { min, max, minExclusive } = limits;
 	const digits = unitFractionDigits[quantity];
 	const step = 10 ** -digits;
 
 	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
 	const tolerance = (limit: number) => UNIT_LIMIT_TOLERANCE * Math.max(1, Math.abs(limit));
-	const toBase = (value: number) => toBaseUnit(value, quantity, unit);
+	const toBase = (value: number) => toBaseUnit(value, quantity, unit, context);
 	const isAtLeast = (limit: number) => (value: number) =>
 		toBase(value) >= limit - tolerance(limit);
 	const isAtMost = (limit: number) => (value: number) =>
@@ -108,16 +108,36 @@ export const unitNumberFieldSchema = (
 		isWithinLimit: (value: number) => boolean,
 		inward: number
 	) => {
-		const nearest = round(fromBaseUnit(limit, quantity, unit));
+		const nearest = round(fromBaseUnit(limit, quantity, unit, context));
 		const shown = isWithinLimit(nearest) ? nearest : round(nearest + inward);
 
-		return formatUnitValue(shown, quantity, unit);
+		return `${formatUnitValue(shown, quantity, unit)}${symbolSuffix}`;
 	};
+
+	return {
+		toBase,
+		tolerance,
+		isAtLeast,
+		isAtMost,
+		formatShownMin: (min: number) => formatShownLimit(min, isAtLeast(min), step),
+		formatShownMax: (max: number) => formatShownLimit(max, isAtMost(max), -step),
+	};
+};
+
+export const unitNumberFieldSchema = (
+	fieldName: string,
+	quantity: UnitQuantity,
+	unit: string,
+	limits: { min?: number; max?: number; minExclusive?: boolean }
+) => {
+	const { min, max, minExclusive } = limits;
+	const { toBase, tolerance, isAtLeast, isAtMost, formatShownMin, formatShownMax } =
+		createUnitLimits(quantity, unit);
 
 	let schema: z.ZodType<number, z.ZodTypeDef, number> = numberFieldSchema(fieldName);
 
 	if (min !== undefined) {
-		const shownMin = formatShownLimit(min, isAtLeast(min), step);
+		const shownMin = formatShownMin(min);
 
 		schema = minExclusive
 			? schema.refine((value) => toBase(value) > min + tolerance(min), {
@@ -129,7 +149,7 @@ export const unitNumberFieldSchema = (
 	}
 
 	if (max !== undefined) {
-		const shownMax = formatShownLimit(max, isAtMost(max), -step);
+		const shownMax = formatShownMax(max);
 
 		schema = schema.refine(isAtMost(max), {
 			message: `${fieldName} cannot be greater than ${shownMax}`,
@@ -366,6 +386,66 @@ export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
 	});
 
 export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
+
+const FUEL_MAX_LITRES = 10000;
+
+// Nullish to match Prisma's optional field; empty input means none.
+const optionalFuelAmountSchema = (fieldName: string) =>
+	z.preprocess(
+		(value) => (value === '' || value === null ? undefined : value),
+		positiveNumberFieldSchema(fieldName).nullish()
+	);
+
+const fuelMaxFields = [
+	{ field: 'fuelBurnRate', fieldName: 'Fuel burn rate', symbolSuffix: '/h' },
+	{ field: 'taxiFuel', fieldName: 'Taxi fuel', symbolSuffix: '' },
+	{ field: 'extraFuel', fieldName: 'Extra fuel', symbolSuffix: '' },
+] as const;
+
+export const createFuelPlanningFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			fuelBurnRate: greaterThanZeroNumberFieldSchema('Fuel burn rate'),
+			flightTime: positiveNumberFieldSchema('Flight time').max(1440, {
+				message: 'Flight time cannot be greater than 24 h',
+			}),
+			reserveTime: positiveNumberFieldSchema('Reserve time').max(180, {
+				message: 'Reserve time cannot be greater than 180 min',
+			}),
+			taxiFuel: optionalFuelAmountSchema('Taxi fuel'),
+			extraFuel: optionalFuelAmountSchema('Extra fuel'),
+			fuelType: z.enum(fuelTypes.map((t) => t.value) as [FuelType, ...FuelType[]], {
+				errorMap: () => ({ message: 'Fuel type must be AVGAS or Jet A' }),
+			}),
+		})
+		// Mass units convert through the fuel type's density, so the maxima are checked here.
+		.superRefine((data, ctx) => {
+			const density = getFuelDensity(data.fuelType);
+
+			if (density === undefined) return;
+
+			for (const { field, fieldName, symbolSuffix } of fuelMaxFields) {
+				const value = data[field];
+
+				// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+				if (value == null || !Number.isFinite(value)) continue;
+
+				const { isAtMost, formatShownMax } = createUnitLimits('fuel', units.fuel, {
+					context: { fuelDensityKgPerL: density },
+					symbolSuffix,
+				});
+
+				if (!isAtMost(FUEL_MAX_LITRES)(value)) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: [field],
+						message: `${fieldName} cannot be greater than ${formatShownMax(FUEL_MAX_LITRES)}`,
+					});
+				}
+			}
+		});
+
+export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

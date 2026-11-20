@@ -8,6 +8,7 @@ import {
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
+	FuelPlanningReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
@@ -17,6 +18,7 @@ import {
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
+	IFuelPlanningFormData,
 	IInvestmentTimeFormData,
 	ILiquidationPriceFormData,
 	IMarkupFormData,
@@ -37,6 +39,7 @@ import {
 	toBaseUnit,
 	toRadians,
 } from '@/lib/units';
+import { getFuelDensity } from '@/lib/utils';
 
 export const calculateMarkup = (formData: IMarkupFormData): MarkupReportProps => {
 	const { cost, salesPrice } = formData;
@@ -411,5 +414,24 @@ export const calculateDensityAltitude = (
 		isaTemperature,
 		isaDeviation: outsideAirTemperature - isaTemperature,
 		densityAltitude: toBaseUnit(densityAltitudeM, 'altitude', 'm'),
+	};
+};
+
+export const calculateFuelPlanning = (formData: IFuelPlanningFormData): FuelPlanningReportProps => {
+	const { fuelBurnRate, flightTime, reserveTime, taxiFuel, extraFuel, fuelType } = formData;
+
+	// Fuel = burn rate × time (FAA PHAK, FAA-H-8083-25C, ch. 16 Basic Calculations); mass = L × kg/L.
+	const fuelDensity = getFuelDensity(fuelType) ?? NaN;
+	const tripFuel = (fuelBurnRate * flightTime) / 60;
+	const reserveFuel = (fuelBurnRate * reserveTime) / 60;
+	const totalFuel = tripFuel + reserveFuel + (taxiFuel ?? 0) + (extraFuel ?? 0);
+
+	return {
+		...formData,
+		fuelDensity,
+		tripFuel,
+		reserveFuel,
+		totalFuel,
+		totalFuelMass: totalFuel * fuelDensity,
 	};
 };
