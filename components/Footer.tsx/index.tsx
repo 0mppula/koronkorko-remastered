@@ -3,7 +3,20 @@ import { Separator } from '../ui/separator';
 import Link from './Link';
 import Logo from './Logo';
 
-const year = new Date(Date.now()).getFullYear();
+const year = new Date().getFullYear();
+
+const FinnishFlag = ({ className }: { className?: string }) => (
+	<svg
+		viewBox="0 0 18 11"
+		xmlns="http://www.w3.org/2000/svg"
+		aria-hidden="true"
+		className={className}
+	>
+		<rect width="18" height="11" fill="#FFFFFF" />
+		<rect x="5" width="3" height="11" fill="#002F6C" />
+		<rect y="4" width="18" height="3" fill="#002F6C" />
+	</svg>
+);
 
 const Footer = () => {
 	return (
@@ -65,22 +78,33 @@ const Footer = () => {
 						))}
 					</div>
 
-					<div className="flex items-center flex-col text-neutral-700 dark:text-neutral-300">
-						<p className="text-sm mb-2 ">
-							Developed by{' '}
-							<a
-								className="hover:underline hover:text-primary dark:hover:text-primary"
-								href="https://www.omarkraidie.com/"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								Omar Kraidié
-							</a>
-						</p>
+					<div className="flex flex-col items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+						<div className="flex flex-col items-center gap-2 md:flex-row">
+							<p>
+								Developed by{' '}
+								<a
+									className="hover:underline hover:text-primary dark:hover:text-primary"
+									href="https://www.omarkraidie.com/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									Omar Kraidié
+								</a>
+							</p>
 
-						<p className="text-sm mb-2">
-							Copyright <span className="text-primary">{year}&copy;</span> Lahti,
-							Finland. All Rights Reserved.
+							<span aria-hidden className="hidden md:inline select-none">
+								·
+							</span>
+
+							<p className="flex items-center gap-1.5">
+								Made in Finland
+								<FinnishFlag className="h-3 w-auto rounded-[1px] outline outline-1 outline-neutral-300 dark:outline-neutral-600" />
+							</p>
+						</div>
+
+						<p>
+							<span className="text-primary">&copy; {year}</span>{' '}
+							Kraidie&nbsp;Consulting&nbsp;Oy. All rights reserved.
 						</p>
 					</div>
 				</div>
