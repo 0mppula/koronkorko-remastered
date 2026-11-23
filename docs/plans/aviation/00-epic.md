@@ -119,8 +119,8 @@ Follow-ups found during the epic (not part of it):
   returning).
 - A second wave of aviation calculators: true airspeed and time-speed-distance are planned in
   `06-true-airspeed-calculator.md` and `07-time-speed-distance-calculator.md` (one branch,
-  `feature/tas-and-tsd-calculators`, from `master`); descent planning, cloud base and turn
-  performance are not planned yet.
+  `feature/tas-and-tsd-calculators`, from `master`); 06 is done, 07 is next. Descent planning,
+  cloud base and turn performance are not planned yet.
 
 ## Preview database
 

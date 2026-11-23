@@ -83,11 +83,13 @@ T0)` = 340.294 m/s = 661.4786 kt, matching the Formulary's `CS_0 = 661.4786 knot
    `null` if DA > 11,000 m.
 
 Steps 3–5 are the Formulary's formulas (`DP`, `M`, `TAS = M*CS`), written with the ICAO
-constants. Refactor `calculateDensityAltitude` to share private helpers for steps 1 and 6
-(`isaPressureAtAltitude`, `densityAltitudeFromDensity`) without changing its results (its tests
-must still pass unchanged). Add `AIR_ADIABATIC_INDEX = 1.4` and `ISA_TROPOPAUSE_ALTITUDE_M = 11000`
-next to the existing ISA constants. Export `calculateMach(calibratedAirspeed, pressureAltitude)`
-(base units) for the schema's Mach check.
+constants. The code works in hPa and uses `ISA_SCALE_HEIGHT_M` (`T0 / L`), like 04.
+Refactor `calculateDensityAltitude` to share private helpers for steps 1 and 6
+(`isaPressureAtAltitude(altitudeM, referencePressure = P0)`, since density altitude passes the
+QNH, and `densityAltitudeFromDensity`) without changing its results (its tests must still pass
+unchanged). Add `AIR_ADIABATIC_INDEX = 1.4` and an exported `ISA_TROPOPAUSE_ALTITUDE_M = 11000`
+(the report uses it) next to the existing ISA constants. Export
+`calculateMach(calibratedAirspeed, pressureAltitude)` (base units) for the schema's Mach check.
 
 `Info.tsx` only (never used for results):
 
@@ -127,8 +129,10 @@ export const createTrueAirspeedFormDataSchema = (units: UnitPreferences) =>
 export const trueAirspeedFormDataSchema = createTrueAirspeedFormDataSchema(BASE_UNITS);
 ```
 
-- Mach check: if `calibratedAirspeed` and `pressureAltitude` are finite numbers (skip otherwise, to
-  avoid duplicate issues; zod runs `superRefine` on dirty data), convert them to base units and
+- Mach check: only if `calibratedAirspeed` and `pressureAltitude` are finite and within their own
+  limits (checked with the same `createUnitLimits` tolerance; zod runs `superRefine` on dirty data,
+  so a finiteness check alone would add the Mach message to e.g. CAS 450 kt at 36,000 ft or to
+  PA 40,000 ft), convert them to base units and
   reject `calculateMach(...) >= 1` on path `calibratedAirspeed` with
   `"Calibrated airspeed gives Mach 1 or more at this pressure altitude; only subsonic speeds are
 supported"`. Mach depends only on CAS and pressure altitude, not on OAT.
@@ -144,11 +148,11 @@ outsideAirTemperature: 5 }`. Inputs: "Calibrated Airspeed (CAS)" (`DynamicFormLa
   "CAS"; speed symbol), "Pressure Altitude" (altitude symbol, `min0={false}`), "Outside Air
   Temperature" (temperature symbol, `min0={false}`).
 - `Report.tsx`: inputs, `ReportDivider`, True Airspeed (`formatBaseValue` speed), Mach Number
-  (3 decimals), Density Altitude (`formatBaseValue` altitude, or "Above <tropopause in user's
+  (`toFixed(3)`, locale-independent like the other aviation values), Density Altitude (`formatBaseValue` altitude, or "Above <tropopause in user's
   unit> (not calculated)" when `null`), `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: IAS, CAS and TAS (PHAK); CAS from the POH airspeed calibration table, IAS ≈ CAS at
-  cruise, several knots apart at low speed; if the pressure altitude isn't known, a link to the
-  Density Altitude Calculator, which computes it from elevation and QNH; static vs indicated OAT
+  cruise, several knots apart at low speed; if the pressure altitude isn't known, a `next/link`
+  to the Density Altitude Calculator (styled like `ReportSource`), which computes it from elevation and QNH; static vs indicated OAT
   (ram rise); the exact compressible method; the incompressible formula and both rules of thumb
   as approximations; `<p>{calculatorDisclaimers.aviation}</p>`; `ReportSource` to the PHAK page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak`, text
