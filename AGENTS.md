@@ -105,6 +105,29 @@ Follow "Adding a calculator" with these differences:
    derivations; schema tests in base units and in at least one non-base unit (message shows the
    user's unit).
 
+## Pitfalls in aviation calculators
+
+- Reports use `formatBaseValue`, never `formatUnitValue` on base values; 2 decimals, altitudes whole, headings whole degrees.
+- zod `superRefine` runs even after field errors: run cross-field checks only when the involved fields passed their own checks.
+- No `NaN`/`Infinity` at exact limits: clamp `asin`/`acos` arguments, use tolerances; check computed results stay within their own limits.
+- Optional fields use `.nullish()` with `null` defaults (Prisma returns `null`); never turn empty optional values into 0.
+- Inputs that allow negative values need `min0={false}` (keypad with a minus key).
+- A new unit quantity also goes in `unitPreferencesSchema`, the Prisma `unitPreferences` type and every test fixture listing all units.
+- Untouched fields keep exact base values; never round stored values.
+- `xs` is generated after `sm` in the CSS: don't combine `xs:` and `sm:` on the same property.
+- Only cite a source as confirming a value if it was actually opened and checked; otherwise say so.
+- Every calculator's tests need an independent verification method (vector addition, inverse formula, feeding results back).
+- After implementing, update the calculator's plan file (and the epic checklist) to match the code; when a plan and the code differ, follow the code.
+- Temperature differences (ISA deviation) convert without offset (`fromBaseTemperatureDifference`); never `fromBaseUnit` on a difference.
+- Derive labels from the displayed value: a WCA side or sign follows the rounded value (no side at `000°`, north shows `360°`).
+- Outside a formula's valid range (Mach ≥ 1, above the tropopause), reject the input or return `null` with a report message; never extrapolate.
+- `POST` saves optional/`null` fields as `?? undefined`; `PUT` replaces the whole `formData`, so cleared optional values are removed.
+- `unitFields` and `getUnitContext` must be stable module-level references, or `useCalculator`'s unit-conversion effect reruns on every render.
+- Aviation values are formatted in fixed `en-US` (dot decimals), not the browser locale (e.g. Mach `toFixed(3)`, not `formatNumber`).
+- Hidden inputs keep their form value: validate only the shown fields and clear form errors when switching which fields are shown.
+- zod 3.22 `z.preprocess` skips its inner schema once an earlier field has an issue; document it as a `BUG:` test, don't work around it.
+- Calculators extending `lib/units.ts`, Prisma `unitPreferences` and the units modal: merge one before starting the next.
+
 ## Conventions
 
 - Format money with `formatCurrency(value, currency)` from `lib/utils` (locale comes from the
