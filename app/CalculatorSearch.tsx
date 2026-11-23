@@ -76,7 +76,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 		<div className="w-full flex flex-wrap xs:flex-nowrap gap-3 sm:gap-4 justify-between items-center">
 			<div className="relative w-full grow-1">
 				<Input
-					className="pl-10 w-full placeholder:text-transparent dark:placeholder:text-transparent sm:placeholder:text-neutral-700 sm:dark:placeholder:text-neutral-300"
+					className="pl-10 w-full"
 					type="search"
 					aria-label="Search calculators"
 					value={internalQuery}
@@ -91,7 +91,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 
 			<Select value={category} onValueChange={handleCategoryChange}>
 				<SelectTrigger
-					className="w-[115px] sm:w-[130px] shrink-0"
+					className="w-[115px] sm:w-[130px] shrink-0 grow basis-0 xs:grow-0 xs:basis-auto"
 					aria-label="Filter by category"
 				>
 					<SelectValue />
