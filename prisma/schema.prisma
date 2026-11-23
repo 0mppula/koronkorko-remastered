@@ -32,6 +32,7 @@ type unitPreferences {
   temperature String?
   pressure    String?
   fuel        String?
+  distance    String?
 }
 
 type preferences {

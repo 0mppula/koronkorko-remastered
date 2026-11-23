@@ -1470,10 +1470,30 @@ describe('trueAirspeedFormDataSchema', () => {
 });
 
 describe('unitPreferencesSchema', () => {
-	const base = { speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'inhg', fuel: 'lb' };
+	const base = {
+		speed: 'kmh',
+		altitude: 'm',
+		temperature: 'f',
+		pressure: 'inhg',
+		fuel: 'lb',
+		distance: 'sm',
+	};
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every distance unit', () => {
+		for (const distance of ['nm', 'km', 'sm']) {
+			expect(unitPreferencesSchema.parse({ ...base, distance }).distance).toBe(distance);
+		}
+	});
+
+	it('rejects an unknown distance unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, distance: 'mi' });
+
+		expect(issueFields(result)).toEqual(['distance']);
+		expect(issueMessages(result)).toEqual(['Invalid distance unit']);
 	});
 
 	it('accepts every fuel unit', () => {
@@ -1503,7 +1523,14 @@ describe('userPreferencesSchema', () => {
 	const base = {
 		theme: 'dark',
 		currency: 'eur',
-		units: { speed: 'kt', altitude: 'ft', temperature: 'c', pressure: 'hpa', fuel: 'l' },
+		units: {
+			speed: 'kt',
+			altitude: 'ft',
+			temperature: 'c',
+			pressure: 'hpa',
+			fuel: 'l',
+			distance: 'nm',
+		},
 	};
 
 	it('accepts valid input', () => {

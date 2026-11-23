@@ -1,4 +1,4 @@
-// Exact by definition: international nautical mile, statute mile and foot.
+// Exact by definition (NIST SP 811, App. B.9): international nautical mile, statute mile and foot.
 const NAUTICAL_MILE_IN_METRES = 1852;
 const MILE_IN_METRES = 1609.344;
 const FOOT_IN_METRES = 0.3048;
@@ -29,6 +29,7 @@ export const unitQuantities = [
 	{ value: 'temperature', label: 'Temperature' },
 	{ value: 'pressure', label: 'Pressure' },
 	{ value: 'fuel', label: 'Fuel' },
+	{ value: 'distance', label: 'Distance' },
 ] as const;
 
 export type UnitQuantity = (typeof unitQuantities)[number]['value'];
@@ -144,6 +145,29 @@ export const unitOptions = {
 				(value * getFuelDensityFromContext(context)) / POUND_IN_KILOGRAMS,
 		},
 	],
+	distance: [
+		{
+			value: 'nm',
+			label: 'Nautical miles (NM)',
+			symbol: 'NM',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'km',
+			label: 'Kilometres (km)',
+			symbol: 'km',
+			toBase: (value: number) => value / (NAUTICAL_MILE_IN_METRES / 1000),
+			fromBase: (value: number) => value * (NAUTICAL_MILE_IN_METRES / 1000),
+		},
+		{
+			value: 'sm',
+			label: 'Statute miles (SM)',
+			symbol: 'SM',
+			toBase: (value: number) => (value * MILE_IN_METRES) / NAUTICAL_MILE_IN_METRES,
+			fromBase: (value: number) => (value * NAUTICAL_MILE_IN_METRES) / MILE_IN_METRES,
+		},
+	],
 } as const satisfies Record<UnitQuantity, readonly UnitOption[]>;
 
 export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number]['value'];
@@ -155,6 +179,7 @@ export const BASE_UNITS: UnitPreferences = {
 	temperature: 'c',
 	pressure: 'hpa',
 	fuel: 'l',
+	distance: 'nm',
 };
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
@@ -164,6 +189,7 @@ export const unitFractionDigits: Record<UnitQuantity, number> = {
 	temperature: 2,
 	pressure: 2,
 	fuel: 2,
+	distance: 2,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
