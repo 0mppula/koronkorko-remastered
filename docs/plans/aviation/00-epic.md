@@ -1,6 +1,7 @@
 # Epic: Aviation Calculators
 
-Branch: `epic/aviation-calculators` · Plans: `docs/plans/aviation/`
+Branch: `epic/aviation-calculators` (closed; merged into `master` in November 2026) · Plans:
+`docs/plans/aviation/`
 
 ## Goal
 
@@ -76,6 +77,9 @@ other to avoid conflicts in `lib/units.ts`, `prisma/schema.prisma` and the units
 
 ## Branching
 
+Historical: this is how the epic was run. The epic is closed; new aviation work branches from an
+up-to-date `master` (see 06 and 07).
+
 - Feature branches are created from an up-to-date `epic/aviation-calculators` (not `master`),
   named `feature/<kebab-case>` as listed above.
 - Feature PRs target `epic/aviation-calculators`. CI (`.github/workflows/ci.yml`) runs on every PR:
@@ -113,8 +117,10 @@ Follow-ups found during the epic (not part of it):
 - An `<a>` inside a `<button>` in the nav (invalid HTML).
 - The not-signed-in check in `getUsersSubscriptionData` is a no-op (`null;` instead of
   returning).
-- A second wave of aviation calculators: true airspeed, descent planning, cloud base and turn
-  performance.
+- A second wave of aviation calculators: true airspeed and time-speed-distance are planned in
+  `06-true-airspeed-calculator.md` and `07-time-speed-distance-calculator.md` (one branch,
+  `feature/tas-and-tsd-calculators`, from `master`); descent planning, cloud base and turn
+  performance are not planned yet.
 
 ## Preview database
 

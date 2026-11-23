@@ -8,6 +8,7 @@ import {
 	calculators,
 } from '@/constants/calculators';
 import { featuredApps } from '@/constants/data';
+import { filterCalculators, parseCategory, splitHighlight } from '@/lib/filterCalculators';
 import { cn } from '@/lib/utils';
 import { Coins, ExternalLink, Plane, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -28,16 +29,15 @@ const SectionHeading = ({ children }: { children: React.ReactNode }) => {
 	);
 };
 
-export default function page({ searchParams }: { searchParams: { q?: string } }) {
+export default function page({
+	searchParams,
+}: {
+	searchParams: { q?: string; category?: string };
+}) {
 	const query = searchParams.q?.toLowerCase() || '';
+	const selectedCategory = parseCategory(searchParams.category);
 
-	const filteredCalculators = query
-		? calculators.filter(
-				(c) =>
-					c.name.toLowerCase().includes(query) ||
-					c.description.toLowerCase().includes(query)
-			)
-		: calculators;
+	const filteredCalculators = filterCalculators(calculators, query, selectedCategory);
 
 	const highlightText = (
 		content: string,
@@ -46,27 +46,23 @@ export default function page({ searchParams }: { searchParams: { q?: string } })
 		className?: string,
 		highlightClassName?: string
 	) => {
-		const regex = new RegExp(`(${query})`, 'gi');
-
 		return (
 			<Wrapper className={className}>
-				{!query
-					? content
-					: content.split(regex).map((part, index) =>
-							part.toLowerCase() === query.toLowerCase() ? (
-								<span
-									key={part + index}
-									className={cn(
-										'bg-primary text-secondary-foreground',
-										highlightClassName
-									)}
-								>
-									{part}
-								</span>
-							) : (
-								part
-							)
-						)}
+				{splitHighlight(content, query).map((part, index) =>
+					part.match ? (
+						<span
+							key={part.text + index}
+							className={cn(
+								'bg-primary text-secondary-foreground',
+								highlightClassName
+							)}
+						>
+							{part.text}
+						</span>
+					) : (
+						part.text
+					)
+				)}
 			</Wrapper>
 		);
 	};

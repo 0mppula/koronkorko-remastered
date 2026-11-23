@@ -1,7 +1,8 @@
 # 03 Wind Triangle Calculator
 
-Epic: `epic/aviation-calculators` (see `00-epic.md`) · Branch: `feature/wind-triangle-calculator`
-(create from up-to-date `epic/aviation-calculators` after 01 and 02 are merged, PR back into it).
+Epic: `epic/aviation-calculators` (closed, merged into `master`; see `00-epic.md`) · Branch:
+`feature/wind-triangle-calculator` (was created from the epic after 01 and 02 and merged back
+into it).
 
 ## Goal
 
