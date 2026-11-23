@@ -1,9 +1,22 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
+import { calculatorCategories } from '@/constants/calculators';
+import {
+	type CalculatorCategoryFilter,
+	buildFilterSearchParams,
+	parseCategory,
+} from '@/lib/filterCalculators';
 import { Calculator, Search } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 interface CalculatorSearchProps {
 	filteredCound: number;
@@ -12,29 +25,52 @@ interface CalculatorSearchProps {
 const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 	const searchParams = useSearchParams();
 	const router = useRouter();
+	const pathname = usePathname();
 
-	const q = searchParams.get('q') || '';
-	const [internalQuery, setInternalQuery] = useState(q);
+	const [internalQuery, setInternalQuery] = useState(searchParams.get('q') || '');
+	const [category, setCategory] = useState(parseCategory(searchParams.get('category')));
+	const queryTimer = useRef<ReturnType<typeof setTimeout>>();
 
+	// Follow URL changes made elsewhere (e.g. a link to /), unless a query update is pending.
 	useEffect(() => {
-		// 200ms debounce
-		const timer = setTimeout(() => {
-			const params = new URLSearchParams(searchParams.toString());
+		if (queryTimer.current) return;
 
-			if (internalQuery) {
-				params.set('q', internalQuery);
-			} else {
-				params.delete('q');
-			}
+		setInternalQuery(searchParams.get('q') || '');
+		setCategory(parseCategory(searchParams.get('category')));
+	}, [searchParams]);
 
-			// Update the URL query string without reloading the page
-			router.replace(`?${params.toString()}`);
+	useEffect(() => () => clearTimeout(queryTimer.current), []);
+
+	const replaceUrl = (q: string, nextCategory: CalculatorCategoryFilter) => {
+		const params = buildFilterSearchParams(searchParams.toString(), {
+			q,
+			category: nextCategory,
+		});
+
+		if (params === searchParams.toString()) return;
+
+		router.replace(params ? `${pathname}?${params}` : pathname, { scroll: false });
+	};
+
+	const handleQueryChange = (value: string) => {
+		setInternalQuery(value);
+
+		clearTimeout(queryTimer.current);
+		queryTimer.current = setTimeout(() => {
+			queryTimer.current = undefined;
+			replaceUrl(value, category);
 		}, 200);
+	};
 
-		return () => {
-			clearTimeout(timer);
-		};
-	}, [internalQuery, searchParams, q]);
+	const handleCategoryChange = (value: string) => {
+		const nextCategory = parseCategory(value);
+		setCategory(nextCategory);
+
+		// Flush the pending query so neither update overwrites the other.
+		clearTimeout(queryTimer.current);
+		queryTimer.current = undefined;
+		replaceUrl(internalQuery, nextCategory);
+	};
 
 	return (
 		<div className="w-full flex gap-4 justify-between items-center">
@@ -43,7 +79,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 					className="pl-10 w-full"
 					type="search"
 					value={internalQuery}
-					onChange={(e) => setInternalQuery(e.target.value)}
+					onChange={(e) => handleQueryChange(e.target.value)}
 					placeholder="Search calculators..."
 				/>
 
@@ -51,6 +87,21 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 					<Search className="size-4" />
 				</div>
 			</div>
+
+			<Select value={category} onValueChange={handleCategoryChange}>
+				<SelectTrigger className="w-[130px] shrink-0" aria-label="Filter by category">
+					<SelectValue />
+				</SelectTrigger>
+
+				<SelectContent>
+					<SelectItem value="all">All</SelectItem>
+					{calculatorCategories.map((c) => (
+						<SelectItem key={c.value} value={c.value}>
+							{c.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 
 			<div className="flex justify-center items-center gap-1">
 				<span className="text-xl">{filteredCound}</span>
