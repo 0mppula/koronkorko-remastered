@@ -73,7 +73,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 	};
 
 	return (
-		<div className="w-full flex gap-4 justify-between items-center">
+		<div className="w-full flex gap-3 sm:gap-4 justify-between items-center">
 			<div className="relative w-full grow-1">
 				<Input
 					className="pl-10 w-full"
@@ -89,7 +89,10 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 			</div>
 
 			<Select value={category} onValueChange={handleCategoryChange}>
-				<SelectTrigger className="w-[130px] shrink-0" aria-label="Filter by category">
+				<SelectTrigger
+					className="w-[115px] sm:w-[130px] shrink-0"
+					aria-label="Filter by category"
+				>
 					<SelectValue />
 				</SelectTrigger>
 
@@ -103,7 +106,20 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 				</SelectContent>
 			</Select>
 
-			<div className="flex justify-center items-center gap-1">
+			<div className="relative flex sm:hidden shrink-0">
+				<Calculator className="size-6" aria-hidden="true" />
+				<span
+					aria-hidden="true"
+					className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-secondary-foreground"
+				>
+					{filteredCound}
+				</span>
+				<span className="sr-only">
+					{filteredCound} {filteredCound === 1 ? 'calculator' : 'calculators'}
+				</span>
+			</div>
+
+			<div className="hidden sm:flex justify-center items-center gap-1">
 				<span className="text-xl">{filteredCound}</span>
 				<Calculator className="size-6" />
 			</div>
