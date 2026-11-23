@@ -119,8 +119,13 @@ Follow-ups found during the epic (not part of it):
   returning).
 - A second wave of aviation calculators: true airspeed and time-speed-distance are planned in
   `06-true-airspeed-calculator.md` and `07-time-speed-distance-calculator.md` (one branch,
-  `feature/tas-and-tsd-calculators`, from `master`); both are done. Descent planning,
-  cloud base and turn performance are not planned yet.
+  `feature/tas-and-tsd-calculators`, from `master`); both are done.
+- A third wave, planned on `feature/aviation-wave-3` (from `master`):
+  `08-heading-calculator.md` (true, magnetic and compass heading), `09-cloud-base-calculator.md`,
+  `10-glide-distance-calculator.md`, `11-turn-performance-calculator.md` and
+  `12-descent-planning-calculator.md` (adds the vertical speed unit and per-unit fraction digits).
+  None is implemented yet. Only 12 extends `lib/units.ts`, Prisma `unitPreferences` and the units
+  modal.
 
 ## Preview database
 
@@ -132,4 +137,5 @@ collections are created on first insert and the new models have no unique indexe
 
 ## Open questions
 
-None at the moment.
+- Third wave (08–12): build all five on `feature/aviation-wave-3`, or one `feature/` branch per
+  calculator from `master`? Not decided yet.
