@@ -1,8 +1,8 @@
 # 05 Fuel Planning Calculator
 
-Epic: `epic/aviation-calculators` (see `00-epic.md`) · Branch: `feature/fuel-planning-calculator`
-(create from up-to-date `epic/aviation-calculators` after 01 is merged; merge 04 and 05 one at a
-time, PR back into the epic).
+Epic: `epic/aviation-calculators` (closed, merged into `master`; see `00-epic.md`) · Branch:
+`feature/fuel-planning-calculator` (was created from the epic after 01 and merged back into it;
+04 and 05 were merged one at a time).
 
 ## Goal
 

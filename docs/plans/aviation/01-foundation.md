@@ -1,7 +1,7 @@
 # 01 Foundation
 
-Epic: `epic/aviation-calculators` (see `00-epic.md`) · Branch: `feature/aviation-foundation`
-(create from up-to-date `epic/aviation-calculators`, PR back into it).
+Epic: `epic/aviation-calculators` (closed, merged into `master`; see `00-epic.md`) · Branch:
+`feature/aviation-foundation` (was created from the epic and merged back into it).
 
 ## Goal
 

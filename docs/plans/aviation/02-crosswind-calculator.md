@@ -1,7 +1,7 @@
 # 02 Crosswind Calculator
 
-Epic: `epic/aviation-calculators` (see `00-epic.md`) · Branch: `feature/crosswind-calculator`
-(create from up-to-date `epic/aviation-calculators` after 01 is merged, PR back into it).
+Epic: `epic/aviation-calculators` (closed, merged into `master`; see `00-epic.md`) · Branch:
+`feature/crosswind-calculator` (was created from the epic after 01 and merged back into it).
 
 ## Goal
 
