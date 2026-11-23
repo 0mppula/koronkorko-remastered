@@ -76,8 +76,9 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 		<div className="w-full flex gap-3 sm:gap-4 justify-between items-center">
 			<div className="relative w-full grow-1">
 				<Input
-					className="pl-10 w-full"
+					className="pl-10 w-full placeholder:text-transparent dark:placeholder:text-transparent sm:placeholder:text-neutral-700 sm:dark:placeholder:text-neutral-300"
 					type="search"
+					aria-label="Search calculators"
 					value={internalQuery}
 					onChange={(e) => handleQueryChange(e.target.value)}
 					placeholder="Search calculators..."
