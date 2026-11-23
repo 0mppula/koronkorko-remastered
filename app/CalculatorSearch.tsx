@@ -91,7 +91,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 
 			<Select value={category} onValueChange={handleCategoryChange}>
 				<SelectTrigger
-					className="w-[115px] sm:w-[130px] shrink-0 grow basis-0 xs:grow-0 xs:basis-auto"
+					className="w-[140px] sm:w-[180px] shrink-0 grow basis-0 xs:grow-0 xs:basis-auto"
 					aria-label="Filter by category"
 				>
 					<SelectValue />
@@ -111,7 +111,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 				<Calculator className="size-6" aria-hidden="true" />
 				<span
 					aria-hidden="true"
-					className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-secondary-foreground"
+					className="absolute -top-2 -right-2 flex size-[18px] items-center justify-center rounded-full bg-primary text-[10px] font-semibold leading-none tabular-nums text-secondary-foreground"
 				>
 					{filteredCound}
 				</span>
@@ -121,7 +121,7 @@ const CalculatorSearch = ({ filteredCound }: CalculatorSearchProps) => {
 			</div>
 
 			<div className="hidden sm:flex justify-center items-center gap-1">
-				<span className="text-xl">{filteredCound}</span>
+				<span className="text-xl tabular-nums min-w-[2ch] text-right">{filteredCound}</span>
 				<Calculator className="size-6" />
 			</div>
 		</div>
