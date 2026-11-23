@@ -125,4 +125,11 @@ export const calculators = [
 		description:
 			'Calculate the true airspeed, Mach number and density altitude, given the calibrated airspeed, pressure altitude and outside air temperature. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Time Speed Distance Calculator',
+		url: 'time-speed-distance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the distance, groundspeed or flight time, given the other two. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

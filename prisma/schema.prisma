@@ -71,6 +71,7 @@ model User {
   DensityAltitudeCalculations      DensityAltitudeCalculation[]
   FuelPlanningCalculations         FuelPlanningCalculation[]
   TrueAirspeedCalculations         TrueAirspeedCalculation[]
+  TimeSpeedDistanceCalculations    TimeSpeedDistanceCalculation[]
 }
 
 enum Plan {
@@ -403,6 +404,31 @@ model TrueAirspeedCalculation {
   formData  TrueAirspeedCalculationFormData
   createdAt DateTime                        @default(now())
   updatedAt DateTime                        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum TimeSpeedDistanceSolveFor {
+  distance
+  groundspeed
+  time
+}
+
+// The solved field is null.
+type TimeSpeedDistanceCalculationFormData {
+  solveFor    TimeSpeedDistanceSolveFor
+  distance    Float?
+  groundspeed Float?
+  time        Float?
+}
+
+model TimeSpeedDistanceCalculation {
+  id        String                               @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                               @db.ObjectId
+  name      String
+  formData  TimeSpeedDistanceCalculationFormData
+  createdAt DateTime                             @default(now())
+  updatedAt DateTime                             @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

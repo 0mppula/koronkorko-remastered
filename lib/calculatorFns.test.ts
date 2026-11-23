@@ -17,6 +17,7 @@ import {
 	calculateMach,
 	calculateMarkup,
 	calculatePresentValue,
+	calculateTimeSpeedDistance,
 	calculateTrueAirspeed,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
@@ -32,6 +33,7 @@ import {
 	IDollarCostAverageFormData,
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
+	ITimeSpeedDistanceFormData,
 } from '@/types/calculations';
 
 // Expected values come from standard formulas / published worked examples, not from running the code.
@@ -1423,5 +1425,120 @@ describe('calculateTrueAirspeed', () => {
 
 			expect(calculateMach(200, 20000)).toBe(result.mach);
 		});
+	});
+});
+
+describe('calculateTimeSpeedDistance', () => {
+	// FAA PHAK (FAA-H-8083-25C), p. 16-11 worked examples.
+	it('calculates the time to fly 210 NM at 140 kt as 1:30', () => {
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'time',
+				distance: 210,
+				groundspeed: 140,
+				time: null,
+			})
+		).toEqual({ solveFor: 'time', distance: 210, groundspeed: 140, time: 90 });
+	});
+
+	it('calculates the distance flown in 1 h 45 min at 120 kt as 210 NM', () => {
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'distance',
+				distance: null,
+				groundspeed: 120,
+				time: 105,
+			})
+		).toEqual({ solveFor: 'distance', distance: 210, groundspeed: 120, time: 105 });
+	});
+
+	it('calculates the groundspeed for 270 NM in 3 h as 90 kt', () => {
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'groundspeed',
+				distance: 270,
+				groundspeed: null,
+				time: 180,
+			})
+		).toEqual({ solveFor: 'groundspeed', distance: 270, groundspeed: 90, time: 180 });
+	});
+
+	it('ignores a hidden value in the solved field', () => {
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'distance',
+				distance: 999,
+				groundspeed: 120,
+				time: 105,
+			}).distance
+		).toBe(210);
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'groundspeed',
+				distance: 270,
+				groundspeed: -5,
+				time: 180,
+			}).groundspeed
+		).toBe(90);
+		expect(
+			calculateTimeSpeedDistance({
+				solveFor: 'time',
+				distance: 210,
+				groundspeed: 140,
+				time: 5000,
+			}).time
+		).toBe(90);
+	});
+
+	it('reproduces the inputs when a result is fed back in the other modes', () => {
+		const start: ITimeSpeedDistanceFormData = {
+			solveFor: 'time',
+			distance: 137.5,
+			groundspeed: 112,
+			time: null,
+		};
+		const { time } = calculateTimeSpeedDistance(start);
+
+		expect(
+			calculateTimeSpeedDistance({ ...start, solveFor: 'distance', distance: null, time })
+				.distance
+		).toBeCloseTo(137.5, 9);
+		expect(
+			calculateTimeSpeedDistance({
+				...start,
+				solveFor: 'groundspeed',
+				groundspeed: null,
+				time,
+			}).groundspeed
+		).toBeCloseTo(112, 9);
+	});
+
+	const unitFields: UnitFields<ITimeSpeedDistanceFormData> = {
+		distance: 'distance',
+		groundspeed: 'speed',
+	};
+
+	// 210 NM × 1.852 = 388.92 km; 140 kt × 1.852 = 259.28 km/h.
+	it('works with values entered in km and km/h', () => {
+		const formData = formDataToBaseUnits<ITimeSpeedDistanceFormData>(
+			{ solveFor: 'time', distance: 388.92, groundspeed: 259.28, time: null },
+			unitFields,
+			{ ...BASE_UNITS, distance: 'km', speed: 'kmh' }
+		);
+
+		expect(calculateTimeSpeedDistance(formData).time).toBeCloseTo(90, 6);
+	});
+
+	// Same-unit arithmetic: 138 mph × 1.75 h = 241.5 SM.
+	it('works with values entered in mph and shown in SM', () => {
+		const formData = formDataToBaseUnits<ITimeSpeedDistanceFormData>(
+			{ solveFor: 'distance', distance: null, groundspeed: 138, time: 105 },
+			unitFields,
+			{ ...BASE_UNITS, distance: 'sm', speed: 'mph' }
+		);
+
+		const { distance } = calculateTimeSpeedDistance(formData);
+
+		expect(fromBaseUnit(distance, 'distance', 'sm')).toBeCloseTo(241.5, 6);
 	});
 });

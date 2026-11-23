@@ -16,6 +16,7 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
 	windTriangleFormDataSchema,
 } from '@/schemas';
@@ -35,6 +36,7 @@ import {
 	MarkupCalculation,
 	PresentValueCalculation,
 	PriceToEarningsRatioCalculation,
+	TimeSpeedDistanceCalculation,
 	TrueAirspeedCalculation,
 	WindTriangleCalculation,
 } from '@prisma/client';
@@ -220,6 +222,16 @@ export interface TrueAirspeedReportProps extends ITrueAirspeedFormData {
 	densityAltitude: number | null;
 }
 
+// Time Speed Distance Calculation
+export type ITimeSpeedDistanceFormData = z.infer<typeof timeSpeedDistanceFormDataSchema>;
+
+export interface TimeSpeedDistanceReportProps {
+	solveFor: ITimeSpeedDistanceFormData['solveFor'];
+	distance: number;
+	groundspeed: number;
+	time: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -237,4 +249,5 @@ export type CalculationType =
 	| WindTriangleCalculation
 	| DensityAltitudeCalculation
 	| FuelPlanningCalculation
-	| TrueAirspeedCalculation;
+	| TrueAirspeedCalculation
+	| TimeSpeedDistanceCalculation;

@@ -12,6 +12,7 @@ import {
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
 	createFuelPlanningFormDataSchema,
+	createTimeSpeedDistanceFormDataSchema,
 	createTrueAirspeedFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
@@ -26,6 +27,7 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
@@ -1466,6 +1468,242 @@ describe('trueAirspeedFormDataSchema', () => {
 				expect(schema.safeParse(formData).success).toBe(true);
 			}
 		});
+	});
+});
+
+describe('timeSpeedDistanceFormDataSchema', () => {
+	const schema = timeSpeedDistanceFormDataSchema;
+	const schemaIn = (units: Partial<typeof BASE_UNITS>) =>
+		createTimeSpeedDistanceFormDataSchema({ ...BASE_UNITS, ...units });
+
+	const bases = {
+		distance: { solveFor: 'distance', groundspeed: 120, time: 105 },
+		groundspeed: { solveFor: 'groundspeed', distance: 270, time: 180 },
+		time: { solveFor: 'time', distance: 210, groundspeed: 140 },
+	} as const;
+
+	const givenFields = {
+		distance: ['groundspeed', 'time'],
+		groundspeed: ['distance', 'time'],
+		time: ['distance', 'groundspeed'],
+	} as const;
+
+	const fieldNames = { distance: 'Distance', groundspeed: 'Groundspeed', time: 'Time' };
+
+	describe.each(['distance', 'groundspeed', 'time'] as const)('solving for %s', (solveFor) => {
+		const base = bases[solveFor];
+
+		it('accepts valid input and outputs the solved field as null', () => {
+			expect(schema.parse(base)).toEqual({
+				distance: null,
+				groundspeed: null,
+				time: null,
+				...base,
+				[solveFor]: null,
+			});
+		});
+
+		it.each([undefined, '', null, -1, 1e9, 'abc', 'Infinity'])(
+			'ignores a hidden value of %s in the solved field',
+			(value) => {
+				const result = schema.safeParse({ ...base, [solveFor]: value });
+
+				expect(result.success).toBe(true);
+				expect(result.success && result.data[solveFor]).toBeNull();
+			}
+		);
+
+		it.each(givenFields[solveFor])('requires the given %s', (field) => {
+			for (const value of [undefined, '', null]) {
+				const result = schema.safeParse({ ...base, [field]: value });
+
+				expect(issueFields(result)).toEqual([field]);
+				expect(issueMessages(result)).toEqual([`${fieldNames[field]} is required`]);
+			}
+		});
+
+		it.each(givenFields[solveFor])('rejects a given %s of 0 or less', (field) => {
+			for (const value of [0, -1]) {
+				const result = schema.safeParse({ ...base, [field]: value });
+
+				expect(issueFields(result)).toEqual([field]);
+			}
+		});
+
+		it('reports both given fields when both are invalid', () => {
+			const [first, second] = givenFields[solveFor];
+			const result = schema.safeParse({ ...base, [first]: 0, [second]: 'abc' });
+
+			expect(issueFields(result)).toEqual([first, second]);
+		});
+	});
+
+	it('shows the minimum messages', () => {
+		expect(issueMessages(schema.safeParse({ ...bases.time, distance: 0 }))).toEqual([
+			'Distance must be greater than 0.00 NM',
+		]);
+		expect(issueMessages(schema.safeParse({ ...bases.time, groundspeed: 0 }))).toEqual([
+			'Groundspeed must be greater than 0.00 kt',
+		]);
+		expect(issueMessages(schema.safeParse({ ...bases.distance, time: 0 }))).toEqual([
+			'Time must be greater than 0',
+		]);
+	});
+
+	it('rejects a non-numeric given value', () => {
+		expect(issueMessages(schema.safeParse({ ...bases.time, distance: 'abc' }))).toEqual([
+			'Distance has to be a number',
+		]);
+	});
+
+	// 10,000 NM = 18,520 km (× 1.852) = 11,507.794 SM (× 1852 / 1609.344).
+	it.each([
+		['nm', 10000, 10000.01, '10,000.00 NM'],
+		['km', 18520, 18520.01, '18,520.00 km'],
+		['sm', 11507.79, 11507.8, '11,507.79 SM'],
+	] as const)('accepts a given distance at the limit in %s', (distance, atLimit, over, shown) => {
+		// 10,000 NM at 1,000 kt is 600 min, within the time limit.
+		const input = { solveFor: 'time', groundspeed: 1000 };
+
+		expect(schemaIn({ distance }).safeParse({ ...input, distance: atLimit }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(schemaIn({ distance }).safeParse({ ...input, distance: over }))
+		).toEqual([`Distance cannot be greater than ${shown}`]);
+	});
+
+	// 1,000 kt = 1,852 km/h = 1,150.779 mph = 514.444 m/s.
+	it.each([
+		['kt', 1000, 1000.01, '1,000.00 kt'],
+		['kmh', 1852, 1852.01, '1,852.00 km/h'],
+		['mph', 1150.77, 1150.78, '1,150.77 mph'],
+	] as const)('accepts a given groundspeed at the limit in %s', (speed, atLimit, over, shown) => {
+		const input = { solveFor: 'distance', time: 60 };
+
+		expect(schemaIn({ speed }).safeParse({ ...input, groundspeed: atLimit }).success).toBe(
+			true
+		);
+		expect(
+			issueMessages(schemaIn({ speed }).safeParse({ ...input, groundspeed: over }))
+		).toEqual([`Groundspeed cannot be greater than ${shown}`]);
+	});
+
+	it('accepts a given time of 24 h and rejects more', () => {
+		const input = { solveFor: 'distance', groundspeed: 1 };
+
+		expect(schema.safeParse({ ...input, time: 1440 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...input, time: 1440.01 }))).toEqual([
+			'Time cannot be greater than 24 h',
+		]);
+	});
+
+	describe('the solved value', () => {
+		// 500 kt × 1,200 min / 60 = 10,000 NM.
+		it.each([
+			['nm', '10,000.00 NM'],
+			['km', '18,520.00 km'],
+			['sm', '11,507.79 SM'],
+		] as const)('accepts a distance at its limit and rejects more in %s', (distance, shown) => {
+			const input = { solveFor: 'distance', groundspeed: 500 };
+
+			expect(schemaIn({ distance }).safeParse({ ...input, time: 1200 }).success).toBe(true);
+
+			const result = schemaIn({ distance }).safeParse({ ...input, time: 1200.01 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual([`The resulting distance would exceed ${shown}`]);
+		});
+
+		// 60 × 1,000 NM / 60 min = 1,000 kt.
+		it.each([
+			['kt', '1,000.00 kt'],
+			['kmh', '1,852.00 km/h'],
+			['mph', '1,150.77 mph'],
+			['ms', '514.44 m/s'],
+		] as const)('accepts a groundspeed at its limit and rejects more in %s', (speed, shown) => {
+			const input = { solveFor: 'groundspeed', time: 60 };
+
+			expect(schemaIn({ speed }).safeParse({ ...input, distance: 1000 }).success).toBe(true);
+
+			const result = schemaIn({ speed }).safeParse({ ...input, distance: 1000.01 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual([
+				`The resulting groundspeed would exceed ${shown}`,
+			]);
+		});
+
+		// 60 × 2,400 NM / 100 kt = 1,440 min.
+		it('accepts a time of 24 h and rejects more', () => {
+			const input = { solveFor: 'time', groundspeed: 100 };
+
+			expect(schema.safeParse({ ...input, distance: 2400 }).success).toBe(true);
+
+			const result = schema.safeParse({ ...input, distance: 2400.01 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual(['The resulting time would exceed 24 h']);
+		});
+
+		// 926 km/h = 500 kt.
+		it('is checked in base units', () => {
+			const input = { solveFor: 'distance', groundspeed: 926 };
+
+			expect(
+				schemaIn({ speed: 'kmh', distance: 'km' }).safeParse({ ...input, time: 1200 })
+					.success
+			).toBe(true);
+			expect(
+				schemaIn({ speed: 'kmh', distance: 'km' }).safeParse({ ...input, time: 1201 })
+					.success
+			).toBe(false);
+		});
+
+		it('is not checked when a given field already failed', () => {
+			const result = schema.safeParse({
+				solveFor: 'distance',
+				groundspeed: 1000.01,
+				time: 1440,
+			});
+
+			expect(issueFields(result)).toEqual(['groundspeed']);
+		});
+	});
+
+	it('accepts imported values at the limits in every distance and speed unit', () => {
+		const unitFields = { distance: 'distance', groundspeed: 'speed' } as const;
+
+		for (const distance of ['nm', 'km', 'sm'] as const) {
+			for (const speed of ['kt', 'kmh', 'mph', 'ms'] as const) {
+				const units = { ...BASE_UNITS, distance, speed };
+				const stored = { solveFor: 'time', distance: 10000, groundspeed: 1000, time: null };
+
+				expect(
+					schemaIn(units).safeParse(formDataFromBaseUnits(stored, unitFields, units))
+						.success
+				).toBe(true);
+			}
+		}
+	});
+
+	it('rejects an unknown solveFor with one issue', () => {
+		const result = schema.safeParse({ ...bases.time, solveFor: 'fuel' });
+
+		expect(issueFields(result)).toEqual(['solveFor']);
+		expect(issueMessages(result)).toEqual(['Solve for must be distance, groundspeed or time']);
+	});
+
+	it('rejects a missing solveFor', () => {
+		const result = schema.safeParse({ distance: 210, groundspeed: 140 });
+
+		expect(issueFields(result)).toEqual(['solveFor']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({ solveFor: 'time', distance: '210', groundspeed: '140.5', time: '' })
+		).toEqual({ solveFor: 'time', distance: 210, groundspeed: 140.5, time: null });
 	});
 });
 

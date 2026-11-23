@@ -25,12 +25,14 @@ import {
 	IPresentValueFormData,
 	IPriceToEarningsRatioFormData,
 	ITrueAirspeedFormData,
+	ITimeSpeedDistanceFormData,
 	IWindTriangleFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
+	TimeSpeedDistanceReportProps,
 	TrueAirspeedReportProps,
 	WindTriangleReportProps,
 } from '@/types/calculations';
@@ -489,4 +491,23 @@ export const calculateFuelPlanning = (formData: IFuelPlanningFormData): FuelPlan
 		totalFuel,
 		totalFuelMass: totalFuel * fuelDensity,
 	};
+};
+
+export const calculateTimeSpeedDistance = (
+	formData: ITimeSpeedDistanceFormData
+): TimeSpeedDistanceReportProps => {
+	const { solveFor } = formData;
+	const distance = formData.distance ?? NaN;
+	const groundspeed = formData.groundspeed ?? NaN;
+	const time = formData.time ?? NaN;
+
+	// T = D / GS, D = GS × T, GS = D / T, T in hours (FAA PHAK, FAA-H-8083-25C, p. 16-11).
+	switch (solveFor) {
+		case 'distance':
+			return { solveFor, distance: (groundspeed * time) / 60, groundspeed, time };
+		case 'groundspeed':
+			return { solveFor, distance, groundspeed: (60 * distance) / time, time };
+		case 'time':
+			return { solveFor, distance, groundspeed, time: (60 * distance) / groundspeed };
+	}
 };

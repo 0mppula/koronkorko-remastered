@@ -23,15 +23,27 @@ const splitMinutes = (value: number) => {
 	return { hours: String(hours), minutes: String(Number((value - hours * 60).toFixed(2))) };
 };
 
+const isEmptyValue = (value: HoursMinutesInputProps['value']) =>
+	value === null || value === undefined || value === '';
+
+const EMPTY_BOXES = { hours: '', minutes: '' };
+
 const HoursMinutesInput = React.forwardRef<HTMLInputElement, HoursMinutesInputProps>(
 	({ value, onChange, onBlur, className, ...props }, ref) => {
 		const [boxes, setBoxes] = useState(() =>
-			splitMinutes(Number.isFinite(Number(value)) ? Number(value) : 0)
+			isEmptyValue(value)
+				? EMPTY_BOXES
+				: splitMinutes(Number.isFinite(Number(value)) ? Number(value) : 0)
 		);
 
 		// Follow outside changes (reset, import); typed values already match.
 		useEffect(() => {
-			const total = Number(value ?? 0);
+			if (isEmptyValue(value)) {
+				setBoxes(EMPTY_BOXES);
+				return;
+			}
+
+			const total = Number(value);
 
 			if (!Number.isFinite(total)) return;
 
@@ -51,7 +63,7 @@ const HoursMinutesInput = React.forwardRef<HTMLInputElement, HoursMinutesInputPr
 		const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
 			const total = toTotalMinutes(boxes.hours, boxes.minutes);
 
-			if (Number.isFinite(total) && total >= 0) {
+			if (!isEmptyValue(value) && Number.isFinite(total) && total >= 0) {
 				setBoxes(splitMinutes(total));
 			}
 

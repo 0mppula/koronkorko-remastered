@@ -214,6 +214,12 @@ export const fuelTypes = [
 	{ value: 'jetA', label: 'Jet A', densityKgPerL: (6.68 * 0.45359237) / 3.785411784 },
 ] as const;
 
+export const timeSpeedDistanceSolveForOptions = [
+	{ value: 'distance', label: 'Distance' },
+	{ value: 'groundspeed', label: 'Groundspeed' },
+	{ value: 'time', label: 'Time' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',
