@@ -24,12 +24,16 @@ import {
 	IMarkupFormData,
 	IPresentValueFormData,
 	IPriceToEarningsRatioFormData,
+	ITrueAirspeedFormData,
+	ITimeSpeedDistanceFormData,
 	IWindTriangleFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
 	MarkupReportProps,
 	PresentValueReportProps,
 	PriceToEarningsRatioReportProps,
+	TimeSpeedDistanceReportProps,
+	TrueAirspeedReportProps,
 	WindTriangleReportProps,
 } from '@/types/calculations';
 import {
@@ -388,6 +392,40 @@ const ISA_PRESSURE_EXPONENT = STANDARD_GRAVITY / (DRY_AIR_GAS_CONSTANT * ISA_LAP
 const ISA_SEA_LEVEL_DENSITY =
 	(ISA_SEA_LEVEL_PRESSURE_HPA * 100) / (DRY_AIR_GAS_CONSTANT * ISA_SEA_LEVEL_TEMPERATURE_K);
 const ISA_SCALE_HEIGHT_M = ISA_SEA_LEVEL_TEMPERATURE_K / ISA_LAPSE_RATE_K_PER_M;
+export const ISA_TROPOPAUSE_ALTITUDE_M = 11000;
+// Ratio of specific heats of dry air.
+const AIR_ADIABATIC_INDEX = 1.4;
+
+const isaPressureAtAltitude = (
+	altitudeM: number,
+	referencePressure: number = ISA_SEA_LEVEL_PRESSURE_HPA
+) => referencePressure * (1 - altitudeM / ISA_SCALE_HEIGHT_M) ** ISA_PRESSURE_EXPONENT;
+
+const densityAltitudeFromDensity = (density: number) =>
+	ISA_SCALE_HEIGHT_M *
+	(1 - (density / ISA_SEA_LEVEL_DENSITY) ** (1 / (ISA_PRESSURE_EXPONENT - 1)));
+
+const airDensity = (pressureHpa: number, temperatureC: number) =>
+	(pressureHpa * 100) / (DRY_AIR_GAS_CONSTANT * (temperatureC + CELSIUS_TO_KELVIN));
+
+const speedOfSound = (temperatureK: number) =>
+	Math.sqrt(AIR_ADIABATIC_INDEX * DRY_AIR_GAS_CONSTANT * temperatureK);
+
+const ISA_SEA_LEVEL_SPEED_OF_SOUND = speedOfSound(ISA_SEA_LEVEL_TEMPERATURE_K);
+
+// Subsonic pitot relations (Aviation Formulary V1.47, "Mach numbers"), valid for M < 1.
+const machFromPressure = (calibratedAirspeed: number, pressureHpa: number) => {
+	const casRatio = fromBaseUnit(calibratedAirspeed, 'speed', 'ms') / ISA_SEA_LEVEL_SPEED_OF_SOUND;
+	const impactPressure = ISA_SEA_LEVEL_PRESSURE_HPA * ((1 + 0.2 * casRatio ** 2) ** 3.5 - 1);
+
+	return Math.sqrt(5 * ((impactPressure / pressureHpa + 1) ** (2 / 7) - 1));
+};
+
+export const calculateMach = (calibratedAirspeed: number, pressureAltitude: number): number =>
+	machFromPressure(
+		calibratedAirspeed,
+		isaPressureAtAltitude(fromBaseUnit(pressureAltitude, 'altitude', 'm'))
+	);
 
 export const calculateDensityAltitude = (
 	formData: IDensityAltitudeFormData
@@ -396,17 +434,14 @@ export const calculateDensityAltitude = (
 
 	// ISA barometric relations: an altimeter set to QNH reads the field elevation.
 	const elevationM = fromBaseUnit(fieldElevation, 'altitude', 'm');
-	const stationPressure = qnh * (1 - elevationM / ISA_SCALE_HEIGHT_M) ** ISA_PRESSURE_EXPONENT;
+	const stationPressure = isaPressureAtAltitude(elevationM, qnh);
 	const pressureAltitudeM =
 		ISA_SCALE_HEIGHT_M *
 		(1 - (stationPressure / ISA_SEA_LEVEL_PRESSURE_HPA) ** (1 / ISA_PRESSURE_EXPONENT));
 	const isaTemperature = ISA_SEA_LEVEL_TEMPERATURE_C - ISA_LAPSE_RATE_K_PER_M * pressureAltitudeM;
-	const density =
-		(stationPressure * 100) /
-		(DRY_AIR_GAS_CONSTANT * (outsideAirTemperature + CELSIUS_TO_KELVIN));
-	const densityAltitudeM =
-		ISA_SCALE_HEIGHT_M *
-		(1 - (density / ISA_SEA_LEVEL_DENSITY) ** (1 / (ISA_PRESSURE_EXPONENT - 1)));
+	const densityAltitudeM = densityAltitudeFromDensity(
+		airDensity(stationPressure, outsideAirTemperature)
+	);
 
 	return {
 		...formData,
@@ -414,6 +449,28 @@ export const calculateDensityAltitude = (
 		isaTemperature,
 		isaDeviation: outsideAirTemperature - isaTemperature,
 		densityAltitude: toBaseUnit(densityAltitudeM, 'altitude', 'm'),
+	};
+};
+
+export const calculateTrueAirspeed = (formData: ITrueAirspeedFormData): TrueAirspeedReportProps => {
+	const { calibratedAirspeed, pressureAltitude, outsideAirTemperature } = formData;
+
+	const pressure = isaPressureAtAltitude(fromBaseUnit(pressureAltitude, 'altitude', 'm'));
+	const mach = machFromPressure(calibratedAirspeed, pressure);
+	const trueAirspeedMs = mach * speedOfSound(outsideAirTemperature + CELSIUS_TO_KELVIN);
+	const densityAltitudeM = densityAltitudeFromDensity(
+		airDensity(pressure, outsideAirTemperature)
+	);
+
+	return {
+		...formData,
+		mach,
+		trueAirspeed: toBaseUnit(trueAirspeedMs, 'speed', 'ms'),
+		// The ISA formulas only hold in the troposphere.
+		densityAltitude:
+			densityAltitudeM > ISA_TROPOPAUSE_ALTITUDE_M
+				? null
+				: toBaseUnit(densityAltitudeM, 'altitude', 'm'),
 	};
 };
 
@@ -434,4 +491,23 @@ export const calculateFuelPlanning = (formData: IFuelPlanningFormData): FuelPlan
 		totalFuel,
 		totalFuelMass: totalFuel * fuelDensity,
 	};
+};
+
+export const calculateTimeSpeedDistance = (
+	formData: ITimeSpeedDistanceFormData
+): TimeSpeedDistanceReportProps => {
+	const { solveFor } = formData;
+	const distance = formData.distance ?? NaN;
+	const groundspeed = formData.groundspeed ?? NaN;
+	const time = formData.time ?? NaN;
+
+	// T = D / GS, D = GS × T, GS = D / T, T in hours (FAA PHAK, FAA-H-8083-25C, p. 16-11).
+	switch (solveFor) {
+		case 'distance':
+			return { solveFor, distance: (groundspeed * time) / 60, groundspeed, time };
+		case 'groundspeed':
+			return { solveFor, distance, groundspeed: (60 * distance) / time, time };
+		case 'time':
+			return { solveFor, distance, groundspeed, time: (60 * distance) / groundspeed };
+	}
 };

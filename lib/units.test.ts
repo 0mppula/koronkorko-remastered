@@ -60,6 +60,26 @@ describe('altitude conversions', () => {
 	});
 });
 
+describe('distance conversions', () => {
+	it('converts nautical miles to and from kilometres (1 NM = 1852 m)', () => {
+		expect(fromBaseUnit(1, 'distance', 'km')).toBe(1.852);
+		expect(toBaseUnit(1.852, 'distance', 'km')).toBe(1);
+	});
+
+	it('converts nautical miles to and from statute miles (1 SM = 1609.344 m)', () => {
+		expect(fromBaseUnit(1, 'distance', 'sm')).toBeCloseTo(1852 / 1609.344, 12);
+		expect(fromBaseUnit(1, 'distance', 'sm')).toBeCloseTo(1.150779, 6);
+		expect(toBaseUnit(1852, 'distance', 'sm')).toBeCloseTo(1609.344, 9);
+	});
+
+	it('formats distances with 2 decimals and grouping', () => {
+		expect(normalize(formatUnitValue(10000, 'distance', 'nm'))).toBe('10,000.00 NM');
+		// 10,000 NM × 1852 / 1609.344 = 11,507.794 SM
+		expect(normalize(formatBaseValue(10000, 'distance', 'sm'))).toBe('11,507.79 SM');
+		expect(normalize(formatBaseValue(210, 'distance', 'km'))).toBe('388.92 km');
+	});
+});
+
 describe('temperature conversions', () => {
 	it.each([
 		[0, 32],
@@ -606,6 +626,7 @@ describe('withDefaultUnitPreferences', () => {
 			temperature: 'c',
 			pressure: 'hpa',
 			fuel: 'l',
+			distance: 'nm',
 		});
 	});
 
@@ -616,13 +637,20 @@ describe('withDefaultUnitPreferences', () => {
 		});
 	});
 
-	it('adds the default pressure and fuel to preferences saved before they existed', () => {
+	it('adds the default pressure, fuel and distance to preferences saved before they existed', () => {
 		expect(
 			withDefaultUnitPreferences({ speed: 'kmh', altitude: 'm', temperature: 'f' })
-		).toEqual({ speed: 'kmh', altitude: 'm', temperature: 'f', pressure: 'hpa', fuel: 'l' });
+		).toEqual({
+			speed: 'kmh',
+			altitude: 'm',
+			temperature: 'f',
+			pressure: 'hpa',
+			fuel: 'l',
+			distance: 'nm',
+		});
 	});
 
-	it('keeps the other choices when only fuel is missing', () => {
+	it('keeps the other choices when only fuel and distance are missing', () => {
 		expect(
 			withDefaultUnitPreferences({
 				speed: 'mph',
@@ -630,7 +658,33 @@ describe('withDefaultUnitPreferences', () => {
 				temperature: 'f',
 				pressure: 'inhg',
 			})
-		).toEqual({ speed: 'mph', altitude: 'm', temperature: 'f', pressure: 'inhg', fuel: 'l' });
+		).toEqual({
+			speed: 'mph',
+			altitude: 'm',
+			temperature: 'f',
+			pressure: 'inhg',
+			fuel: 'l',
+			distance: 'nm',
+		});
+	});
+
+	it('keeps the other choices when only distance is missing', () => {
+		expect(
+			withDefaultUnitPreferences({
+				speed: 'mph',
+				altitude: 'm',
+				temperature: 'f',
+				pressure: 'inhg',
+				fuel: 'lb',
+			})
+		).toEqual({
+			speed: 'mph',
+			altitude: 'm',
+			temperature: 'f',
+			pressure: 'inhg',
+			fuel: 'lb',
+			distance: 'nm',
+		});
 	});
 
 	it('falls back to the default for invalid values', () => {
@@ -640,7 +694,7 @@ describe('withDefaultUnitPreferences', () => {
 	});
 
 	it('drops unknown quantities', () => {
-		const units = { speed: 'mph', distance: 'nm' } as Partial<Record<'speed', string>>;
+		const units = { speed: 'mph', volume: 'm3' } as Partial<Record<'speed', string>>;
 
 		expect(withDefaultUnitPreferences(units)).toEqual({
 			...DEFAULT_UNIT_PREFERENCES,

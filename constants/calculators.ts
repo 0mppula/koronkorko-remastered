@@ -118,4 +118,18 @@ export const calculators = [
 		description:
 			'Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'True Airspeed Calculator',
+		url: 'true-airspeed-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the true airspeed, Mach number and density altitude, given the calibrated airspeed, pressure altitude and outside air temperature. Additionally, logged in users can save their calculations.',
+	},
+	{
+		name: 'Time Speed Distance Calculator',
+		url: 'time-speed-distance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the distance, groundspeed or flight time, given the other two. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

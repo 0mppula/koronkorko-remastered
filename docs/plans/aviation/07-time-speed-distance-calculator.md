@@ -86,27 +86,35 @@ and returns all three.
 
 - `solveFor`: `z.enum` from `timeSpeedDistanceSolveForOptions` (in `constants/data.ts`, like
   `fuelTypes`), message `"Solve for must be distance, groundspeed or time"`.
-- `distance`, `groundspeed`, `time`: optional numbers (`.nullish()`, `''` → none, as 05's optional
-  fuel amounts). Their limits are checked in `superRefine` **only for the two given fields**, so a
-  hidden value never blocks the form: missing → `"Distance is required"` (etc.); limits via
-  `createUnitLimits` (distance, speed; same tolerance and inward-rounded messages as 01), time
-  `"Time must be greater than 0"` / `"Time cannot be greater than 24 h"`.
+- `distance`, `groundspeed`, `time`: `z.unknown()` in the object, so the hidden field (any value,
+  including non-numeric) never adds an issue and zod 3.22's `preprocess` quirk can't skip a
+  check. `superRefine` checks **only the two given fields**: empty (`undefined`, `''`, `null`) →
+  `"Distance is required"` (etc.); otherwise the value is parsed with `unitNumberFieldSchema`
+  (distance, speed; `min: 0, minExclusive: true`, so `"Distance must be greater than 0.00 NM"`
+  and inward-rounded maxima as in 01) or `numberFieldSchema('Time')` with `"Time must be greater
+than 0"` / `"Time cannot be greater than 24 h"`, and its first issue is reported on the field.
+  Numeric strings are coerced the same way. An unknown `solveFor` skips these checks (one issue).
 - Solved value check (path `solveFor`), only when both given fields are valid: compute the result in
-  base units and reject if above its limit: `"The resulting distance would exceed 10,000.00 NM"`
+  base units with `calculateTimeSpeedDistance` and reject if above its limit (same relative
+  tolerance as the unit limits): `"The resulting distance would exceed 10,000.00 NM"`
   (`18,520.00 km`, `11,507.79 SM`), `"The resulting groundspeed would exceed 1,000.00 kt"`
   (`1,852.00 km/h`, `1,150.77 mph`, `514.44 m/s`), `"The resulting time would exceed 24 h"`.
-- `.transform` sets the solved field to `null`, so the API stores `null` (the client form keeps the
-  hidden value because `useCalculator` saves `form.getValues()`; the API parses the body with the
-  schema). The `POST` saves `null` fields as `?? undefined`, as in 05.
-- Watch the known zod 3.22 quirks (`preprocess` skipping after an earlier issue, `superRefine` on
-  dirty data); document any that surface as `BUG:` tests.
+- `.transform` returns numbers for the given fields and `null` for the solved field, so the API
+  stores `null` (the client form keeps the hidden value because `useCalculator` saves
+  `form.getValues()`; the API parses the body with the schema). The `POST` saves `null` fields as
+  `?? undefined`, as in 05.
+- Known quirk (harmless, not fixed): after a save or update the form still holds the hidden value
+  while the stored field is `null`, so "Update" always sends a `PUT`, and the optimistic cache
+  holds the hidden value until the list is refetched.
 
 ## UI
 
 - `Calculator.tsx`: defaults (base units) `{ solveFor: 'time', distance: 210, groundspeed: 140,
 time: null }` (PHAK example, 1 h 30 min). "Solve for" `RadioGroup` at the top; the solved input is
-  not rendered (react-hook-form keeps its value). Inputs: "Distance" (distance symbol),
-  "Groundspeed" (speed symbol), "Time" (`HoursMinutesInput`).
+  not rendered (react-hook-form keeps its value). Changing "Solve for" clears the form errors, so a
+  hidden field's error doesn't show stale when it's shown again. Inputs: "Distance" (distance
+  symbol), "Groundspeed" (speed symbol), both empty for `null`, and "Time"
+  (`HoursMinutesInput`, which now shows empty boxes for `null`/`''` instead of 0 h 0 min).
 - `Report.tsx`: the two given values, `ReportDivider`, the solved value labelled e.g. "Time"
   (`formatHoursMinutes`), distance and groundspeed with `formatBaseValue`,
   `<CalculatorDisclaimer category="aviation" />`.

@@ -1,4 +1,5 @@
-import { currencies, fuelTypes, themes } from '@/constants/data';
+import { currencies, fuelTypes, themes, timeSpeedDistanceSolveForOptions } from '@/constants/data';
+import { calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formatUnitValue,
@@ -387,6 +388,65 @@ export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
 
 export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
 
+const TAS_CALIBRATED_AIRSPEED_LIMITS = { min: 0, minExclusive: true, max: 400 };
+const TAS_PRESSURE_ALTITUDE_LIMITS = { min: -1500, max: 36000 };
+
+export const createTrueAirspeedFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			calibratedAirspeed: unitNumberFieldSchema(
+				'Calibrated airspeed',
+				'speed',
+				units.speed,
+				TAS_CALIBRATED_AIRSPEED_LIMITS
+			),
+			pressureAltitude: unitNumberFieldSchema(
+				'Pressure altitude',
+				'altitude',
+				units.altitude,
+				TAS_PRESSURE_ALTITUDE_LIMITS
+			),
+			outsideAirTemperature: unitNumberFieldSchema(
+				'Outside air temperature',
+				'temperature',
+				units.temperature,
+				{ min: -70, max: 60 }
+			),
+		})
+		.superRefine((data, ctx) => {
+			const speedLimits = createUnitLimits('speed', units.speed);
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const { calibratedAirspeed, pressureAltitude } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (
+				!Number.isFinite(calibratedAirspeed) ||
+				!Number.isFinite(pressureAltitude) ||
+				!(speedLimits.toBase(calibratedAirspeed) > 0) ||
+				!speedLimits.isAtMost(TAS_CALIBRATED_AIRSPEED_LIMITS.max)(calibratedAirspeed) ||
+				!altitudeLimits.isAtLeast(TAS_PRESSURE_ALTITUDE_LIMITS.min)(pressureAltitude) ||
+				!altitudeLimits.isAtMost(TAS_PRESSURE_ALTITUDE_LIMITS.max)(pressureAltitude)
+			) {
+				return;
+			}
+
+			const mach = calculateMach(
+				speedLimits.toBase(calibratedAirspeed),
+				altitudeLimits.toBase(pressureAltitude)
+			);
+
+			if (mach >= 1) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['calibratedAirspeed'],
+					message:
+						'Calibrated airspeed gives Mach 1 or more at this pressure altitude; only subsonic speeds are supported',
+				});
+			}
+		});
+
+export const trueAirspeedFormDataSchema = createTrueAirspeedFormDataSchema(BASE_UNITS);
+
 const FUEL_MAX_LITRES = 10000;
 
 // Nullish to match Prisma's optional field; empty input means none.
@@ -447,6 +507,128 @@ export const createFuelPlanningFormDataSchema = (units: UnitPreferences) =>
 
 export const fuelPlanningFormDataSchema = createFuelPlanningFormDataSchema(BASE_UNITS);
 
+type TimeSpeedDistanceSolveFor = (typeof timeSpeedDistanceSolveForOptions)[number]['value'];
+
+// Base units: NM, kt and minutes.
+const TSD_LIMITS = { distance: 10000, groundspeed: 1000, time: 1440 } as const;
+
+const isEmptyValue = (value: unknown) => value === '' || value === null || value === undefined;
+
+export const createTimeSpeedDistanceFormDataSchema = (units: UnitPreferences) => {
+	const distanceLimits = createUnitLimits('distance', units.distance);
+	const speedLimits = createUnitLimits('speed', units.speed);
+
+	const fields = {
+		distance: {
+			name: 'Distance',
+			schema: unitNumberFieldSchema('Distance', 'distance', units.distance, {
+				min: 0,
+				minExclusive: true,
+				max: TSD_LIMITS.distance,
+			}),
+			toBase: distanceLimits.toBase,
+			shownMax: distanceLimits.formatShownMax(TSD_LIMITS.distance),
+		},
+		groundspeed: {
+			name: 'Groundspeed',
+			schema: unitNumberFieldSchema('Groundspeed', 'speed', units.speed, {
+				min: 0,
+				minExclusive: true,
+				max: TSD_LIMITS.groundspeed,
+			}),
+			toBase: speedLimits.toBase,
+			shownMax: speedLimits.formatShownMax(TSD_LIMITS.groundspeed),
+		},
+		time: {
+			name: 'Time',
+			schema: numberFieldSchema('Time')
+				.gt(0, { message: 'Time must be greater than 0' })
+				.max(TSD_LIMITS.time, { message: 'Time cannot be greater than 24 h' }),
+			toBase: (value: number) => value,
+			shownMax: '24 h',
+		},
+	} as const;
+
+	const solveForValues = timeSpeedDistanceSolveForOptions.map((o) => o.value) as [
+		TimeSpeedDistanceSolveFor,
+		...TimeSpeedDistanceSolveFor[],
+	];
+
+	return (
+		z
+			.object({
+				solveFor: z.enum(solveForValues, {
+					errorMap: () => ({
+						message: 'Solve for must be distance, groundspeed or time',
+					}),
+				}),
+				// Checked below, only when given: the solved field may hold any hidden form value.
+				distance: z.unknown(),
+				groundspeed: z.unknown(),
+				time: z.unknown(),
+			})
+			.superRefine((data, ctx) => {
+				const { solveFor } = data;
+
+				// Zod runs this even when solveFor failed its own check.
+				if (!solveForValues.includes(solveFor)) return;
+
+				const baseValues = { distance: null, groundspeed: null, time: null } as Record<
+					TimeSpeedDistanceSolveFor,
+					number | null
+				>;
+				let isValid = true;
+
+				for (const field of solveForValues) {
+					if (field === solveFor) continue;
+
+					const { name, schema, toBase } = fields[field];
+					const value = data[field];
+					const result = isEmptyValue(value) ? null : schema.safeParse(value);
+
+					if (!result?.success) {
+						isValid = false;
+						ctx.addIssue({
+							code: z.ZodIssueCode.custom,
+							path: [field],
+							message: result?.error.issues[0].message ?? `${name} is required`,
+						});
+						continue;
+					}
+
+					baseValues[field] = toBase(result.data);
+				}
+
+				if (!isValid) return;
+
+				const solved = calculateTimeSpeedDistance({ solveFor, ...baseValues })[solveFor];
+				const limit = TSD_LIMITS[solveFor];
+
+				if (solved > limit + UNIT_LIMIT_TOLERANCE * limit) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['solveFor'],
+						message: `The resulting ${solveFor} would exceed ${fields[solveFor].shownMax}`,
+					});
+				}
+			})
+			// Saved calculations store the solved field as null.
+			.transform(({ solveFor, ...values }) => {
+				const toNumber = (field: TimeSpeedDistanceSolveFor) =>
+					field === solveFor ? null : Number(values[field]);
+
+				return {
+					solveFor,
+					distance: toNumber('distance'),
+					groundspeed: toNumber('groundspeed'),
+					time: toNumber('time'),
+				};
+			})
+	);
+};
+
+export const timeSpeedDistanceFormDataSchema = createTimeSpeedDistanceFormDataSchema(BASE_UNITS);
+
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);
 
@@ -462,6 +644,7 @@ export const unitPreferencesSchema = z.object(
 		temperature: unitValueSchema('temperature'),
 		pressure: unitValueSchema('pressure'),
 		fuel: unitValueSchema('fuel'),
+		distance: unitValueSchema('distance'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

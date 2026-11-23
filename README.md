@@ -19,7 +19,7 @@ Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source cod
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
-Users can also choose their preferred units (speed, altitude, temperature, pressure and fuel) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
+Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel and distance) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 
@@ -121,6 +121,14 @@ Calculate the pressure altitude, ISA temperature deviation and density altitude,
 ### [Fuel Planning Calculator][16]
 
 Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type (AVGAS or Jet A).
+
+### [True Airspeed Calculator][17]
+
+Calculate the true airspeed, Mach number and density altitude, given the calibrated airspeed, pressure altitude and outside air temperature.
+
+### [Time Speed Distance Calculator][18]
+
+Calculate the distance, groundspeed or flight time, given the other two.
 
 ---
 
@@ -260,5 +268,7 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [14]: https://www.koronkorko.com/wind-triangle-calculator
 [15]: https://www.koronkorko.com/density-altitude-calculator
 [16]: https://www.koronkorko.com/fuel-planning-calculator
+[17]: https://www.koronkorko.com/true-airspeed-calculator
+[18]: https://www.koronkorko.com/time-speed-distance-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

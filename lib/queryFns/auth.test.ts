@@ -11,6 +11,7 @@ const units = {
 	temperature: 'f',
 	pressure: 'inhg',
 	fuel: 'usgal',
+	distance: 'km',
 } as const;
 
 describe('updateUserPreferences', () => {
