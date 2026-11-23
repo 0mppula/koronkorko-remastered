@@ -69,6 +69,7 @@ model User {
   WindTriangleCalculations         WindTriangleCalculation[]
   DensityAltitudeCalculations      DensityAltitudeCalculation[]
   FuelPlanningCalculations         FuelPlanningCalculation[]
+  TrueAirspeedCalculations         TrueAirspeedCalculation[]
 }
 
 enum Plan {
@@ -382,6 +383,23 @@ model FuelPlanningCalculation {
   userId    String                          @db.ObjectId
   name      String
   formData  FuelPlanningCalculationFormData
+  createdAt DateTime                        @default(now())
+  updatedAt DateTime                        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type TrueAirspeedCalculationFormData {
+  calibratedAirspeed    Float
+  pressureAltitude      Float
+  outsideAirTemperature Float
+}
+
+model TrueAirspeedCalculation {
+  id        String                          @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                          @db.ObjectId
+  name      String
+  formData  TrueAirspeedCalculationFormData
   createdAt DateTime                        @default(now())
   updatedAt DateTime                        @updatedAt
 

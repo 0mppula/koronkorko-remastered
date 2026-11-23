@@ -122,6 +122,10 @@ Calculate the pressure altitude, ISA temperature deviation and density altitude,
 
 Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type (AVGAS or Jet A).
 
+### [True Airspeed Calculator][17]
+
+Calculate the true airspeed, Mach number and density altitude, given the calibrated airspeed, pressure altitude and outside air temperature.
+
 ---
 
 ## How to set up the project locally
@@ -260,5 +264,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [14]: https://www.koronkorko.com/wind-triangle-calculator
 [15]: https://www.koronkorko.com/density-altitude-calculator
 [16]: https://www.koronkorko.com/fuel-planning-calculator
+[17]: https://www.koronkorko.com/true-airspeed-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

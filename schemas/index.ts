@@ -1,4 +1,5 @@
 import { currencies, fuelTypes, themes } from '@/constants/data';
+import { calculateMach } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formatUnitValue,
@@ -386,6 +387,65 @@ export const createDensityAltitudeFormDataSchema = (units: UnitPreferences) =>
 	});
 
 export const densityAltitudeFormDataSchema = createDensityAltitudeFormDataSchema(BASE_UNITS);
+
+const TAS_CALIBRATED_AIRSPEED_LIMITS = { min: 0, minExclusive: true, max: 400 };
+const TAS_PRESSURE_ALTITUDE_LIMITS = { min: -1500, max: 36000 };
+
+export const createTrueAirspeedFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			calibratedAirspeed: unitNumberFieldSchema(
+				'Calibrated airspeed',
+				'speed',
+				units.speed,
+				TAS_CALIBRATED_AIRSPEED_LIMITS
+			),
+			pressureAltitude: unitNumberFieldSchema(
+				'Pressure altitude',
+				'altitude',
+				units.altitude,
+				TAS_PRESSURE_ALTITUDE_LIMITS
+			),
+			outsideAirTemperature: unitNumberFieldSchema(
+				'Outside air temperature',
+				'temperature',
+				units.temperature,
+				{ min: -70, max: 60 }
+			),
+		})
+		.superRefine((data, ctx) => {
+			const speedLimits = createUnitLimits('speed', units.speed);
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const { calibratedAirspeed, pressureAltitude } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (
+				!Number.isFinite(calibratedAirspeed) ||
+				!Number.isFinite(pressureAltitude) ||
+				!(speedLimits.toBase(calibratedAirspeed) > 0) ||
+				!speedLimits.isAtMost(TAS_CALIBRATED_AIRSPEED_LIMITS.max)(calibratedAirspeed) ||
+				!altitudeLimits.isAtLeast(TAS_PRESSURE_ALTITUDE_LIMITS.min)(pressureAltitude) ||
+				!altitudeLimits.isAtMost(TAS_PRESSURE_ALTITUDE_LIMITS.max)(pressureAltitude)
+			) {
+				return;
+			}
+
+			const mach = calculateMach(
+				speedLimits.toBase(calibratedAirspeed),
+				altitudeLimits.toBase(pressureAltitude)
+			);
+
+			if (mach >= 1) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['calibratedAirspeed'],
+					message:
+						'Calibrated airspeed gives Mach 1 or more at this pressure altitude; only subsonic speeds are supported',
+				});
+			}
+		});
+
+export const trueAirspeedFormDataSchema = createTrueAirspeedFormDataSchema(BASE_UNITS);
 
 const FUEL_MAX_LITRES = 10000;
 

@@ -12,6 +12,7 @@ import {
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
 	createFuelPlanningFormDataSchema,
+	createTrueAirspeedFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
@@ -25,6 +26,7 @@ import {
 	markupFormDataSchema,
 	presentValueFormDataSchema,
 	priceToEarningsRatioFormDataSchema,
+	trueAirspeedFormDataSchema,
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
 	userPreferencesSchema,
@@ -1273,6 +1275,196 @@ describe('createFuelPlanningFormDataSchema', () => {
 			taxiFuel: 5,
 			extraFuel: undefined,
 			fuelType: 'jetA',
+		});
+	});
+});
+
+describe('trueAirspeedFormDataSchema', () => {
+	const base = { calibratedAirspeed: 120, pressureAltitude: 5000, outsideAirTemperature: 5 };
+	const MACH_MESSAGE =
+		'Calibrated airspeed gives Mach 1 or more at this pressure altitude; only subsonic speeds are supported';
+
+	it('accepts valid input', () => {
+		expect(trueAirspeedFormDataSchema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(trueAirspeedFormDataSchema, base);
+
+	it('accepts a negative pressure altitude and temperature', () => {
+		const input = {
+			calibratedAirspeed: 90,
+			pressureAltitude: -1000,
+			outsideAirTemperature: -40,
+		};
+
+		expect(trueAirspeedFormDataSchema.parse(input)).toEqual(input);
+	});
+
+	it('rejects a CAS of 0', () => {
+		const result = trueAirspeedFormDataSchema.safeParse({ ...base, calibratedAirspeed: 0 });
+
+		expect(issueFields(result)).toEqual(['calibratedAirspeed']);
+		expect(issueMessages(result)).toEqual(['Calibrated airspeed must be greater than 0.00 kt']);
+	});
+
+	it.each([
+		['calibratedAirspeed', 400, 400.01, 'Calibrated airspeed cannot be greater than 400.00 kt'],
+		['pressureAltitude', -1500, -1501, 'Pressure altitude cannot be lower than -1,500 ft'],
+		['pressureAltitude', 36000, 36001, 'Pressure altitude cannot be greater than 36,000 ft'],
+		[
+			'outsideAirTemperature',
+			-70,
+			-70.01,
+			'Outside air temperature cannot be lower than -70.00 °C',
+		],
+		[
+			'outsideAirTemperature',
+			60,
+			60.01,
+			'Outside air temperature cannot be greater than 60.00 °C',
+		],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		expect(trueAirspeedFormDataSchema.safeParse({ ...base, [field]: limit }).success).toBe(
+			true
+		);
+
+		const result = trueAirspeedFormDataSchema.safeParse({ ...base, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	// Mach 1 is at CAS 342.274 kt at 36,000 ft and 389.964 kt at 30,000 ft (Aviation Formulary).
+	it.each([
+		{ pressureAltitude: 36000, accepted: 342, rejected: 343 },
+		{ pressureAltitude: 30000, accepted: 389, rejected: 390 },
+	])(
+		'accepts $accepted kt and rejects $rejected kt at $pressureAltitude ft',
+		({ pressureAltitude, accepted, rejected }) => {
+			const parse = (calibratedAirspeed: number) =>
+				trueAirspeedFormDataSchema.safeParse({
+					...base,
+					calibratedAirspeed,
+					pressureAltitude,
+				});
+
+			expect(parse(accepted).success).toBe(true);
+			expect(issueFields(parse(rejected))).toEqual(['calibratedAirspeed']);
+			expect(issueMessages(parse(rejected))).toEqual([MACH_MESSAGE]);
+		}
+	);
+
+	it('accepts the maximum CAS at 25,000 ft (Mach 0.934)', () => {
+		const input = { ...base, calibratedAirspeed: 400, pressureAltitude: 25000 };
+
+		expect(trueAirspeedFormDataSchema.safeParse(input).success).toBe(true);
+	});
+
+	it.each([
+		{
+			input: { calibratedAirspeed: 450, pressureAltitude: 36000 },
+			field: 'calibratedAirspeed',
+			message: 'Calibrated airspeed cannot be greater than 400.00 kt',
+		},
+		{
+			input: { calibratedAirspeed: -500, pressureAltitude: 36000 },
+			field: 'calibratedAirspeed',
+			message: 'Calibrated airspeed must be greater than 0.00 kt',
+		},
+		{
+			input: { calibratedAirspeed: 343, pressureAltitude: 40000 },
+			field: 'pressureAltitude',
+			message: 'Pressure altitude cannot be greater than 36,000 ft',
+		},
+	])("doesn't add the Mach message when $field already failed", ({ input, field, message }) => {
+		const result = trueAirspeedFormDataSchema.safeParse({ ...base, ...input });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			trueAirspeedFormDataSchema.parse({
+				calibratedAirspeed: '150.5',
+				pressureAltitude: '-500',
+				outsideAirTemperature: '-5',
+			})
+		).toEqual({ calibratedAirspeed: 150.5, pressureAltitude: -500, outsideAirTemperature: -5 });
+	});
+
+	describe('in km/h, m and °F', () => {
+		const units = { ...BASE_UNITS, speed: 'kmh', altitude: 'm', temperature: 'f' } as const;
+		const schema = createTrueAirspeedFormDataSchema(units);
+		// 222.24 km/h = 120 kt, 1524 m = 5000 ft, 41 °F = 5 °C
+		const userBase = {
+			calibratedAirspeed: 222.24,
+			pressureAltitude: 1524,
+			outsideAirTemperature: 41,
+		};
+
+		it('accepts valid input', () => {
+			expect(schema.safeParse(userBase).success).toBe(true);
+		});
+
+		// 400 kt = 740.8 km/h, −1500 ft = −457.2 m, 36000 ft = 10972.8 m, −70 °C = −94 °F,
+		// 60 °C = 140 °F. Shown limits are rounded inwards.
+		it.each([
+			[
+				'calibratedAirspeed',
+				740.8,
+				740.81,
+				'Calibrated airspeed cannot be greater than 740.80 km/h',
+			],
+			['pressureAltitude', -457, -458, 'Pressure altitude cannot be lower than -457 m'],
+			['pressureAltitude', 10972, 10973, 'Pressure altitude cannot be greater than 10,972 m'],
+			[
+				'outsideAirTemperature',
+				-94,
+				-94.01,
+				'Outside air temperature cannot be lower than -94.00 °F',
+			],
+			[
+				'outsideAirTemperature',
+				140,
+				140.01,
+				'Outside air temperature cannot be greater than 140.00 °F',
+			],
+		])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+			expect(schema.safeParse({ ...userBase, [field]: limit }).success).toBe(true);
+
+			const result = schema.safeParse({ ...userBase, [field]: beyond });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		// 633 km/h ≈ 341.8 kt and 636 km/h ≈ 343.4 kt; Mach 1 is at about 342.3 kt here.
+		it('checks the Mach number in the user units', () => {
+			const parse = (calibratedAirspeed: number) =>
+				schema.safeParse({ ...userBase, calibratedAirspeed, pressureAltitude: 10972 });
+
+			expect(parse(633).success).toBe(true);
+			expect(issueMessages(parse(636))).toEqual([MACH_MESSAGE]);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			for (const baseValues of [
+				{ calibratedAirspeed: 400, pressureAltitude: -1500, outsideAirTemperature: -70 },
+				{ calibratedAirspeed: 300, pressureAltitude: 36000, outsideAirTemperature: 60 },
+			]) {
+				const formData = formDataFromBaseUnits(
+					baseValues,
+					{
+						calibratedAirspeed: 'speed',
+						pressureAltitude: 'altitude',
+						outsideAirTemperature: 'temperature',
+					},
+					units
+				);
+
+				expect(schema.safeParse(formData).success).toBe(true);
+			}
 		});
 	});
 });

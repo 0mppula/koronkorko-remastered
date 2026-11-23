@@ -14,8 +14,10 @@ import {
 	calculateFuelPlanning,
 	calculateInvestmentTime,
 	calculateLiquidationPrice,
+	calculateMach,
 	calculateMarkup,
 	calculatePresentValue,
+	calculateTrueAirspeed,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
 import {
@@ -1285,6 +1287,141 @@ describe('calculateFuelPlanning', () => {
 			expect(result.taxiFuel).toBeCloseTo(5, 12);
 			expect(result.extraFuel).toBeCloseTo(10, 12);
 			expect(result.totalFuel).toBeCloseTo(105, 9);
+		});
+	});
+});
+
+describe('calculateTrueAirspeed', () => {
+	// Sources:
+	// - FAA PHAK (FAA-H-8083-25C) p. 11-18: CAS equals TAS at sea level in the standard atmosphere.
+	// - Aviation Formulary V1.47 (https://edwilliams.org/avform147.htm), "Mach numbers": CAS 250 kt,
+	//   PA 10,000 ft, OAT −6.72 °C gives M 0.4523 and TAS 287.7 kt (rounded); "Standard Atmosphere":
+	//   PA 8,000 ft, OAT 18 °C gives DA 10,145 ft; reverse formula for the CAS at Mach 1.
+	// - Other values: the ICAO Standard Atmosphere and the Formulary's pitot formulas evaluated with
+	//   40-digit decimals in a standalone Python script (not by running calculateTrueAirspeed).
+	it.each([
+		{ cas: 100, pa: 0, oat: 15, mach: 0.151176, tas: 100, da: 0 },
+		{ cas: 250, pa: 10000, oat: -6.72, mach: 0.452275, tas: 287.6741, da: 9772.71 },
+		{ cas: 100, pa: 8000, oat: 18, mach: 0.175238, tas: 116.5179, da: 10144.66 },
+		{ cas: 120, pa: 5000, oat: 5.094, mach: 0.198717, tas: 129.1678, da: 5000 },
+		{ cas: 150, pa: -1500, oat: 40, mach: 0.220805, tas: 152.2622, da: 996.95 },
+		{ cas: 200, pa: 20000, oat: -24.6, mach: 0.440378, tas: 270.5449, da: 20002.85 },
+		{ cas: 300, pa: 36000, oat: -56.5, mach: 0.891339, tas: 511.2443, da: 35979.02 },
+		{ cas: 400, pa: 25000, oat: -70, mach: 0.933725, tas: 518.6017, da: 20358.52 },
+	])('CAS $cas kt, PA $pa ft, OAT $oat °C', ({ cas, pa, oat, mach, tas, da }) => {
+		const result = calculateTrueAirspeed({
+			calibratedAirspeed: cas,
+			pressureAltitude: pa,
+			outsideAirTemperature: oat,
+		});
+
+		expect(result.mach).toBeCloseTo(mach, 5);
+		expect(result.trueAirspeed).toBeCloseTo(tas, 3);
+		expect(result.densityAltitude).toBeCloseTo(da, 1);
+	});
+
+	it('matches the Formulary examples at their published precision', () => {
+		const mach = calculateTrueAirspeed({
+			calibratedAirspeed: 250,
+			pressureAltitude: 10000,
+			outsideAirTemperature: -6.72,
+		});
+		const densityAltitude = calculateTrueAirspeed({
+			calibratedAirspeed: 100,
+			pressureAltitude: 8000,
+			outsideAirTemperature: 18,
+		});
+
+		expect(mach.mach).toBeCloseTo(0.4523, 4);
+		expect(mach.trueAirspeed).toBeCloseTo(287.7, 1);
+		expect(densityAltitude.densityAltitude).toBeCloseTo(10145, 0);
+	});
+
+	it('gives TAS = CAS and Mach = CAS / 661.4786 kt at ISA sea level', () => {
+		const result = calculateTrueAirspeed({
+			calibratedAirspeed: 100,
+			pressureAltitude: 0,
+			outsideAirTemperature: 15,
+		});
+
+		expect(result.trueAirspeed).toBeCloseTo(100, 9);
+		expect(result.mach).toBeCloseTo(100 / 661.4786, 7);
+		expect(result.densityAltitude).toBeCloseTo(0, 6);
+	});
+
+	// DA would be 46,505.64 ft, above the 36,089.24 ft tropopause.
+	it('returns no density altitude above the tropopause but still gives TAS and Mach', () => {
+		const result = calculateTrueAirspeed({
+			calibratedAirspeed: 300,
+			pressureAltitude: 36000,
+			outsideAirTemperature: 60,
+		});
+
+		expect(result.mach).toBeCloseTo(0.891339, 5);
+		expect(result.trueAirspeed).toBeCloseTo(633.9705, 3);
+		expect(result.densityAltitude).toBeNull();
+	});
+
+	it('gives a higher TAS and DA for a higher OAT, with the same Mach', () => {
+		const [cold, warm] = [-10, 30].map((outsideAirTemperature) =>
+			calculateTrueAirspeed({
+				calibratedAirspeed: 150,
+				pressureAltitude: 6000,
+				outsideAirTemperature,
+			})
+		);
+
+		expect(warm.mach).toBe(cold.mach);
+		expect(warm.trueAirspeed).toBeGreaterThan(cold.trueAirspeed);
+		expect(warm.densityAltitude).toBeGreaterThan(cold.densityAltitude!);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = {
+			calibratedAirspeed: 123.4,
+			pressureAltitude: 4321,
+			outsideAirTemperature: -3.5,
+		};
+
+		expect(calculateTrueAirspeed(formData)).toMatchObject(formData);
+	});
+
+	// 463 km/h = 250 kt, 3048 m = 10,000 ft, 19.9 °F = −6.7222 °C.
+	it('works with values entered in km/h, m and °F', () => {
+		const formData = formDataToBaseUnits(
+			{ calibratedAirspeed: 463, pressureAltitude: 3048, outsideAirTemperature: 19.9 },
+			{
+				calibratedAirspeed: 'speed',
+				pressureAltitude: 'altitude',
+				outsideAirTemperature: 'temperature',
+			},
+			{ ...BASE_UNITS, speed: 'kmh', altitude: 'm', temperature: 'f' }
+		);
+
+		const result = calculateTrueAirspeed(formData);
+
+		expect(result.mach).toBeCloseTo(0.452275, 5);
+		expect(result.trueAirspeed).toBeCloseTo(287.6729, 3);
+		expect(fromBaseUnit(result.trueAirspeed, 'speed', 'kmh')).toBeCloseTo(532.7702, 3);
+	});
+
+	describe('calculateMach', () => {
+		// CAS for Mach 1 from the Formulary's reverse formula.
+		it.each([
+			{ cas: 342.274, pa: 36000 },
+			{ cas: 389.964, pa: 30000 },
+		])('gives Mach 1 at $cas kt and $pa ft', ({ cas, pa }) => {
+			expect(calculateMach(cas, pa)).toBeCloseTo(1, 4);
+		});
+
+		it('does not depend on the OAT', () => {
+			const result = calculateTrueAirspeed({
+				calibratedAirspeed: 200,
+				pressureAltitude: 20000,
+				outsideAirTemperature: 10,
+			});
+
+			expect(calculateMach(200, 20000)).toBe(result.mach);
 		});
 	});
 });
