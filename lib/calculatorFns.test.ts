@@ -12,6 +12,7 @@ import {
 	calculateEnterpriseValue,
 	calculateEventProbability,
 	calculateFuelPlanning,
+	calculateHeading,
 	calculateInvestmentTime,
 	calculateLiquidationPrice,
 	calculateMach,
@@ -25,6 +26,8 @@ import {
 	BASE_UNITS,
 	formDataToBaseUnits,
 	fromBaseUnit,
+	normalizeDegrees,
+	signedAngleDifference,
 	UnitFields,
 	UnitPreferences,
 } from '@/lib/units';
@@ -1540,5 +1543,101 @@ describe('calculateTimeSpeedDistance', () => {
 		const { distance } = calculateTimeSpeedDistance(formData);
 
 		expect(fromBaseUnit(distance, 'distance', 'sm')).toBeCloseTo(241.5, 6);
+	});
+});
+
+describe('calculateHeading', () => {
+	// FAA PHAK (FAA-H-8083-25C) worked examples, plus exact wrap-around cases.
+	const cases: [number, number, 'east' | 'west', number | null, number, number | null, string][] =
+		[
+			[360, 9, 'east', null, 351, null, 'PHAK 16-7, 9° E: 360 → 351'],
+			[90, 9, 'east', null, 81, null, 'PHAK 16-7, 9° E: 090 → 081'],
+			[180, 9, 'east', null, 171, null, 'PHAK 16-7, 9° E: 180 → 171'],
+			[270, 9, 'east', null, 261, null, 'PHAK 16-7, 9° E: 270 → 261'],
+			[60, 9, 'east', null, 51, null, 'PHAK 16-7, TH 060 → 051'],
+			[180, 10, 'west', -2, 190, 188, 'PHAK 8-24/8-25, Washington, D.C.'],
+			[180, 14, 'east', null, 166, null, 'PHAK 8-24, Los Angeles'],
+			[28, 7, 'east', 2, 21, 23, 'PHAK 16-20 flight planning example'],
+			[88, 10, 'east', -4, 78, 74, 'PHAK Figure 16-16'],
+			[5, 10, 'east', null, 355, null, 'wraps below 0'],
+			[355, 10, 'west', 20, 5, 25, 'wraps above 360'],
+			[90, 180, 'east', null, 270, null, '180° E'],
+			[90, 180, 'west', null, 270, null, '180° W gives the same as 180° E'],
+			[10, 0, 'east', -20, 10, 350, 'zero variation; correction wraps below 0'],
+		];
+
+	it.each(cases)(
+		'TH %d, variation %d %s, correction %j → MH %d, CH %j (%s)',
+		(trueHeading, variation, variationDirection, deviationCorrection, mh, ch) => {
+			const { magneticHeading, compassHeading } = calculateHeading({
+				trueHeading,
+				variation,
+				variationDirection,
+				deviationCorrection,
+			});
+
+			expect(magneticHeading).toBeCloseTo(mh, 6);
+
+			if (ch === null) {
+				expect(compassHeading).toBeNull();
+			} else {
+				expect(compassHeading).toBeCloseTo(ch, 6);
+			}
+		}
+	);
+
+	// PHAK 8-25 reverse rule: CH ∓ correction = MH, MH + E / − W variation = TH.
+	it.each(cases)(
+		'returns to TH %d from the compass heading by the reverse rule',
+		(trueHeading, variation, variationDirection, deviationCorrection) => {
+			const { magneticHeading, compassHeading } = calculateHeading({
+				trueHeading,
+				variation,
+				variationDirection,
+				deviationCorrection,
+			});
+			const backToMagnetic =
+				compassHeading === null
+					? magneticHeading
+					: normalizeDegrees(compassHeading - (deviationCorrection ?? 0));
+			const backToTrue = normalizeDegrees(
+				backToMagnetic + (variationDirection === 'east' ? variation : -variation)
+			);
+
+			expect(backToMagnetic).toBeCloseTo(magneticHeading, 9);
+			expect(signedAngleDifference(backToTrue, trueHeading)).toBeCloseTo(0, 9);
+		}
+	);
+
+	// PHAK Figure 16-12 deviation card (For → Steer), with zero variation.
+	it.each([
+		[30, -2, 28],
+		[210, 2, 212],
+	])('steers %d° with a %d° card correction as %d°', (heading, correction, steer) => {
+		expect(
+			calculateHeading({
+				trueHeading: heading,
+				variation: 0,
+				variationDirection: 'east',
+				deviationCorrection: correction,
+			}).compassHeading
+		).toBeCloseTo(steer, 6);
+	});
+
+	it('treats an undefined correction as none and returns the inputs unrounded', () => {
+		const input = { trueHeading: 87.6, variation: 9.4, variationDirection: 'west' } as const;
+
+		expect(calculateHeading(input)).toEqual({
+			...input,
+			magneticHeading: expect.closeTo(97, 9),
+			compassHeading: null,
+		});
+	});
+
+	it('returns a magnetic heading of 0 (not 360) for magnetic north', () => {
+		expect(
+			calculateHeading({ trueHeading: 350, variation: 10, variationDirection: 'west' })
+				.magneticHeading
+		).toBe(0);
 	});
 });

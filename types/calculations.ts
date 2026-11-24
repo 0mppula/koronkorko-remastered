@@ -11,6 +11,7 @@ import {
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -31,6 +32,7 @@ import {
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
 	FuelPlanningCalculation,
+	HeadingCalculation,
 	InvestmentTimeCalculation,
 	LiquidationPriceCalculation,
 	MarkupCalculation,
@@ -232,6 +234,15 @@ export interface TimeSpeedDistanceReportProps {
 	time: number;
 }
 
+// Heading Calculation
+export type IHeadingFormData = z.infer<typeof headingFormDataSchema>;
+
+export interface HeadingReportProps extends IHeadingFormData {
+	magneticHeading: number;
+	// Null without a deviation correction.
+	compassHeading: number | null;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -250,4 +261,5 @@ export type CalculationType =
 	| DensityAltitudeCalculation
 	| FuelPlanningCalculation
 	| TrueAirspeedCalculation
-	| TimeSpeedDistanceCalculation;
+	| TimeSpeedDistanceCalculation
+	| HeadingCalculation;

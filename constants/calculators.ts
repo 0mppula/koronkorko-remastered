@@ -132,4 +132,11 @@ export const calculators = [
 		description:
 			'Calculate the distance, groundspeed or flight time, given the other two. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'True, Magnetic and Compass Heading Calculator',
+		url: 'heading-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

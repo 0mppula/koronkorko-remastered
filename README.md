@@ -130,6 +130,10 @@ Calculate the true airspeed, Mach number and density altitude, given the calibra
 
 Calculate the distance, groundspeed or flight time, given the other two.
 
+### [True, Magnetic and Compass Heading Calculator][19]
+
+Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction.
+
 ---
 
 ## How to set up the project locally
@@ -270,5 +274,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [16]: https://www.koronkorko.com/fuel-planning-calculator
 [17]: https://www.koronkorko.com/true-airspeed-calculator
 [18]: https://www.koronkorko.com/time-speed-distance-calculator
+[19]: https://www.koronkorko.com/heading-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

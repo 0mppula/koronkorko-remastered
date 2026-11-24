@@ -9,6 +9,7 @@ import {
 	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
 	FuelPlanningReportProps,
+	HeadingReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
 	ICompoundInterestFormData,
@@ -19,6 +20,7 @@ import {
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
+	IHeadingFormData,
 	IInvestmentTimeFormData,
 	ILiquidationPriceFormData,
 	IMarkupFormData,
@@ -510,4 +512,22 @@ export const calculateTimeSpeedDistance = (
 		case 'time':
 			return { solveFor, distance, groundspeed, time: (60 * distance) / groundspeed };
 	}
+};
+
+export const calculateHeading = (formData: IHeadingFormData): HeadingReportProps => {
+	const { trueHeading, variation, variationDirection, deviationCorrection } = formData;
+
+	// TH − E / + W variation = MH; MH + card correction = CH (FAA PHAK, FAA-H-8083-25C, p. 16-7 to 16-9).
+	const magneticHeading = normalizeDegrees(
+		variationDirection === 'east' ? trueHeading - variation : trueHeading + variation
+	);
+
+	return {
+		...formData,
+		magneticHeading,
+		compassHeading:
+			deviationCorrection == null
+				? null
+				: normalizeDegrees(magneticHeading + deviationCorrection),
+	};
 };

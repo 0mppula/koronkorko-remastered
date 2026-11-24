@@ -1,4 +1,10 @@
-import { currencies, fuelTypes, themes, timeSpeedDistanceSolveForOptions } from '@/constants/data';
+import {
+	currencies,
+	fuelTypes,
+	themes,
+	timeSpeedDistanceSolveForOptions,
+	variationDirections,
+} from '@/constants/data';
 import { calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
@@ -628,6 +634,27 @@ export const createTimeSpeedDistanceFormDataSchema = (units: UnitPreferences) =>
 };
 
 export const timeSpeedDistanceFormDataSchema = createTimeSpeedDistanceFormDataSchema(BASE_UNITS);
+
+type VariationDirection = (typeof variationDirections)[number]['value'];
+
+export const headingFormDataSchema = z.object({
+	trueHeading: headingFieldSchema('True heading'),
+	variation: numberFieldSchema('Variation')
+		.min(0, { message: 'Variation cannot be negative' })
+		.max(180, { message: 'Variation cannot be greater than 180°' }),
+	variationDirection: z.enum(
+		variationDirections.map((d) => d.value) as [VariationDirection, ...VariationDirection[]],
+		{ errorMap: () => ({ message: 'Variation must be East or West' }) }
+	),
+	// Nullish to match Prisma's optional field; empty input means no compass heading.
+	deviationCorrection: z.preprocess(
+		(value) => (value === '' || value === null ? undefined : value),
+		numberFieldSchema('Deviation correction')
+			.min(-20, { message: 'Deviation correction must be between -20° and +20°' })
+			.max(20, { message: 'Deviation correction must be between -20° and +20°' })
+			.nullish()
+	),
+});
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

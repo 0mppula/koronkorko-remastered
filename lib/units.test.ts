@@ -6,9 +6,11 @@ import {
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
+	formatSignedDegrees,
 	formatTemperatureDifference,
 	formatUnitInputValue,
 	formatUnitValue,
+	formatVariation,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
 	formDataToExactBaseUnits,
@@ -610,6 +612,34 @@ describe('formatDegrees', () => {
 		expect(formatDegrees(0, { heading: true })).toBe('360°');
 		expect(formatDegrees(359.6, { heading: true })).toBe('360°');
 		expect(formatDegrees(87, { heading: true })).toBe('087°');
+	});
+});
+
+describe('formatSignedDegrees', () => {
+	it('shows whole degrees with a sign', () => {
+		expect(formatSignedDegrees(2)).toBe('+2°');
+		expect(formatSignedDegrees(-2)).toBe('-2°');
+		expect(formatSignedDegrees(-20)).toBe('-20°');
+		expect(formatSignedDegrees(1.6)).toBe('+2°');
+	});
+
+	it('shows values that round to 0 as 0° without a sign', () => {
+		expect(formatSignedDegrees(0)).toBe('0°');
+		expect(formatSignedDegrees(-0.4)).toBe('0°');
+		expect(formatSignedDegrees(0.4)).toBe('0°');
+	});
+});
+
+describe('formatVariation', () => {
+	it('shows whole degrees with East or West', () => {
+		expect(formatVariation(9, 'east')).toBe('9° E');
+		expect(formatVariation(10.4, 'west')).toBe('10° W');
+		expect(formatVariation(180, 'west')).toBe('180° W');
+	});
+
+	it('shows a variation that rounds to 0 as 0° without East or West', () => {
+		expect(formatVariation(0, 'east')).toBe('0°');
+		expect(formatVariation(0.4, 'west')).toBe('0°');
 	});
 });
 

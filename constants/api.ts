@@ -24,6 +24,7 @@ export const FUEL_PLANNING_CALCULATIONS_API_URL = '/api/fuel-planning-calculatio
 export const TRUE_AIRSPEED_CALCULATIONS_API_URL = '/api/true-airspeed-calculations' as const;
 export const TIME_SPEED_DISTANCE_CALCULATIONS_API_URL =
 	'/api/time-speed-distance-calculations' as const;
+export const HEADING_CALCULATIONS_API_URL = '/api/heading-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -44,6 +45,7 @@ export const API_URLS = [
 	FUEL_PLANNING_CALCULATIONS_API_URL,
 	TRUE_AIRSPEED_CALCULATIONS_API_URL,
 	TIME_SPEED_DISTANCE_CALCULATIONS_API_URL,
+	HEADING_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -70,6 +72,7 @@ export const FUEL_PLANNING_CALCULATIONS_QUERY_KEY = 'fuel-planning-calculations'
 export const TRUE_AIRSPEED_CALCULATIONS_QUERY_KEY = 'true-airspeed-calculations' as const;
 export const TIME_SPEED_DISTANCE_CALCULATIONS_QUERY_KEY =
 	'time-speed-distance-calculations' as const;
+export const HEADING_CALCULATIONS_QUERY_KEY = 'heading-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -90,4 +93,5 @@ export const QUERY_KEYS = [
 	FUEL_PLANNING_CALCULATIONS_QUERY_KEY,
 	TRUE_AIRSPEED_CALCULATIONS_QUERY_KEY,
 	TIME_SPEED_DISTANCE_CALCULATIONS_QUERY_KEY,
+	HEADING_CALCULATIONS_QUERY_KEY,
 ] as const;

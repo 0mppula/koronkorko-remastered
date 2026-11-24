@@ -220,6 +220,11 @@ export const timeSpeedDistanceSolveForOptions = [
 	{ value: 'time', label: 'Time' },
 ] as const;
 
+export const variationDirections = [
+	{ value: 'east', label: 'East' },
+	{ value: 'west', label: 'West' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',

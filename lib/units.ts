@@ -294,6 +294,17 @@ export const formatDegrees = (value: number, { heading = false }: { heading?: bo
 	return `${String(degrees).padStart(3, '0')}°`;
 };
 
+// Whole degrees with a sign, e.g. a compass card correction: +2°, -2°, 0°.
+export const formatSignedDegrees = (value: number): string =>
+	`${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0, signDisplay: 'exceptZero' }).format(value)}°`;
+
+// The side comes from the displayed whole degrees, so 0° has no East/West.
+export const formatVariation = (value: number, direction: 'east' | 'west'): string => {
+	const degrees = Math.round(Math.abs(value));
+
+	return degrees === 0 ? '0°' : `${degrees}° ${direction === 'east' ? 'E' : 'W'}`;
+};
+
 export const withDefaultUnitPreferences = (
 	units?: Partial<Record<UnitQuantity, string | null>> | null
 ): UnitPreferences => {

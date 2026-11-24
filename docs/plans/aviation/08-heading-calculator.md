@@ -67,9 +67,9 @@ Variation".
 - `CH = normalizeDegrees(MH + deviationCorrection)` when a correction is given, otherwise `null`.
 
 `calculateHeading` returns unrounded values; the report shows whole degrees with
-`formatDegrees(value, { heading: true })` (north `360°`, never `000°`). A variation of 0 is shown
-as `0°` without East/West (label derived from the displayed value, see the pitfalls in
-`AGENTS.md`); a correction is shown with its sign (`+2°`, `−2°`, `0°`).
+`formatDegrees(value, { heading: true })` (north `360°`, never `000°`). The variation is shown with
+`formatVariation` (`9° E`; `0°` without East/West when the displayed value is 0) and the correction
+with `formatSignedDegrees` (`+2°`, `-2°`, `0°`), both in `lib/units.ts`.
 
 ## Zod schema rules (`schemas/index.ts`)
 
@@ -79,18 +79,19 @@ as `0°` without East/West (label derived from the displayed value, see the pitf
 - `variationDirection: z.enum(variationDirections)` (`constants/data.ts`, like `fuelTypes`),
   message `"Variation must be East or West"`.
 - `deviationCorrection`: optional number, −20 to +20 (`"Deviation correction must be between -20°
-and +20°"`); `.nullish()`; empty input → `null`, never 0. The zod 3.22 `preprocess` quirk applies
-  to this optional field (see the existing `BUG:` test); don't work around it.
+and +20°"`); `z.preprocess` (`''`/`null` → `undefined`) around `.nullish()`, like `gustSpeed`, so
+  an empty input parses to `undefined` (form default and Prisma value are `null`), never 0. The zod
+  3.22 `preprocess` quirk applies to this optional field (`BUG:` test); don't work around it.
 - No cross-field checks.
 
 ## UI
 
 - `Calculator.tsx`: defaults `{ trueHeading: 88, variation: 10, variationDirection: 'east',
 deviationCorrection: -4 }` (PHAK Figure 16-16). Inputs: "True Heading" (`°`), "Variation"
-  (`°`) with an East/West `Select` next to it, "Deviation Correction from the Compass Card" (`°`,
-  `min0={false}`, optional, placeholder "Optional").
-- `Report.tsx`: inputs, `ReportDivider`, Magnetic Heading, Compass Heading (only when calculated;
-  otherwise "Not calculated (no deviation correction)"),
+  (`°`) with an East/West `Select` next to it (inline `FormGroup`), "Deviation Correction from the
+  Compass Card" (`°`, `min0={false}`, optional, placeholder "Optional"). No `unitFields`.
+- `Report.tsx`: True Heading, Variation, Deviation Correction (only when given), `ReportDivider`,
+  Magnetic Heading, Compass Heading (otherwise "Not calculated (no deviation correction)"),
   `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: true north vs magnetic north, isogonic/agonic lines, "east is least, west is best"
   with the PHAK 9° E examples, deviation and the compass card (correction as printed, PHAK 8-25
@@ -105,20 +106,21 @@ VariationDirection deviationCorrection Float? }`, `model HeadingCalculation`,
    `HeadingCalculations HeadingCalculation[]` on `User`. Run `npx prisma generate`.
 2. `constants/data.ts`: `variationDirections`.
 3. `schemas/index.ts` + test: `headingFormDataSchema`.
-4. `types/calculations.ts`: `IHeadingFormData`, `HeadingReportProps extends IHeadingFormData {
+4. `lib/units.ts` + test: `formatVariation`, `formatSignedDegrees`.
+5. `types/calculations.ts`: `IHeadingFormData`, `HeadingReportProps extends IHeadingFormData {
 magneticHeading: number; compassHeading: number | null }`, add to `CalculationType`.
-5. `lib/calculatorFns.ts` + test: `calculateHeading`.
-6. `constants/api.ts`: `HEADING_CALCULATIONS_API_URL = '/api/heading-calculations'`,
+6. `lib/calculatorFns.ts` + test: `calculateHeading`.
+7. `constants/api.ts`: `HEADING_CALCULATIONS_API_URL = '/api/heading-calculations'`,
    `HEADING_CALCULATIONS_QUERY_KEY = 'heading-calculations'`.
-7. `constants/calculators.ts`: `{ name: 'True, Magnetic and Compass Heading Calculator', url:
+8. `constants/calculators.ts`: `{ name: 'True, Magnetic and Compass Heading Calculator', url:
 'heading-calculator', category: 'aviation', description: 'Calculate the magnetic and compass
 heading, given the true heading, magnetic variation and compass deviation correction.
 Additionally, logged in users can save their calculations.' }`.
-8. `app/api/heading-calculations/route.ts` and `[id]/route.ts` (`POST` saves `null` as
+9. `app/api/heading-calculations/route.ts` and `[id]/route.ts` (`POST` saves `null` as
    `?? undefined`).
-9. `app/(calculators)/heading-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
-   `Info.tsx`.
-10. `README.md` aviation entry; `00-epic.md` follow-up (mark 08 done).
+10. `app/(calculators)/heading-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
+    `Info.tsx`.
+11. `README.md` aviation entry; `00-epic.md` follow-up (mark 08 done).
 
 ## Test cases
 
@@ -147,12 +149,14 @@ Additionally, logged in users can save their calculations.' }`.
 - Independent check: PHAK 8-25 reverse rule ("Compass Course ± Deviation = Magnetic Course ±
   Variation = True Course"): for every row, `CH − correction` gives MH and `MH + E − W` gives TH
   (after `normalizeDegrees`).
-- Report labels: a variation of 0 shows `0°` without East/West; MH exactly 0 shows `360°`.
+- Report labels (`lib/units.test.ts`): a variation of 0 shows `0°` without East/West; MH exactly 0
+  shows `360°` (`formatDegrees` tests; `calculateHeading` returns 0 for magnetic north).
 
 Schema: valid input passes; missing true heading, variation or direction; TH 1 and 360 accepted,
 0 and 360.01 rejected (existing `headingFieldSchema` messages); variation 0 and 180 accepted,
 −0.01 and 180.01 rejected; unknown direction rejected; correction `null`/missing/`''` accepted as
-`null`, −20 and 20 accepted, −20.01 and 20.01 rejected; numeric strings coerced.
+no correction (`undefined`), −20 and 20 accepted, −20.01 and 20.01 rejected; numeric strings
+coerced; `BUG:` an invalid correction is not reported together with an invalid true heading.
 
 ## Acceptance criteria
 

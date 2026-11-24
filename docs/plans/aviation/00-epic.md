@@ -125,7 +125,7 @@ Follow-ups found during the epic (not part of it):
   `10-glide-distance-calculator.md`, `11-turn-performance-calculator.md` and
   `12-descent-planning-calculator.md` (adds the vertical speed unit and per-unit fraction digits).
   All five are implemented on that one branch, in order 08 → 12.
-  None is implemented yet. Only 12 extends `lib/units.ts`, Prisma `unitPreferences` and the units
+  Done: 08. Only 12 extends `lib/units.ts`, Prisma `unitPreferences` and the units
   modal.
 
 ## Preview database

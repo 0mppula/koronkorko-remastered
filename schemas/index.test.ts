@@ -22,6 +22,7 @@ import {
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -1704,6 +1705,106 @@ describe('timeSpeedDistanceFormDataSchema', () => {
 		expect(
 			schema.parse({ solveFor: 'time', distance: '210', groundspeed: '140.5', time: '' })
 		).toEqual({ solveFor: 'time', distance: 210, groundspeed: 140.5, time: null });
+	});
+});
+
+describe('headingFormDataSchema', () => {
+	const base = { trueHeading: 88, variation: 10, variationDirection: 'east' };
+	const withCorrection = { ...base, deviationCorrection: -4 };
+
+	it('accepts valid input', () => {
+		expect(headingFormDataSchema.parse(base)).toEqual(base);
+		expect(headingFormDataSchema.parse(withCorrection)).toEqual(withCorrection);
+		expect(headingFormDataSchema.parse({ ...base, variationDirection: 'west' })).toEqual({
+			...base,
+			variationDirection: 'west',
+		});
+	});
+
+	itRejectsMissingFields(headingFormDataSchema, base);
+
+	it('accepts a true heading of 1 and 360', () => {
+		expect(headingFormDataSchema.safeParse({ ...base, trueHeading: 1 }).success).toBe(true);
+		expect(headingFormDataSchema.safeParse({ ...base, trueHeading: 360 }).success).toBe(true);
+	});
+
+	it.each([0, 360.01])('rejects a true heading of %d', (trueHeading) => {
+		const result = headingFormDataSchema.safeParse({ ...base, trueHeading });
+
+		expect(issueFields(result)).toEqual(['trueHeading']);
+		expect(issueMessages(result)).toEqual(['True heading must be between 1 and 360']);
+	});
+
+	it('accepts a variation of 0 and 180', () => {
+		expect(headingFormDataSchema.safeParse({ ...base, variation: 0 }).success).toBe(true);
+		expect(headingFormDataSchema.safeParse({ ...base, variation: 180 }).success).toBe(true);
+	});
+
+	it.each([
+		[-0.01, 'Variation cannot be negative'],
+		[180.01, 'Variation cannot be greater than 180°'],
+	])('rejects a variation of %d', (variation, message) => {
+		const result = headingFormDataSchema.safeParse({ ...base, variation });
+
+		expect(issueFields(result)).toEqual(['variation']);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it.each(['north', 'E', ''])('rejects a variation direction of %j', (variationDirection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, variationDirection });
+
+		expect(issueFields(result)).toEqual(['variationDirection']);
+		expect(issueMessages(result)).toEqual(['Variation must be East or West']);
+	});
+
+	it.each([undefined, '', null])('treats a correction of %j as none', (deviationCorrection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, deviationCorrection });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.deviationCorrection).toBeUndefined();
+	});
+
+	it.each([-20, 0, 20])('accepts a correction of %d', (deviationCorrection) => {
+		expect(headingFormDataSchema.parse({ ...base, deviationCorrection })).toEqual({
+			...base,
+			deviationCorrection,
+		});
+	});
+
+	it.each([-20.01, 20.01])('rejects a correction of %d', (deviationCorrection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, deviationCorrection });
+
+		expect(issueFields(result)).toEqual(['deviationCorrection']);
+		expect(issueMessages(result)).toEqual([
+			'Deviation correction must be between -20° and +20°',
+		]);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid correction together with an invalid true heading', () => {
+		const result = headingFormDataSchema.safeParse({
+			...base,
+			trueHeading: 0,
+			deviationCorrection: 30,
+		});
+
+		expect(issueFields(result)).toEqual(['trueHeading', 'deviationCorrection']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			headingFormDataSchema.parse({
+				trueHeading: '088',
+				variation: '10.5',
+				variationDirection: 'west',
+				deviationCorrection: '-4',
+			})
+		).toEqual({
+			trueHeading: 88,
+			variation: 10.5,
+			variationDirection: 'west',
+			deviationCorrection: -4,
+		});
 	});
 });
 
