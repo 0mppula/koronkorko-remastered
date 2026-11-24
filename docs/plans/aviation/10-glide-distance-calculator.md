@@ -13,8 +13,8 @@ fields as the gust speed in `02-crosswind-calculator.md`, time formatting as in
 
 Given the altitude, the terrain elevation and the glide ratio, calculate the glide distance over
 the ground; optionally with the glide true airspeed and a headwind or tailwind, also the
-groundspeed and the glide time. Uses the existing altitude, speed and distance units; no new unit
-preference.
+groundspeed, the glide time and the descent rate. Uses the existing altitude, speed, distance and
+vertical speed units; no new unit preference.
 
 ## Decisions
 
@@ -28,6 +28,10 @@ preference.
 - **Glide TAS** is optional (≥ 20 kt and ≤ 400 kt). Without it there is no wind, groundspeed or
   time; with it, the glide time is the still-air distance divided by the glide TAS (wind doesn't
   change the time, only the distance).
+- **Descent rate** (added later on `feature/glide-descent-rate`, once the vertical speed unit
+  from 12 existed): glide TAS ÷ glide ratio in ft/min, shown only with a glide TAS, in the user's
+  vertical speed unit. Like the time, it doesn't depend on the wind. No limit: the glide ratio is
+    > 0, so it is always finite, and it is an output only.
 - **Limits (base units):** glide ratio > 0 and ≤ 70, altitude −1,500 to 60,000 ft, terrain
   −1,500 to 30,000 ft, glide TAS 20–400 kt, wind 0–200 kt.
 - **No glide distance limit:** with these limits the largest possible result is 7,793.63 NM
@@ -61,6 +65,7 @@ preference.
 | `glideDistance` (output)    | NM        | distance   | over the ground (still air without a wind)             |
 | `groundspeed` (output)      | kt        | speed      | `null` without glide TAS                               |
 | `glideTime` (output)        | minutes   | none       | `null` without glide TAS; `formatHoursMinutes`         |
+| `descentRate` (output)      | ft/min    | vert. spd. | `null` without glide TAS; TAS ÷ glide ratio            |
 
 `glideDistanceUnitFields`: `{ altitude: 'altitude', terrainElevation: 'altitude',
 glideTrueAirspeed: 'speed', windSpeed: 'speed' }`.
@@ -90,12 +95,14 @@ constants are now exported from `lib/units.ts`):
 2. `stillAirDistance = height × glideRatio / NAUTICAL_MILE_IN_FEET` (NM).
 3. With a glide TAS: `groundspeed = TAS − wind` (headwind) or `TAS + wind` (tailwind; `TAS` with
    no wind or a wind of 0); `glideDistance = stillAirDistance × groundspeed / TAS`;
-   `glideTime = stillAirDistance / TAS × 60` (min). Without a glide TAS: `glideDistance =
-stillAirDistance`.
+   `glideTime = stillAirDistance / TAS × 60` (min);
+   `descentRate = TAS × NAUTICAL_MILE_IN_FEET / 60 / glideRatio` (ft/min). Without a glide TAS:
+   `glideDistance = stillAirDistance`, `groundspeed`, `glideTime` and `descentRate` are `null`.
 
 The time aloft doesn't depend on the wind: Glider Flying Handbook p. 5-5, "A headwind during an
 approach results in greater altitude loss per distance traveled. The glider descends at a constant
-rate, but a lower groundspeed increases the observed approach angle."
+rate, but a lower groundspeed increases the observed approach angle." The descent rate is the sink
+speed, airspeed ÷ glide ratio (GFH p. 5-10: 50 kt with a 2.1 kt sink speed is about 24:1).
 
 ## Zod schema rules (`schemas/index.ts`)
 
@@ -131,10 +138,12 @@ than 37.04 km/h"`, `"Altitude cannot be greater than 18,288 m"`.
 inline`; an imported calculation without wind shows the placeholder "Headwind or tailwind").
 - `Report.tsx`: Altitude, Terrain Elevation, Glide Ratio (`x:1`), Glide True Airspeed (if given),
   Headwind/Tailwind (if above 0), `ReportDivider`, Height Above Terrain, Glide Distance
-  (`formatBaseValue` distance), and with a glide TAS: Groundspeed and Glide Time
-  (`formatHoursMinutes`), `<CalculatorDisclaimer category="aviation" />`.
+  (`formatBaseValue` distance), and with a glide TAS: Groundspeed, Glide Time
+  (`formatHoursMinutes`) and Descent Rate (`formatBaseValue` vertical speed: whole ft/min, m/s
+  with 2 decimals), `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: glide ratio (AFH 10:1 example), best glide speed from the POH, wind effect (AFH,
-  Glider Flying Handbook 60/25 kt example), flying faster into a headwind isn't modelled,
+  Glider Flying Handbook 60/25 kt example), descent rate = TAS ÷ glide ratio (GFH 50 kt / 2.1 kt),
+  flying faster into a headwind isn't modelled,
   `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to the AFH page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/airplane_handbook`, text
   `"FAA Airplane Flying Handbook"`).
@@ -150,49 +159,54 @@ GlideDistanceCalculation`, `GlideDistanceCalculations GlideDistanceCalculation[]
 3. `schemas/index.ts` + test.
 4. `types/calculations.ts`: `IGlideDistanceFormData`, `GlideDistanceReportProps extends
 IGlideDistanceFormData { height: number; glideDistance: number; groundspeed: number | null;
-glideTime: number | null }`, add to `CalculationType`.
+glideTime: number | null; descentRate: number | null }`, add to `CalculationType`.
 5. `lib/calculatorFns.ts` + test: `calculateGlideDistance`.
 6. `constants/api.ts`: `GLIDE_DISTANCE_CALCULATIONS_API_URL = '/api/glide-distance-calculations'`,
    `GLIDE_DISTANCE_CALCULATIONS_QUERY_KEY = 'glide-distance-calculations'`.
 7. `constants/calculators.ts`: `{ name: 'Glide Distance Calculator', url:
-'glide-distance-calculator', category: 'aviation', description: 'Calculate the glide distance
-and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in
-users can save their calculations.' }`.
+'glide-distance-calculator', category: 'aviation', description: 'Calculate the glide distance,
+time and descent rate, given the altitude, terrain elevation, glide ratio and wind. Additionally,
+logged in users can save their calculations.' }`.
 8. `app/api/glide-distance-calculations/route.ts` and `[id]/route.ts` (`POST` saves `null` as
    `?? undefined` for `glideTrueAirspeed`, `windSpeed` and `windType`).
 9. `app/(calculators)/glide-distance-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
    `Info.tsx`.
 10. `README.md` aviation entry; `00-epic.md` follow-up (mark 10 done).
 
-Status: implemented on `feature/aviation-wave-3`.
+Status: implemented on `feature/aviation-wave-3`; the descent rate was added on
+`feature/glide-descent-rate`.
 
 ## Test cases
 
-`calculateGlideDistance` (distances `toBeCloseTo(x, 6)`, time `toBeCloseTo(x, 6)`):
+`calculateGlideDistance` (distances, time and descent rate `toBeCloseTo(x, 6)`):
 
-| Altitude | Terrain | Ratio | TAS | Wind     | Height | Distance (NM) | GS (kt) | Time (min) | Source                                  |
-| -------- | ------- | ----- | --- | -------- | ------ | ------------- | ------- | ---------- | --------------------------------------- |
-| 1,500    | 500     | 10    | —   | —        | 1,000  | 1.645788      | `null`  | `null`     | AFH 3-21 (10,000 ft per 1,000 ft)       |
-| 4,000    | 1,000   | 24    | 60  | —        | 3,000  | 11.849676     | 60      | 11.849676  | GFH 5-10 ratio 24, exact                |
-| 4,000    | 1,000   | 24    | 60  | 25 head  | 3,000  | 6.912311      | 35      | 11.849676  | GFH 5-4 (60 kt, 25 kt headwind → 35 kt) |
-| 4,000    | 1,000   | 24    | 60  | 25 tail  | 3,000  | 16.787041     | 85      | 11.849676  | GFH 5-4 (25 kt tailwind → 85 kt)        |
-| 6,000    | 1,000   | 9     | —   | —        | 5,000  | 7.406048      | `null`  | `null`     | Exact                                   |
-| 60,000   | −1,500  | 70    | 20  | 200 tail | 61,500 | 7,793.630670  | 220     | 2,125.5356 | Exact (largest possible result)         |
+| Altitude | Terrain | Ratio | TAS | Wind     | Height | Distance (NM) | GS (kt) | Time (min) | Descent (ft/min) | Source                                  |
+| -------- | ------- | ----- | --- | -------- | ------ | ------------- | ------- | ---------- | ---------------- | --------------------------------------- |
+| 1,500    | 500     | 10    | —   | —        | 1,000  | 1.645788      | `null`  | `null`     | `null`           | AFH 3-21 (10,000 ft per 1,000 ft)       |
+| 4,000    | 1,000   | 24    | 60  | —        | 3,000  | 11.849676     | 60      | 11.849676  | 253.171479       | GFH 5-10 ratio 24, exact                |
+| 4,000    | 1,000   | 24    | 60  | 25 head  | 3,000  | 6.912311      | 35      | 11.849676  | 253.171479       | GFH 5-4 (60 kt, 25 kt headwind → 35 kt) |
+| 4,000    | 1,000   | 24    | 60  | 25 tail  | 3,000  | 16.787041     | 85      | 11.849676  | 253.171479       | GFH 5-4 (25 kt tailwind → 85 kt)        |
+| 6,000    | 1,000   | 9     | —   | —        | 5,000  | 7.406048      | `null`  | `null`     | `null`           | Exact                                   |
+| 60,000   | −1,500  | 70    | 20  | 200 tail | 61,500 | 7,793.630670  | 220     | 2,125.5356 | 28.933883        | Exact (largest possible result)         |
 
 - Row 1: 10,000 ft = 10,000 × 0.3048 / 1,852 NM (exact).
+- GFH p. 5-10 descent rate: TAS 50 kt with ratio 50 / 2.1 gives the 2.1 kt sink speed,
+  212.664042 ft/min.
 - The last row is the extreme corner (all limits at their extremes): assert the result is finite
   and ≈ 7,793.63 NM, so a change to the limits is noticed (no 10,000 NM check exists).
 - Values come from the formulas above evaluated with 50-digit decimals in a standalone Python
   script, never by running `calculateGlideDistance`; put the sources and method in a comment.
-- Independent checks: `glideTime / 60 × groundspeed` equals the glide distance; the implied descent
-  rate `height / glideTime` (ft/min) equals `TAS × NM_IN_FEET / 60 / glideRatio` (253.1715 ft/min
-  for rows 2–4); with zero wind the distance equals the still-air distance.
+- Independent checks: `glideTime / 60 × groundspeed` equals the glide distance; `descentRate`
+  equals `height / glideTime` and `TAS × NM_IN_FEET / 60 / glideRatio` (253.1715 ft/min for rows
+  2–4) and is the same with a headwind, no wind and a tailwind; with zero wind the distance equals
+  the still-air distance.
 - Wind 0 with a TAS of 60 kt (rows 2–4 inputs): groundspeed 60, distance 11.849676 NM.
 - Same TAS, three winds: a 25 kt headwind, no wind and a 25 kt tailwind (rows 3, 2, 4) give an
   identical glide time (11.849676 min) while the distances differ (6.912311 < 11.849676 <
   16.787041 NM).
 - Units: altitude 1,219.2 m and terrain 304.8 m (= 4,000 / 1,000 ft), TAS 111.12 km/h (= 60 kt),
-  25 kt headwind as 46.3 km/h give 12.801600 km (= 6.912311 NM × 1.852).
+  25 kt headwind as 46.3 km/h give 12.801600 km (= 6.912311 NM × 1.852); the descent rate in m/s
+  is 1.286111 (2.5 kt × 1,852 / 3,600).
 
 Schema: valid input passes, with and without TAS and wind; missing altitude, terrain or ratio;
 limits at and beyond each limit (ratio 0 rejected, 70 accepted, 70.01 rejected; TAS 20 and 400
@@ -205,7 +219,10 @@ a field already failed; numeric strings coerced.
 ## Acceptance criteria
 
 - `/glide-distance-calculator` appears in the Aviation section, the category filter and search.
-- Results match the test cases in every altitude, speed and distance unit; storage is ft, kt.
+- Results match the test cases in every altitude, speed, distance and vertical speed unit; storage
+  is ft, kt.
+- With a glide TAS the report shows the descent rate (whole ft/min, m/s with 2 decimals); without
+  one it is hidden.
 - A wind above 0 requires a glide TAS and a type; a wind of 0 is no wind; a headwind at or above
   the TAS is rejected.
 - Info explains flying faster into a headwind isn't modelled.
