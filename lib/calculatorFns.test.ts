@@ -22,6 +22,7 @@ import {
 	calculatePresentValue,
 	calculateTimeSpeedDistance,
 	calculateTrueAirspeed,
+	calculateTurnPerformance,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
 import {
@@ -1905,5 +1906,248 @@ describe('calculateGlideDistance', () => {
 		expect(fromBaseUnit(result.glideDistance, 'distance', 'km')).toBeCloseTo(12.8016, 6);
 		expect(fromBaseUnit(result.groundspeed as number, 'speed', 'kmh')).toBeCloseTo(64.82, 9);
 		expect(result.glideTime).toBeCloseTo(11.849676, 6);
+	});
+});
+
+describe('calculateTurnPerformance', () => {
+	// Exact SI formulas with g = 9.80665 m/s² (Aviation Formulary "Turns and pivotal altitude";
+	// FAA PHAK FAA-H-8083-25C pp. 5-35, 5-38..5-40), evaluated with Python decimal (50 digits),
+	// not by running calculateTurnPerformance.
+	const KT_IN_M_PER_S = 1852 / 3600;
+	const NM_IN_FEET = 1852 / 0.3048;
+	const expectWithinPercent = (actual: number, expected: number, percent: number) =>
+		expect(Math.abs(actual / expected - 1) * 100).toBeLessThan(percent);
+
+	it.each([
+		{
+			tas: 120,
+			bank: 30,
+			rot: 5.254882,
+			ft: 2208.3324,
+			nm: 0.363445,
+			n: 1.154701,
+			t: 68.5077,
+			std: 18.242631,
+		},
+		{
+			tas: 240,
+			bank: 30,
+			rot: 2.627441,
+			ft: 8833.3296,
+			nm: 1.453779,
+			n: 1.154701,
+			t: 137.0155,
+			std: 33.393506,
+		},
+		{
+			tas: 100,
+			bank: 45,
+			rot: 10.922067,
+			ft: 885.4037,
+			nm: 0.145719,
+			n: 1.414214,
+			t: 32.9608,
+			std: 15.358847,
+		},
+		{
+			tas: 240,
+			bank: 49,
+			rot: 5.235167,
+			ft: 4433.2974,
+			nm: 0.729627,
+			n: 1.524253,
+			t: 68.7657,
+			std: 33.393506,
+		},
+		{
+			tas: 100,
+			bank: 60,
+			rot: 18.917575,
+			ft: 511.1881,
+			nm: 0.084131,
+			n: 2,
+			t: 19.0299,
+			std: 15.358847,
+		},
+		{
+			tas: 400,
+			bank: 75,
+			rot: 10.190427,
+			ft: 3795.8912,
+			nm: 0.624723,
+			n: 3.863703,
+			t: 35.3273,
+			std: 47.692408,
+		},
+		{
+			tas: 20,
+			bank: 75,
+			rot: 203.80854,
+			ft: 9.4897,
+			nm: 0.001562,
+			n: 3.863703,
+			t: 1.7664,
+			std: 3.144364,
+		},
+		{
+			tas: 20,
+			bank: 0.1,
+			rot: 0.095313,
+			ft: 20291.9371,
+			nm: 3.339623,
+			n: 1.000002,
+			t: 3777.025,
+			std: 3.144364,
+		},
+	])('$tas kt at $bank°', ({ tas, bank, rot, ft, nm, n, t, std }) => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: tas,
+			bankAngle: bank,
+			stallSpeed: null,
+		});
+
+		expect(result.rateOfTurn).toBeCloseTo(rot, 4);
+		expect(result.turnRadius).toBeCloseTo(ft, 4);
+		expect(result.turnRadius / NM_IN_FEET).toBeCloseTo(nm, 4);
+		expect(result.loadFactor).toBeCloseTo(n, 4);
+		expect(result.fullTurnTime).toBeCloseTo(t, 3);
+		expect(result.standardRateBankAngle).toBeCloseTo(std, 4);
+		expect(result.stallSpeedInTurn).toBeNull();
+
+		// Formulary "v= w R": the speed equals the rate of turn (rad/s) times the radius (m).
+		const omega = (result.rateOfTurn * Math.PI) / 180;
+
+		expect(omega * result.turnRadius * 0.3048).toBeCloseTo(tas * KT_IN_M_PER_S, 9);
+	});
+
+	// PHAK's constants 1,091 and 11.26 are rounded (exact 1,092.2067 and 11.294283), so its
+	// examples differ from the exact values by up to ~0.4 %.
+	it('matches the PHAK 5-39/5-40 examples within 0.5 %', () => {
+		const at120 = calculateTurnPerformance({
+			trueAirspeed: 120,
+			bankAngle: 30,
+			stallSpeed: null,
+		});
+		const at240 = calculateTurnPerformance({
+			trueAirspeed: 240,
+			bankAngle: 30,
+			stallSpeed: null,
+		});
+		const at240Bank49 = calculateTurnPerformance({
+			trueAirspeed: 240,
+			bankAngle: 49,
+			stallSpeed: null,
+		});
+
+		expectWithinPercent(at120.rateOfTurn, 5.25, 0.5);
+		expectWithinPercent(at120.fullTurnTime, 68.6, 0.5);
+		expectWithinPercent(at120.turnRadius, 2215, 0.5);
+		expectWithinPercent(at240.rateOfTurn, 2.62, 0.5);
+		expectWithinPercent(at240.fullTurnTime, 137, 0.5);
+		expectWithinPercent(at240.turnRadius, 8861, 0.5);
+		expectWithinPercent(at240Bank49.rateOfTurn, 5.25, 0.5);
+	});
+
+	// The Formulary's 11.23 (exact 11.294) makes its radius 0.6 % larger than the exact 885.40 ft.
+	it('matches the Aviation Formulary examples at 100 kt', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 100,
+			bankAngle: 45,
+			stallSpeed: null,
+		});
+
+		expectWithinPercent(result.turnRadius, 891, 1);
+		expect(result.rateOfTurn).toBeCloseTo(10.9, 1);
+		expect(result.standardRateBankAngle).toBeCloseTo(15.4, 1);
+	});
+
+	it('gives 2 G at 60° and raises the stall speed by √n (PHAK 5-35)', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 100,
+			bankAngle: 60,
+			stallSpeed: 50,
+		});
+
+		expect(result.loadFactor).toBeCloseTo(2, 12);
+		expect(result.stallSpeedInTurn).toBeCloseTo(50 * Math.SQRT2, 9);
+		expect(result.stallSpeedInTurn).toBeCloseTo(70.7107, 4);
+		// PHAK Figure 5-52: the load factor is the vector sum √(1 + tan² 60°).
+		expect(result.loadFactor).toBeCloseTo(Math.sqrt(1 + Math.tan(Math.PI / 3) ** 2), 12);
+	});
+
+	// Outside the form limit (75°); called directly to check PHAK's 50 kt → 100 kt at 4 G.
+	it('doubles a 50 kt stall speed at 4 G', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 120,
+			bankAngle: (Math.acos(0.25) * 180) / Math.PI,
+			stallSpeed: 50,
+		});
+
+		expect(result.loadFactor).toBeCloseTo(4, 12);
+		expect(result.stallSpeedInTurn).toBeCloseTo(100, 9);
+	});
+
+	it('gives the stall speed in the turn at the limits', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 400,
+			bankAngle: 75,
+			stallSpeed: 200,
+		});
+
+		expect(result.stallSpeedInTurn).toBeCloseTo(393.1261, 4);
+	});
+
+	it('gives a stall speed above the TAS without comparing them', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 60,
+			bankAngle: 60,
+			stallSpeed: 50,
+		});
+
+		expect(result.stallSpeedInTurn).toBeCloseTo(70.7107, 4);
+	});
+
+	it.each([20, 100, 120, 240, 400])(
+		'turns at 3°/s and 360° in 120 s at the standard-rate bank for %d kt',
+		(tas) => {
+			const { standardRateBankAngle } = calculateTurnPerformance({
+				trueAirspeed: tas,
+				bankAngle: 30,
+				stallSpeed: null,
+			});
+			const result = calculateTurnPerformance({
+				trueAirspeed: tas,
+				bankAngle: standardRateBankAngle,
+				stallSpeed: null,
+			});
+
+			expect(result.rateOfTurn).toBeCloseTo(3, 9);
+			expect(result.fullTurnTime).toBeCloseTo(120, 9);
+		}
+	);
+
+	it('returns the inputs unchanged', () => {
+		const formData = { trueAirspeed: 123.4, bankAngle: 25, stallSpeed: 55 };
+
+		expect(calculateTurnPerformance(formData)).toMatchObject(formData);
+	});
+
+	// 222.24 km/h = 120 kt; radius 2,208.3324 ft = 673.0997 m = 0.363445 NM = 0.673100 km.
+	it('works with values entered in km/h and shown in m and km', () => {
+		const formData = formDataToBaseUnits(
+			{ trueAirspeed: 222.24, bankAngle: 30, stallSpeed: null },
+			{ trueAirspeed: 'speed', stallSpeed: 'speed' },
+			{ ...BASE_UNITS, speed: 'kmh', altitude: 'm', distance: 'km' }
+		);
+		const result = calculateTurnPerformance(formData);
+
+		expect(result.trueAirspeed).toBeCloseTo(120, 9);
+		expect(result.rateOfTurn).toBeCloseTo(5.254882, 4);
+		expect(fromBaseUnit(result.turnRadius, 'altitude', 'm')).toBeCloseTo(673.0997, 4);
+		expect(fromBaseUnit(result.turnRadius / NM_IN_FEET, 'distance', 'km')).toBeCloseTo(
+			0.6731,
+			4
+		);
+		expect(result.standardRateBankAngle).toBeCloseTo(18.242631, 4);
 	});
 });

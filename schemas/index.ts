@@ -865,6 +865,28 @@ export const createGlideDistanceFormDataSchema = (units: UnitPreferences) =>
 
 export const glideDistanceFormDataSchema = createGlideDistanceFormDataSchema(BASE_UNITS);
 
+export const createTurnPerformanceFormDataSchema = (units: UnitPreferences) =>
+	z.object({
+		trueAirspeed: unitNumberFieldSchema('True airspeed', 'speed', units.speed, {
+			min: 20,
+			max: 400,
+		}),
+		bankAngle: numberFieldSchema('Bank angle')
+			.gt(0, { message: 'Bank angle must be greater than 0°' })
+			.max(75, { message: 'Bank angle cannot be greater than 75°' }),
+		// Nullish to match Prisma's optional field; empty input means no stall speed.
+		stallSpeed: z.preprocess(
+			emptyToUndefined,
+			unitNumberFieldSchema('Stall speed', 'speed', units.speed, {
+				min: 0,
+				minExclusive: true,
+				max: 200,
+			}).nullish()
+		),
+	});
+
+export const turnPerformanceFormDataSchema = createTurnPerformanceFormDataSchema(BASE_UNITS);
+
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);
 

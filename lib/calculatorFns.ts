@@ -32,6 +32,7 @@ import {
 	IPriceToEarningsRatioFormData,
 	ITrueAirspeedFormData,
 	ITimeSpeedDistanceFormData,
+	ITurnPerformanceFormData,
 	IWindTriangleFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
@@ -40,6 +41,7 @@ import {
 	PriceToEarningsRatioReportProps,
 	TimeSpeedDistanceReportProps,
 	TrueAirspeedReportProps,
+	TurnPerformanceReportProps,
 	WindTriangleReportProps,
 } from '@/types/calculations';
 import {
@@ -589,5 +591,33 @@ export const calculateGlideDistance = (
 		groundspeed,
 		// The wind changes the distance, not the time aloft (GFH 5-5).
 		glideTime: (stillAirDistance / glideTrueAirspeed) * 60,
+	};
+};
+
+const STANDARD_RATE_DEG_PER_S = 3;
+
+export const calculateTurnPerformance = (
+	formData: ITurnPerformanceFormData
+): TurnPerformanceReportProps => {
+	const { trueAirspeed, bankAngle, stallSpeed } = formData;
+
+	// Coordinated level turn: tan(bank) = V² / (R g), V = ω R (Aviation Formulary; PHAK 5-38..5-40).
+	const speed = (trueAirspeed * NAUTICAL_MILE_IN_METRES) / 3600;
+	const bank = toRadians(bankAngle);
+	const rateOfTurn = (((STANDARD_GRAVITY * Math.tan(bank)) / speed) * 180) / Math.PI;
+	const loadFactor = 1 / Math.cos(bank);
+	const standardRateBankAngle =
+		(Math.atan((speed * toRadians(STANDARD_RATE_DEG_PER_S)) / STANDARD_GRAVITY) * 180) /
+		Math.PI;
+
+	return {
+		...formData,
+		rateOfTurn,
+		turnRadius: speed ** 2 / (STANDARD_GRAVITY * Math.tan(bank)) / FOOT_IN_METRES,
+		loadFactor,
+		fullTurnTime: 360 / rateOfTurn,
+		standardRateBankAngle,
+		// Stall speed rises with the square root of the load factor (PHAK 5-35).
+		stallSpeedInTurn: stallSpeed == null ? null : stallSpeed * Math.sqrt(loadFactor),
 	};
 };

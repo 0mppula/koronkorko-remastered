@@ -4,6 +4,7 @@ import {
 	formatCurrency,
 	formatHoursMinutes,
 	formatMinutes,
+	formatMinutesSeconds,
 	getFuelDensity,
 	getFuelTypeLabel,
 	getFuelUnitContext,
@@ -109,6 +110,25 @@ describe('formatHoursMinutes', () => {
 
 	it('falls back to zero for NaN', () => {
 		expect(formatHoursMinutes(NaN)).toBe('0 h 0 min');
+	});
+});
+
+describe('formatMinutesSeconds', () => {
+	it('splits seconds into minutes and seconds', () => {
+		expect(formatMinutesSeconds(120)).toBe('2 min 0 s');
+		expect(formatMinutesSeconds(45)).toBe('0 min 45 s');
+		expect(formatMinutesSeconds(0)).toBe('0 min 0 s');
+		expect(formatMinutesSeconds(3777.025)).toBe('62 min 57 s');
+	});
+
+	it('rounds to whole seconds before splitting', () => {
+		expect(formatMinutesSeconds(68.5077)).toBe('1 min 9 s');
+		expect(formatMinutesSeconds(59.6)).toBe('1 min 0 s');
+		expect(formatMinutesSeconds(59.4)).toBe('0 min 59 s');
+	});
+
+	it('falls back to zero for NaN', () => {
+		expect(formatMinutesSeconds(NaN)).toBe('0 min 0 s');
 	});
 });
 

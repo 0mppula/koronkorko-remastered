@@ -153,4 +153,11 @@ export const calculators = [
 		description:
 			'Calculate the glide distance and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Turn Performance Calculator',
+		url: 'turn-performance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the rate of turn, turn radius, load factor and standard-rate bank angle, given the true airspeed and bank angle. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

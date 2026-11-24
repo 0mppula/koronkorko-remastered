@@ -21,6 +21,7 @@ import {
 	priceToEarningsRatioFormDataSchema,
 	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
+	turnPerformanceFormDataSchema,
 	windTriangleFormDataSchema,
 } from '@/schemas';
 import {
@@ -44,6 +45,7 @@ import {
 	PriceToEarningsRatioCalculation,
 	TimeSpeedDistanceCalculation,
 	TrueAirspeedCalculation,
+	TurnPerformanceCalculation,
 	WindTriangleCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
@@ -268,6 +270,19 @@ export interface GlideDistanceReportProps extends IGlideDistanceFormData {
 	glideTime: number | null;
 }
 
+// Turn Performance Calculation
+export type ITurnPerformanceFormData = z.infer<typeof turnPerformanceFormDataSchema>;
+
+export interface TurnPerformanceReportProps extends ITurnPerformanceFormData {
+	rateOfTurn: number;
+	turnRadius: number;
+	loadFactor: number;
+	fullTurnTime: number;
+	standardRateBankAngle: number;
+	// Null without a stall speed.
+	stallSpeedInTurn: number | null;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -289,4 +304,5 @@ export type CalculationType =
 	| TimeSpeedDistanceCalculation
 	| HeadingCalculation
 	| CloudBaseCalculation
-	| GlideDistanceCalculation;
+	| GlideDistanceCalculation
+	| TurnPerformanceCalculation;

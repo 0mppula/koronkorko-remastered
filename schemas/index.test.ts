@@ -17,6 +17,7 @@ import {
 	createGlideDistanceFormDataSchema,
 	createTimeSpeedDistanceFormDataSchema,
 	createTrueAirspeedFormDataSchema,
+	createTurnPerformanceFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
@@ -34,6 +35,7 @@ import {
 	priceToEarningsRatioFormDataSchema,
 	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
+	turnPerformanceFormDataSchema,
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
 	userPreferencesSchema,
@@ -2278,6 +2280,113 @@ describe('glideDistanceFormDataSchema', () => {
 
 		expect(issueFields(result)).toEqual([field]);
 		expect(issueMessages(result)).toEqual([message]);
+	});
+});
+
+describe('turnPerformanceFormDataSchema', () => {
+	const schema = turnPerformanceFormDataSchema;
+	const base = { trueAirspeed: 120, bankAngle: 30 };
+
+	it('accepts valid input with and without a stall speed', () => {
+		expect(schema.parse(base)).toEqual(base);
+		expect(schema.parse({ ...base, stallSpeed: 50 })).toEqual({ ...base, stallSpeed: 50 });
+	});
+
+	itRejectsMissingFields(schema, base);
+
+	it.each([undefined, '', null])('treats a stall speed of %j as none', (stallSpeed) => {
+		const result = schema.safeParse({ ...base, stallSpeed });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.stallSpeed).toBeUndefined();
+	});
+
+	it.each([
+		['trueAirspeed', 20, 19.99, 'True airspeed cannot be lower than 20.00 kt'],
+		['trueAirspeed', 400, 400.01, 'True airspeed cannot be greater than 400.00 kt'],
+		['bankAngle', 0.01, 0, 'Bank angle must be greater than 0°'],
+		['bankAngle', 75, 75.01, 'Bank angle cannot be greater than 75°'],
+		['stallSpeed', 0.01, 0, 'Stall speed must be greater than 0.00 kt'],
+		['stallSpeed', 200, 200.01, 'Stall speed cannot be greater than 200.00 kt'],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		const input = { ...base, stallSpeed: 50 };
+
+		expect(schema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = schema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it.each(['trueAirspeed', 'bankAngle', 'stallSpeed'])('rejects a negative %s', (field) => {
+		const result = schema.safeParse({ ...base, stallSpeed: 50, [field]: -1 });
+
+		expect(issueFields(result)).toEqual([field]);
+	});
+
+	it('accepts a stall speed above the TAS (no comparison)', () => {
+		expect(schema.safeParse({ trueAirspeed: 40, bankAngle: 30, stallSpeed: 60 }).success).toBe(
+			true
+		);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid stall speed together with an invalid bank angle', () => {
+		const result = schema.safeParse({ ...base, bankAngle: 80, stallSpeed: 201 });
+
+		expect(issueFields(result)).toEqual(['bankAngle', 'stallSpeed']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({ trueAirspeed: '120.5', bankAngle: '30', stallSpeed: '48.5' })
+		).toEqual({ trueAirspeed: 120.5, bankAngle: 30, stallSpeed: 48.5 });
+	});
+
+	// 20 kt = 37.04 km/h, 400 kt = 740.8 km/h, 200 kt = 370.4 km/h.
+	it.each([
+		['trueAirspeed', 37.04, 37.03, 'True airspeed cannot be lower than 37.04 km/h'],
+		['trueAirspeed', 740.8, 740.81, 'True airspeed cannot be greater than 740.80 km/h'],
+		['stallSpeed', 370.4, 370.41, 'Stall speed cannot be greater than 370.40 km/h'],
+	])('shows the %s limit in km/h: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const kmhSchema = createTurnPerformanceFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+		const input = { trueAirspeed: 222.24, bankAngle: 30, stallSpeed: 92.6 };
+
+		expect(kmhSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = kmhSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	// 20 kt = 23.0156 mph, 400 kt = 460.3115 mph, 200 kt = 230.1558 mph (rounded inwards).
+	it.each([
+		['trueAirspeed', 23.02, 23.01, 'True airspeed cannot be lower than 23.02 mph'],
+		['trueAirspeed', 460.31, 460.32, 'True airspeed cannot be greater than 460.31 mph'],
+		['stallSpeed', 230.15, 230.16, 'Stall speed cannot be greater than 230.15 mph'],
+	])('shows the %s limit in mph: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const mphSchema = createTurnPerformanceFormDataSchema({ ...BASE_UNITS, speed: 'mph' });
+		const input = { trueAirspeed: 138, bankAngle: 30, stallSpeed: 57.5 };
+
+		expect(mphSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = mphSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('accepts the form values of the limits set from base units', () => {
+		const units = { ...BASE_UNITS, speed: 'kmh' } as const;
+		const formData = formDataFromBaseUnits(
+			{ trueAirspeed: 400, bankAngle: 75, stallSpeed: 200 },
+			{ trueAirspeed: 'speed', stallSpeed: 'speed' },
+			units
+		);
+
+		expect(createTurnPerformanceFormDataSchema(units).safeParse(formData).success).toBe(true);
 	});
 });
 
