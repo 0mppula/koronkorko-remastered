@@ -28,6 +28,7 @@ const Report = ({ report }: ReportProps) => {
 		glideDistance,
 		groundspeed,
 		glideTime,
+		descentRate,
 	} = report;
 
 	const formatAltitude = (baseValue: number) =>
@@ -66,6 +67,13 @@ const Report = ({ report }: ReportProps) => {
 
 			{glideTime !== null && (
 				<ReportGroup header="Glide Time" value={formatHoursMinutes(glideTime)} />
+			)}
+
+			{descentRate !== null && (
+				<ReportGroup
+					header="Descent Rate"
+					value={formatBaseValue(descentRate, 'verticalSpeed', units.verticalSpeed)}
+				/>
 			)}
 
 			<CalculatorDisclaimer category="aviation" />

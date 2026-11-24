@@ -151,7 +151,7 @@ export const calculators = [
 		url: 'glide-distance-calculator',
 		category: 'aviation',
 		description:
-			'Calculate the glide distance and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in users can save their calculations.',
+			'Calculate the glide distance, time and descent rate, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in users can save their calculations.',
 	},
 	{
 		name: 'Turn Performance Calculator',

@@ -140,7 +140,7 @@ Estimate the cloud base above ground level and mean sea level, given the tempera
 
 ### [Glide Distance Calculator][21]
 
-Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed and glide time with a glide true airspeed and a headwind or tailwind.
+Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed, glide time and descent rate with a glide true airspeed and a headwind or tailwind.
 
 ### [Turn Performance Calculator][22]
 

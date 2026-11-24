@@ -43,12 +43,15 @@ const Info = () => {
 
 				<p className="mt-4">
 					The airplane descends at the same rate whatever the wind, so the time aloft is
-					the still-air distance divided by the glide true airspeed. The wind only changes
-					how far the airplane moves over the ground in that time: the glide distance is
-					the still-air distance times the groundspeed divided by the true airspeed. A
-					wind therefore needs the glide true airspeed, and a headwind must be lower than
-					it. A wind speed of 0 is the same as no wind. Enter the headwind or tailwind
-					component; the Crosswind Calculator gives it from a reported wind.
+					the still-air distance divided by the glide true airspeed. That descent rate is
+					the glide true airspeed divided by the glide ratio: the Glider Flying Handbook
+					gives a glider at 50 knots sinking at 2.1 knots, a glide ratio of about 24:1.
+					The wind only changes how far the airplane moves over the ground in that time:
+					the glide distance is the still-air distance times the groundspeed divided by
+					the true airspeed. A wind therefore needs the glide true airspeed, and a
+					headwind must be lower than it. A wind speed of 0 is the same as no wind. Enter
+					the headwind or tailwind component; the Crosswind Calculator gives it from a
+					reported wind.
 				</p>
 
 				<p className="mt-4">
