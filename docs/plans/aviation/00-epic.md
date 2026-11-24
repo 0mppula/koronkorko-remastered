@@ -124,6 +124,7 @@ Follow-ups found during the epic (not part of it):
   `08-heading-calculator.md` (true, magnetic and compass heading), `09-cloud-base-calculator.md`,
   `10-glide-distance-calculator.md`, `11-turn-performance-calculator.md` and
   `12-descent-planning-calculator.md` (adds the vertical speed unit and per-unit fraction digits).
+  All five are implemented on that one branch, in order 08 → 12.
   None is implemented yet. Only 12 extends `lib/units.ts`, Prisma `unitPreferences` and the units
   modal.
 
@@ -137,5 +138,4 @@ collections are created on first insert and the new models have no unique indexe
 
 ## Open questions
 
-- Third wave (08–12): build all five on `feature/aviation-wave-3`, or one `feature/` branch per
-  calculator from `master`? Not decided yet.
+None at the moment.

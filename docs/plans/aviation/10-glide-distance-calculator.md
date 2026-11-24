@@ -1,8 +1,8 @@
 # 10 Glide Distance Calculator
 
-Branch: `feature/aviation-wave-3` (from an up-to-date `master`; plans 08–12 are written there; how
-the implementation is split into branches is an open question in `00-epic.md`). The aviation epic
-is closed; there is no epic branch.
+Branch: `feature/aviation-wave-3` (from an up-to-date `master`; plans 08–12 are written and all
+five calculators are implemented there, in order 08 → 12). The aviation epic is closed; there is
+no epic branch.
 
 Follow "Adding a calculator" and "Adding an aviation calculator" in `AGENTS.md`. This plan only
 lists what is specific to this calculator; conventions are as in `01-foundation.md`, optional unit
