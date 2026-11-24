@@ -138,6 +138,10 @@ Calculate the magnetic and compass heading, given the true heading, magnetic var
 
 Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and optional field elevation.
 
+### [Glide Distance Calculator][21]
+
+Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed and glide time with a glide true airspeed and a headwind or tailwind.
+
 ---
 
 ## How to set up the project locally
@@ -280,5 +284,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [18]: https://www.koronkorko.com/time-speed-distance-calculator
 [19]: https://www.koronkorko.com/heading-calculator
 [20]: https://www.koronkorko.com/cloud-base-calculator
+[21]: https://www.koronkorko.com/glide-distance-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

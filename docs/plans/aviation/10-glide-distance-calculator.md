@@ -21,7 +21,9 @@ preference.
 - **Glide performance** is entered as a glide ratio (e.g. 9 for 9:1), from the POH.
 - **Height** is altitude minus terrain elevation (both entered); altitude must be above terrain.
 - **Wind** is optional: a wind speed 0–200 kt plus a Headwind/Tailwind select (like the variation
-  East/West in 08), not a signed number. A wind needs the glide TAS. A headwind equal to or
+  East/West), not a signed number. A wind speed of 0 (or empty) means no wind: then neither a
+  wind type nor a glide TAS is required, and the groundspeed equals the glide TAS if one is
+  given. A wind speed above 0 needs both the glide TAS and a wind type. A headwind equal to or
   stronger than the glide TAS (groundspeed ≤ 0) is rejected, like in the wind triangle.
 - **Glide TAS** is optional (≥ 20 kt and ≤ 400 kt). Without it there is no wind, groundspeed or
   time; with it, the glide time is the still-air distance divided by the glide TAS (wind doesn't
@@ -53,8 +55,8 @@ preference.
 | `terrainElevation` (input)  | ft        | altitude   | −1,500 to 30,000                                       |
 | `glideRatio` (input)        | —         | none       | > 0, ≤ 70 (`x:1`)                                      |
 | `glideTrueAirspeed` (input) | kt        | speed      | optional (`.nullish()`, `null`); 20–400                |
-| `windSpeed` (input)         | kt        | speed      | optional (`null`); 0–200; needs `glideTrueAirspeed`    |
-| `windType` (input)          | —         | none       | `'headwind' \| 'tailwind'`; stored `null` without wind |
+| `windSpeed` (input)         | kt        | speed      | optional; 0–200; > 0 needs `glideTrueAirspeed`         |
+| `windType` (input)          | —         | none       | `'headwind' \| 'tailwind'`; `null` when wind is 0/none |
 | `height` (output)           | ft        | altitude   | altitude − terrain                                     |
 | `glideDistance` (output)    | NM        | distance   | over the ground (still air without a wind)             |
 | `groundspeed` (output)      | kt        | speed      | `null` without glide TAS                               |
@@ -81,13 +83,13 @@ Sources:
   "the pilot can add half the headwind component to the zero wind L/D to obtain maximum distance"
   (Info only).
 
-In base units (`NM_IN_FEET = 1852 / 0.3048`, from the existing `NAUTICAL_MILE_IN_METRES` and
-`FOOT_IN_METRES`):
+In base units (`NAUTICAL_MILE_IN_FEET = NAUTICAL_MILE_IN_METRES / FOOT_IN_METRES`; both
+constants are now exported from `lib/units.ts`):
 
 1. `height = altitude − terrainElevation` (ft).
-2. `stillAirDistance = height × glideRatio / NM_IN_FEET` (NM).
+2. `stillAirDistance = height × glideRatio / NAUTICAL_MILE_IN_FEET` (NM).
 3. With a glide TAS: `groundspeed = TAS − wind` (headwind) or `TAS + wind` (tailwind; `TAS` with
-   no wind); `glideDistance = stillAirDistance × groundspeed / TAS`;
+   no wind or a wind of 0); `glideDistance = stillAirDistance × groundspeed / TAS`;
    `glideTime = stillAirDistance / TAS × 60` (min). Without a glide TAS: `glideDistance =
 stillAirDistance`.
 
@@ -100,32 +102,37 @@ rate, but a lower groundspeed increases the observed approach angle."
 - `createGlideDistanceFormDataSchema(units)` with `unitNumberFieldSchema` for `altitude`
   ("Altitude", `min: -1500, max: 60000`), `terrainElevation` ("Terrain elevation",
   `min: -1500, max: 30000`), `glideTrueAirspeed` ("Glide true airspeed", `min: 20, max: 400`,
-  `.nullish()`), `windSpeed` ("Wind speed", `min: 0, max: 200`, `.nullish()`);
-  `glideRatio: numberFieldSchema('Glide ratio')` > 0 and ≤ 70 (`"Glide ratio must be greater than
-0"`, `"Glide ratio cannot be greater than 70"`); `windType: z.enum(windTypes).nullish()`
-  (`constants/data.ts`). `glideDistanceFormDataSchema = createGlideDistanceFormDataSchema(BASE_UNITS)`.
+  `.nullish()`, empty/`null` preprocessed to `undefined` like the crosswind gust), `windSpeed`
+  ("Wind speed", `min: 0, max: 200`, same); `glideRatio: greaterThanZeroNumberFieldSchema('Glide
+ratio').max(70)` (`"Glide ratio must be greater than 0"`, `"Glide ratio cannot be greater than
+70"`); `windType: z.enum(windTypes).nullish()` (`constants/data.ts`, message `"Choose headwind or
+tailwind"`). `glideDistanceFormDataSchema = createGlideDistanceFormDataSchema(BASE_UNITS)`.
 - Cross-field (`superRefine`), each only when the involved fields passed their own checks:
     - altitude ≤ terrain → path `altitude`, `"Altitude must be above the terrain elevation"`.
-    - wind speed given without glide TAS → path `glideTrueAirspeed`, `"Glide true airspeed is
+    - wind speed > 0 without glide TAS → path `glideTrueAirspeed`, `"Glide true airspeed is
 required when a wind is entered"`.
-    - wind speed given without `windType` → path `windType`, `"Choose headwind or tailwind"`.
-    - headwind ≥ glide TAS → path `windSpeed`, `"The headwind must be lower than the glide true
-airspeed"`.
-- `.transform` sets `windType` to `null` when there is no wind speed, so the API never stores a
-  type without a speed.
-- Messages show the user's unit, rounded inwards (01): e.g. `"Glide true airspeed must be at least
-37.04 km/h"`, `"Altitude cannot be greater than 18,288 m"`.
+    - wind speed > 0 without `windType` → path `windType`, `"Choose headwind or tailwind"`.
+    - headwind ≥ glide TAS (compared in the user's unit with a relative 1e-9 tolerance) → path
+      `windSpeed`, `"The headwind must be lower than the glide true airspeed"`.
+- `.transform` sets `windType` to `null` when the wind speed is empty or 0, so the API never
+  stores a type without a wind. The output type therefore always has `windType`.
+- Messages show the user's unit, rounded inwards (01): e.g. `"Glide true airspeed cannot be lower
+than 37.04 km/h"`, `"Altitude cannot be greater than 18,288 m"`.
+- Zod 3.22 `preprocess` quirk: an invalid TAS isn't reported once an earlier field failed
+  (`BUG:` test).
 
 ## UI
 
 - `Calculator.tsx`: defaults (base units) `{ altitude: 4000, terrainElevation: 1000, glideRatio:
 9, glideTrueAirspeed: null, windSpeed: null, windType: 'headwind' }`. Inputs: "Altitude",
-  "Terrain Elevation" (altitude symbol, `min0={false}`), "Glide Ratio" (suffix `:1`), "Glide True
-  Airspeed (optional)" and "Wind Speed (optional)" (speed symbol) with a Headwind/Tailwind `Select`
-  next to the wind speed.
-- `Report.tsx`: inputs, `ReportDivider`, Height Above Terrain, Glide Distance (`formatBaseValue`
-  distance), and with a glide TAS: Groundspeed and Glide Time (`formatHoursMinutes`),
-  `<CalculatorDisclaimer category="aviation" />`.
+  "Terrain Elevation" (altitude symbol, `min0={false}`), "Glide Ratio" (`iconType="unit"`,
+  `unitSymbol=":1"`), "Glide True Airspeed (optional)" and "Wind Speed (optional)" (speed
+  symbol) with a "Wind Type" Headwind/Tailwind `Select` next to the wind speed (`FormGroup
+inline`; an imported calculation without wind shows the placeholder "Headwind or tailwind").
+- `Report.tsx`: Altitude, Terrain Elevation, Glide Ratio (`x:1`), Glide True Airspeed (if given),
+  Headwind/Tailwind (if above 0), `ReportDivider`, Height Above Terrain, Glide Distance
+  (`formatBaseValue` distance), and with a glide TAS: Groundspeed and Glide Time
+  (`formatHoursMinutes`), `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: glide ratio (AFH 10:1 example), best glide speed from the POH, wind effect (AFH,
   Glider Flying Handbook 60/25 kt example), flying faster into a headwind isn't modelled,
   `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to the AFH page
@@ -152,10 +159,12 @@ glideTime: number | null }`, add to `CalculationType`.
 and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in
 users can save their calculations.' }`.
 8. `app/api/glide-distance-calculations/route.ts` and `[id]/route.ts` (`POST` saves `null` as
-   `?? undefined`).
+   `?? undefined` for `glideTrueAirspeed`, `windSpeed` and `windType`).
 9. `app/(calculators)/glide-distance-calculator/`: `page.tsx`, `Calculator.tsx`, `Report.tsx`,
    `Info.tsx`.
 10. `README.md` aviation entry; `00-epic.md` follow-up (mark 10 done).
+
+Status: implemented on `feature/aviation-wave-3`.
 
 ## Test cases
 
@@ -178,14 +187,18 @@ users can save their calculations.' }`.
 - Independent checks: `glideTime / 60 × groundspeed` equals the glide distance; the implied descent
   rate `height / glideTime` (ft/min) equals `TAS × NM_IN_FEET / 60 / glideRatio` (253.1715 ft/min
   for rows 2–4); with zero wind the distance equals the still-air distance.
+- Wind 0 with a TAS of 60 kt (rows 2–4 inputs): groundspeed 60, distance 11.849676 NM.
+- Same TAS, three winds: a 25 kt headwind, no wind and a 25 kt tailwind (rows 3, 2, 4) give an
+  identical glide time (11.849676 min) while the distances differ (6.912311 < 11.849676 <
+  16.787041 NM).
 - Units: altitude 1,219.2 m and terrain 304.8 m (= 4,000 / 1,000 ft), TAS 111.12 km/h (= 60 kt),
   25 kt headwind as 46.3 km/h give 12.801600 km (= 6.912311 NM × 1.852).
 
 Schema: valid input passes, with and without TAS and wind; missing altitude, terrain or ratio;
 limits at and beyond each limit (ratio 0 rejected, 70 accepted, 70.01 rejected; TAS 20 and 400
 accepted, 19.99 and 400.01 rejected; wind 0 and 200 accepted), messages in m, km/h and mph;
-altitude equal to terrain rejected; wind without TAS rejected on `glideTrueAirspeed`; wind without
-type rejected; headwind 59.99 kt at TAS 60 accepted, 60 rejected; tailwind 200 at TAS 20 accepted;
+altitude equal to terrain rejected; wind > 0 without TAS rejected on `glideTrueAirspeed`; wind > 0
+without type rejected; wind 0 without TAS and type accepted (output `windType: null`); headwind 59.99 kt at TAS 60 accepted, 60 rejected; tailwind 200 at TAS 20 accepted;
 the parsed output has `windType: null` without a wind speed; cross-field messages aren't added when
 a field already failed; numeric strings coerced.
 
@@ -193,7 +206,8 @@ a field already failed; numeric strings coerced.
 
 - `/glide-distance-calculator` appears in the Aviation section, the category filter and search.
 - Results match the test cases in every altitude, speed and distance unit; storage is ft, kt.
-- Wind requires a glide TAS; a headwind at or above the TAS is rejected.
+- A wind above 0 requires a glide TAS and a type; a wind of 0 is no wind; a headwind at or above
+  the TAS is rejected.
 - Info explains flying faster into a headwind isn't modelled.
 - Save, rename, update, import, delete and free-plan limit work. Disclaimer present.
 - Lint, typecheck, format check and tests pass.
