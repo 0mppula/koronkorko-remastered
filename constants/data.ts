@@ -225,6 +225,11 @@ export const variationDirections = [
 	{ value: 'west', label: 'West' },
 ] as const;
 
+export const windTypes = [
+	{ value: 'headwind', label: 'Headwind' },
+	{ value: 'tailwind', label: 'Tailwind' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',

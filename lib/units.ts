@@ -1,7 +1,7 @@
 // Exact by definition (NIST SP 811, App. B.9): international nautical mile, statute mile and foot.
-const NAUTICAL_MILE_IN_METRES = 1852;
+export const NAUTICAL_MILE_IN_METRES = 1852;
 const MILE_IN_METRES = 1609.344;
-const FOOT_IN_METRES = 0.3048;
+export const FOOT_IN_METRES = 0.3048;
 const SECONDS_IN_HOUR = 3600;
 // NIST SP 811 App. B.9: 1 inHg (conventional) = 3386.389 Pa, rounded to 33.8639 hPa.
 const INCH_OF_MERCURY_IN_HECTOPASCALS = 33.8639;

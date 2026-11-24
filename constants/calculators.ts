@@ -146,4 +146,11 @@ export const calculators = [
 		description:
 			'Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and field elevation. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Glide Distance Calculator',
+		url: 'glide-distance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the glide distance and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

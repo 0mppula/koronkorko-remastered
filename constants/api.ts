@@ -26,6 +26,7 @@ export const TIME_SPEED_DISTANCE_CALCULATIONS_API_URL =
 	'/api/time-speed-distance-calculations' as const;
 export const HEADING_CALCULATIONS_API_URL = '/api/heading-calculations' as const;
 export const CLOUD_BASE_CALCULATIONS_API_URL = '/api/cloud-base-calculations' as const;
+export const GLIDE_DISTANCE_CALCULATIONS_API_URL = '/api/glide-distance-calculations' as const;
 
 export const API_URLS = [
 	ANNUALIZED_RETURN_CALCULATIONS_API_URL,
@@ -48,6 +49,7 @@ export const API_URLS = [
 	TIME_SPEED_DISTANCE_CALCULATIONS_API_URL,
 	HEADING_CALCULATIONS_API_URL,
 	CLOUD_BASE_CALCULATIONS_API_URL,
+	GLIDE_DISTANCE_CALCULATIONS_API_URL,
 ] as const;
 
 // Tanstack query keys
@@ -76,6 +78,7 @@ export const TIME_SPEED_DISTANCE_CALCULATIONS_QUERY_KEY =
 	'time-speed-distance-calculations' as const;
 export const HEADING_CALCULATIONS_QUERY_KEY = 'heading-calculations' as const;
 export const CLOUD_BASE_CALCULATIONS_QUERY_KEY = 'cloud-base-calculations' as const;
+export const GLIDE_DISTANCE_CALCULATIONS_QUERY_KEY = 'glide-distance-calculations' as const;
 
 export const QUERY_KEYS = [
 	ANNUALIZED_RETURN_CALCULATIONS_QUERY_KEY,
@@ -98,4 +101,5 @@ export const QUERY_KEYS = [
 	TIME_SPEED_DISTANCE_CALCULATIONS_QUERY_KEY,
 	HEADING_CALCULATIONS_QUERY_KEY,
 	CLOUD_BASE_CALCULATIONS_QUERY_KEY,
+	GLIDE_DISTANCE_CALCULATIONS_QUERY_KEY,
 ] as const;

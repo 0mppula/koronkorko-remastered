@@ -12,6 +12,7 @@ import {
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	glideDistanceFormDataSchema,
 	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
@@ -34,6 +35,7 @@ import {
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
 	FuelPlanningCalculation,
+	GlideDistanceCalculation,
 	HeadingCalculation,
 	InvestmentTimeCalculation,
 	LiquidationPriceCalculation,
@@ -255,6 +257,17 @@ export interface CloudBaseReportProps extends ICloudBaseFormData {
 	cloudBaseMsl: number | null;
 }
 
+// Glide Distance Calculation
+export type IGlideDistanceFormData = z.infer<typeof glideDistanceFormDataSchema>;
+
+export interface GlideDistanceReportProps extends IGlideDistanceFormData {
+	height: number;
+	glideDistance: number;
+	// Null without a glide true airspeed.
+	groundspeed: number | null;
+	glideTime: number | null;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -275,4 +288,5 @@ export type CalculationType =
 	| TrueAirspeedCalculation
 	| TimeSpeedDistanceCalculation
 	| HeadingCalculation
-	| CloudBaseCalculation;
+	| CloudBaseCalculation
+	| GlideDistanceCalculation;

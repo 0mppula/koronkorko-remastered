@@ -14,6 +14,7 @@ import {
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
 	createFuelPlanningFormDataSchema,
+	createGlideDistanceFormDataSchema,
 	createTimeSpeedDistanceFormDataSchema,
 	createTrueAirspeedFormDataSchema,
 	createWindTriangleFormDataSchema,
@@ -24,6 +25,7 @@ import {
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	glideDistanceFormDataSchema,
 	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
@@ -1994,6 +1996,288 @@ describe('cloudBaseFormDataSchema', () => {
 
 			expect(schema.safeParse(formData).success).toBe(true);
 		});
+	});
+});
+
+describe('glideDistanceFormDataSchema', () => {
+	const schema = glideDistanceFormDataSchema;
+	const base = { altitude: 4000, terrainElevation: 1000, glideRatio: 9 };
+	const withWind = { ...base, glideTrueAirspeed: 60, windSpeed: 25, windType: 'headwind' };
+	const TAS_REQUIRED = 'Glide true airspeed is required when a wind is entered';
+	const TYPE_REQUIRED = 'Choose headwind or tailwind';
+	const HEADWIND_MESSAGE = 'The headwind must be lower than the glide true airspeed';
+	const ABOVE_TERRAIN = 'Altitude must be above the terrain elevation';
+
+	it('accepts valid input with and without a TAS and wind', () => {
+		expect(schema.parse(base)).toEqual({ ...base, windType: null });
+		expect(schema.parse({ ...base, glideTrueAirspeed: 60 })).toEqual({
+			...base,
+			glideTrueAirspeed: 60,
+			windType: null,
+		});
+		expect(schema.parse(withWind)).toEqual(withWind);
+		expect(schema.parse({ ...withWind, windType: 'tailwind' })).toEqual({
+			...withWind,
+			windType: 'tailwind',
+		});
+	});
+
+	itRejectsMissingFields(schema, base);
+
+	it.each([undefined, '', null])('treats a TAS and wind of %j as none', (value) => {
+		const result = schema.safeParse({
+			...base,
+			glideTrueAirspeed: value,
+			windSpeed: value,
+			windType: 'headwind',
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.glideTrueAirspeed).toBeUndefined();
+		expect(result.success && result.data.windSpeed).toBeUndefined();
+		expect(result.success && result.data.windType).toBeNull();
+	});
+
+	it('treats a wind of 0 as no wind: no TAS or wind type needed', () => {
+		for (const windType of [undefined, null, 'tailwind']) {
+			const result = schema.safeParse({ ...base, windSpeed: 0, windType });
+
+			expect(result.success).toBe(true);
+			expect(result.success && result.data.windSpeed).toBe(0);
+			expect(result.success && result.data.windType).toBeNull();
+		}
+	});
+
+	it('requires a TAS with a wind above 0', () => {
+		const result = schema.safeParse({ ...withWind, glideTrueAirspeed: '' });
+
+		expect(issueFields(result)).toEqual(['glideTrueAirspeed']);
+		expect(issueMessages(result)).toEqual([TAS_REQUIRED]);
+	});
+
+	it.each([undefined, null])('requires a wind type of %j with a wind above 0', (windType) => {
+		const result = schema.safeParse({ ...withWind, windType });
+
+		expect(issueFields(result)).toEqual(['windType']);
+		expect(issueMessages(result)).toEqual([TYPE_REQUIRED]);
+	});
+
+	it('reports both a missing TAS and a missing wind type', () => {
+		const result = schema.safeParse({ ...base, windSpeed: 25 });
+
+		expect(issueFields(result)).toEqual(['windType', 'glideTrueAirspeed']);
+	});
+
+	it.each(['crosswind', 'Headwind'])('rejects a wind type of %j', (windType) => {
+		const result = schema.safeParse({ ...withWind, windType });
+
+		expect(issueFields(result)).toEqual(['windType']);
+		expect(issueMessages(result)).toEqual([TYPE_REQUIRED]);
+	});
+
+	it('accepts a headwind of 59.99 kt at 60 kt and rejects 60 kt and more', () => {
+		expect(schema.safeParse({ ...withWind, windSpeed: 59.99 }).success).toBe(true);
+
+		for (const windSpeed of [60, 70]) {
+			const result = schema.safeParse({ ...withWind, windSpeed });
+
+			expect(issueFields(result)).toEqual(['windSpeed']);
+			expect(issueMessages(result)).toEqual([HEADWIND_MESSAGE]);
+		}
+	});
+
+	it('accepts a 200 kt tailwind at a TAS of 20 kt', () => {
+		const input = { ...withWind, glideTrueAirspeed: 20, windSpeed: 200, windType: 'tailwind' };
+
+		expect(schema.safeParse(input).success).toBe(true);
+	});
+
+	it.each([4000, 3999])('rejects an altitude of %d ft above 4,000 ft terrain', (altitude) => {
+		const result = schema.safeParse({ ...base, altitude, terrainElevation: 4000 });
+
+		expect(issueFields(result)).toEqual(['altitude']);
+		expect(issueMessages(result)).toEqual([ABOVE_TERRAIN]);
+	});
+
+	it.each([
+		['altitude', 60000, 60000.1, 'Altitude cannot be greater than 60,000 ft'],
+		['altitude', -1000, -1500.1, 'Altitude cannot be lower than -1,500 ft'],
+		['terrainElevation', -1500, -1500.1, 'Terrain elevation cannot be lower than -1,500 ft'],
+		['terrainElevation', 30000, 30000.1, 'Terrain elevation cannot be greater than 30,000 ft'],
+		['glideRatio', 70, 70.01, 'Glide ratio cannot be greater than 70'],
+		['glideRatio', 0.01, 0, 'Glide ratio must be greater than 0'],
+		['glideTrueAirspeed', 20, 19.99, 'Glide true airspeed cannot be lower than 20.00 kt'],
+		['glideTrueAirspeed', 400, 400.01, 'Glide true airspeed cannot be greater than 400.00 kt'],
+		['windSpeed', 0, -0.01, 'Wind speed cannot be lower than 0.00 kt'],
+		['windSpeed', 200, 200.01, 'Wind speed cannot be greater than 200.00 kt'],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		const input = {
+			...withWind,
+			terrainElevation: -1500,
+			altitude: 40000,
+			glideTrueAirspeed: 400,
+			windType: 'tailwind',
+		};
+
+		expect(schema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = schema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('rejects a negative glide ratio', () => {
+		expect(issueMessages(schema.safeParse({ ...base, glideRatio: -1 }))).toEqual([
+			'Glide ratio must be greater than 0',
+		]);
+	});
+
+	it.each([
+		[{ altitude: -1501, terrainElevation: 1000 }, ['altitude']],
+		[{ altitude: 4000, terrainElevation: 30001 }, ['terrainElevation']],
+		[{ glideTrueAirspeed: 19, windSpeed: 25 }, ['glideTrueAirspeed']],
+		[{ glideTrueAirspeed: 401, windSpeed: 25 }, ['glideTrueAirspeed']],
+		[{ glideTrueAirspeed: '', windSpeed: 201 }, ['windSpeed']],
+	])('adds no cross-field issue when a field already failed: %j', (input, fields) => {
+		const result = schema.safeParse({ ...withWind, ...input });
+
+		expect(issueFields(result)).toEqual(fields);
+		expect(issueMessages(result)).not.toContain(ABOVE_TERRAIN);
+		expect(issueMessages(result)).not.toContain(TAS_REQUIRED);
+		expect(issueMessages(result)).not.toContain(HEADWIND_MESSAGE);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid TAS together with an invalid altitude', () => {
+		const result = schema.safeParse({ ...base, altitude: 60001, glideTrueAirspeed: 401 });
+
+		expect(issueFields(result)).toEqual(['altitude', 'glideTrueAirspeed']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({
+				altitude: '4500.5',
+				terrainElevation: '-200',
+				glideRatio: '8.5',
+				glideTrueAirspeed: '65',
+				windSpeed: '10',
+				windType: 'tailwind',
+			})
+		).toEqual({
+			altitude: 4500.5,
+			terrainElevation: -200,
+			glideRatio: 8.5,
+			glideTrueAirspeed: 65,
+			windSpeed: 10,
+			windType: 'tailwind',
+		});
+	});
+
+	describe('in m and km/h', () => {
+		const units = { ...BASE_UNITS, altitude: 'm', speed: 'kmh' } as const;
+		const userSchema = createGlideDistanceFormDataSchema(units);
+		// 1,219.2 m / 304.8 m = 4,000 / 1,000 ft; 111.12 km/h = 60 kt; 46.3 km/h = 25 kt.
+		const userBase = {
+			altitude: 1219.2,
+			terrainElevation: 304.8,
+			glideRatio: 24,
+			glideTrueAirspeed: 111.12,
+			windSpeed: 46.3,
+			windType: 'headwind',
+		};
+
+		it('accepts valid input', () => {
+			expect(userSchema.safeParse(userBase).success).toBe(true);
+		});
+
+		// 60,000 ft = 18,288 m, −1,500 ft = −457.2 m, 30,000 ft = 9,144 m, 20 kt = 37.04 km/h,
+		// 400 kt = 740.8 km/h, 200 kt = 370.4 km/h. Shown limits are rounded inwards.
+		it.each([
+			['altitude', 18288, 18289, 'Altitude cannot be greater than 18,288 m'],
+			['terrainElevation', -457, -458, 'Terrain elevation cannot be lower than -457 m'],
+			['terrainElevation', 9144, 9145, 'Terrain elevation cannot be greater than 9,144 m'],
+			[
+				'glideTrueAirspeed',
+				37.04,
+				37.03,
+				'Glide true airspeed cannot be lower than 37.04 km/h',
+			],
+			[
+				'glideTrueAirspeed',
+				740.8,
+				740.81,
+				'Glide true airspeed cannot be greater than 740.80 km/h',
+			],
+			['windSpeed', 370.4, 370.41, 'Wind speed cannot be greater than 370.40 km/h'],
+		])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+			const input = { ...userBase, altitude: 12000, windType: 'tailwind' };
+
+			expect(userSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+			const result = userSchema.safeParse({ ...input, [field]: beyond });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		it('rejects a headwind equal to the TAS', () => {
+			const result = userSchema.safeParse({ ...userBase, windSpeed: 111.12 });
+
+			expect(issueFields(result)).toEqual(['windSpeed']);
+			expect(issueMessages(result)).toEqual([HEADWIND_MESSAGE]);
+		});
+
+		it('rejects an altitude equal to the terrain elevation', () => {
+			const result = userSchema.safeParse({ ...userBase, altitude: 304.8 });
+
+			expect(issueMessages(result)).toEqual([ABOVE_TERRAIN]);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			const formData = formDataFromBaseUnits(
+				{
+					altitude: 60000,
+					terrainElevation: 30000,
+					glideRatio: 70,
+					glideTrueAirspeed: 20,
+					windSpeed: 200,
+					windType: 'tailwind',
+				},
+				{
+					altitude: 'altitude',
+					terrainElevation: 'altitude',
+					glideTrueAirspeed: 'speed',
+					windSpeed: 'speed',
+				},
+				units
+			);
+
+			expect(userSchema.safeParse(formData).success).toBe(true);
+		});
+	});
+
+	// 20 kt = 23.0156 mph, 400 kt = 460.3115 mph, 200 kt = 230.1558 mph (rounded inwards).
+	it.each([
+		['glideTrueAirspeed', 23.02, 23.01, 'Glide true airspeed cannot be lower than 23.02 mph'],
+		[
+			'glideTrueAirspeed',
+			460.31,
+			460.32,
+			'Glide true airspeed cannot be greater than 460.31 mph',
+		],
+		['windSpeed', 230.15, 230.16, 'Wind speed cannot be greater than 230.15 mph'],
+	])('shows the %s limit in mph: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const mphSchema = createGlideDistanceFormDataSchema({ ...BASE_UNITS, speed: 'mph' });
+		const input = { ...withWind, glideTrueAirspeed: 460, windType: 'tailwind' };
+
+		expect(mphSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = mphSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
 	});
 });
 

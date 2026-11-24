@@ -13,6 +13,7 @@ import {
 	calculateEnterpriseValue,
 	calculateEventProbability,
 	calculateFuelPlanning,
+	calculateGlideDistance,
 	calculateHeading,
 	calculateInvestmentTime,
 	calculateLiquidationPrice,
@@ -1726,5 +1727,183 @@ describe('calculateCloudBase', () => {
 		expect(fromBaseUnit(result.cloudBaseAgl, 'altitude', 'm')).toBeCloseTo(1246.91, 2);
 		expect(formatUnsignedTemperatureDifference(result.spread, 'f')).toBe('18.00 °F');
 		expect(formatBaseValue(result.cloudBaseAgl, 'altitude', 'm')).toBe('1,247 m');
+	});
+});
+
+describe('calculateGlideDistance', () => {
+	// FAA AFH (FAA-H-8083-3C) p. 3-21: a 10:1 glide ratio is 10,000 ft forward per 1,000 ft lost;
+	// p. 3-23: a headwind shortens and a tailwind lengthens the glide. FAA GFH (FAA-H-8083-13B)
+	// p. 5-4: 60 kt TAS with a 25 kt headwind is 35 kt GS, with a 25 kt tailwind 85 kt; p. 5-10:
+	// 24:1. Expected values are the formulas evaluated with Python decimal (50 digits), with
+	// 1 NM = 1852 / 0.3048 ft, not by running calculateGlideDistance.
+	const NM_IN_FEET = 1852 / 0.3048;
+	const gfh = {
+		altitude: 4000,
+		terrainElevation: 1000,
+		glideRatio: 24,
+		glideTrueAirspeed: 60,
+		windType: null,
+	};
+
+	it.each([
+		{
+			case: 'AFH 10:1, no TAS',
+			input: { altitude: 1500, terrainElevation: 500, glideRatio: 10, windType: null },
+			height: 1000,
+			distance: 1.645788,
+			gs: null,
+			time: null,
+		},
+		{
+			case: 'GFH 24:1, 60 kt, no wind',
+			input: gfh,
+			height: 3000,
+			distance: 11.849676,
+			gs: 60,
+			time: 11.849676,
+		},
+		{
+			case: 'GFH 25 kt headwind',
+			input: { ...gfh, windSpeed: 25, windType: 'headwind' as const },
+			height: 3000,
+			distance: 6.912311,
+			gs: 35,
+			time: 11.849676,
+		},
+		{
+			case: 'GFH 25 kt tailwind',
+			input: { ...gfh, windSpeed: 25, windType: 'tailwind' as const },
+			height: 3000,
+			distance: 16.787041,
+			gs: 85,
+			time: 11.849676,
+		},
+		{
+			case: '9:1, no TAS',
+			input: { altitude: 6000, terrainElevation: 1000, glideRatio: 9, windType: null },
+			height: 5000,
+			distance: 7.406048,
+			gs: null,
+			time: null,
+		},
+		{
+			case: 'all limits at their extremes (largest possible result)',
+			input: {
+				altitude: 60000,
+				terrainElevation: -1500,
+				glideRatio: 70,
+				glideTrueAirspeed: 20,
+				windSpeed: 200,
+				windType: 'tailwind' as const,
+			},
+			height: 61500,
+			distance: 7793.63067,
+			gs: 220,
+			time: 2125.535637,
+		},
+	])('$case', ({ input, height, distance, gs, time }) => {
+		const result = calculateGlideDistance(input);
+
+		expect(result.height).toBe(height);
+		expect(Number.isFinite(result.glideDistance)).toBe(true);
+		expect(result.glideDistance).toBeCloseTo(distance, 6);
+
+		if (gs === null || time === null) {
+			expect(result.groundspeed).toBeNull();
+			expect(result.glideTime).toBeNull();
+		} else {
+			expect(result.groundspeed).toBeCloseTo(gs, 9);
+			expect(result.glideTime).toBeCloseTo(time, 6);
+		}
+	});
+
+	it('treats a wind of 0 as no wind', () => {
+		const result = calculateGlideDistance({ ...gfh, windSpeed: 0, windType: null });
+
+		expect(result.groundspeed).toBe(60);
+		expect(result.glideDistance).toBeCloseTo(11.849676, 6);
+	});
+
+	it('gives the same glide time with a headwind, no wind and a tailwind', () => {
+		const headwind = calculateGlideDistance({ ...gfh, windSpeed: 25, windType: 'headwind' });
+		const noWind = calculateGlideDistance(gfh);
+		const tailwind = calculateGlideDistance({ ...gfh, windSpeed: 25, windType: 'tailwind' });
+
+		expect(headwind.glideTime).toBe(noWind.glideTime);
+		expect(tailwind.glideTime).toBe(noWind.glideTime);
+		expect(noWind.glideTime).toBeCloseTo(11.849676, 6);
+		expect(headwind.glideDistance).toBeLessThan(noWind.glideDistance);
+		expect(noWind.glideDistance).toBeLessThan(tailwind.glideDistance);
+	});
+
+	it.each([
+		{ windSpeed: 25, windType: 'headwind' as const },
+		{ windSpeed: 25, windType: 'tailwind' as const },
+		{ windSpeed: null, windType: null },
+		{ windSpeed: 200, windType: 'tailwind' as const },
+	])('flies the glide distance in the glide time at the groundspeed: %j', (wind) => {
+		const result = calculateGlideDistance({ ...gfh, ...wind });
+
+		expect(((result.glideTime as number) / 60) * (result.groundspeed as number)).toBeCloseTo(
+			result.glideDistance,
+			9
+		);
+	});
+
+	// The sink rate is TAS / glide ratio: 60 kt / 24 = 2.5 kt = 253.1715 ft/min.
+	it.each(['headwind', 'tailwind'] as const)(
+		'descends at TAS / glide ratio with a %s',
+		(windType) => {
+			const result = calculateGlideDistance({ ...gfh, windSpeed: 25, windType });
+
+			expect(result.height / (result.glideTime as number)).toBeCloseTo(
+				(60 * NM_IN_FEET) / 60 / 24,
+				9
+			);
+			expect(result.height / (result.glideTime as number)).toBeCloseTo(253.171479, 6);
+		}
+	);
+
+	it('gives the still-air distance without a wind', () => {
+		const withTas = calculateGlideDistance(gfh);
+		const withoutTas = calculateGlideDistance({ ...gfh, glideTrueAirspeed: null });
+
+		expect(withTas.glideDistance).toBeCloseTo(withoutTas.glideDistance, 12);
+		expect(withoutTas.glideDistance * NM_IN_FEET).toBeCloseTo(3000 * 24, 6);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { ...gfh, windSpeed: 12.3, windType: 'headwind' as const };
+
+		expect(calculateGlideDistance(formData)).toMatchObject(formData);
+	});
+
+	// 1,219.2 m / 304.8 m = 4,000 / 1,000 ft; 111.12 km/h = 60 kt; 46.3 km/h = 25 kt;
+	// 6.912311 NM × 1.852 = 12.8016 km.
+	it('works with values entered in m and km/h and shown in km', () => {
+		const formData = formDataToBaseUnits(
+			{
+				altitude: 1219.2,
+				terrainElevation: 304.8,
+				glideRatio: 24,
+				glideTrueAirspeed: 111.12,
+				windSpeed: 46.3,
+				windType: 'headwind' as const,
+			},
+			{
+				altitude: 'altitude',
+				terrainElevation: 'altitude',
+				glideTrueAirspeed: 'speed',
+				windSpeed: 'speed',
+			},
+			{ ...BASE_UNITS, altitude: 'm', speed: 'kmh', distance: 'km' }
+		);
+
+		const result = calculateGlideDistance(formData);
+
+		expect(result.glideDistance).toBeCloseTo(6.912311, 6);
+		expect(fromBaseUnit(result.glideDistance, 'distance', 'km')).toBeCloseTo(12.8016, 6);
+		expect(fromBaseUnit(result.groundspeed as number, 'speed', 'kmh')).toBeCloseTo(64.82, 9);
+		expect(result.glideTime).toBeCloseTo(11.849676, 6);
 	});
 });

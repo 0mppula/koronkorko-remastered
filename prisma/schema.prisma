@@ -74,6 +74,7 @@ model User {
   TimeSpeedDistanceCalculations    TimeSpeedDistanceCalculation[]
   HeadingCalculations              HeadingCalculation[]
   CloudBaseCalculations            CloudBaseCalculation[]
+  GlideDistanceCalculations        GlideDistanceCalculation[]
 }
 
 enum Plan {
@@ -471,6 +472,31 @@ model CloudBaseCalculation {
   formData  CloudBaseCalculationFormData
   createdAt DateTime                     @default(now())
   updatedAt DateTime                     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum GlideWindType {
+  headwind
+  tailwind
+}
+
+type GlideDistanceCalculationFormData {
+  altitude          Float
+  terrainElevation  Float
+  glideRatio        Float
+  glideTrueAirspeed Float?
+  windSpeed         Float?
+  windType          GlideWindType?
+}
+
+model GlideDistanceCalculation {
+  id        String                           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                           @db.ObjectId
+  name      String
+  formData  GlideDistanceCalculationFormData
+  createdAt DateTime                         @default(now())
+  updatedAt DateTime                         @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

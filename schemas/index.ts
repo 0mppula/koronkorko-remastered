@@ -4,6 +4,7 @@ import {
 	themes,
 	timeSpeedDistanceSolveForOptions,
 	variationDirections,
+	windTypes,
 } from '@/constants/data';
 import { calculateCloudBase, calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
 import {
@@ -738,6 +739,131 @@ export const createCloudBaseFormDataSchema = (units: UnitPreferences) =>
 		});
 
 export const cloudBaseFormDataSchema = createCloudBaseFormDataSchema(BASE_UNITS);
+
+type WindType = (typeof windTypes)[number]['value'];
+
+const GLIDE_ALTITUDE_LIMITS = { min: -1500, max: 60000 };
+const GLIDE_TERRAIN_ELEVATION_LIMITS = { min: -1500, max: 30000 };
+const GLIDE_TRUE_AIRSPEED_LIMITS = { min: 20, max: 400 };
+const GLIDE_WIND_SPEED_LIMITS = { min: 0, max: 200 };
+
+const emptyToUndefined = (value: unknown) => (value === '' || value === null ? undefined : value);
+
+export const createGlideDistanceFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			altitude: unitNumberFieldSchema(
+				'Altitude',
+				'altitude',
+				units.altitude,
+				GLIDE_ALTITUDE_LIMITS
+			),
+			terrainElevation: unitNumberFieldSchema(
+				'Terrain elevation',
+				'altitude',
+				units.altitude,
+				GLIDE_TERRAIN_ELEVATION_LIMITS
+			),
+			glideRatio: greaterThanZeroNumberFieldSchema('Glide ratio').max(70, {
+				message: 'Glide ratio cannot be greater than 70',
+			}),
+			// Nullish to match Prisma's optional fields; empty input means none.
+			glideTrueAirspeed: z.preprocess(
+				emptyToUndefined,
+				unitNumberFieldSchema(
+					'Glide true airspeed',
+					'speed',
+					units.speed,
+					GLIDE_TRUE_AIRSPEED_LIMITS
+				).nullish()
+			),
+			windSpeed: z.preprocess(
+				emptyToUndefined,
+				unitNumberFieldSchema(
+					'Wind speed',
+					'speed',
+					units.speed,
+					GLIDE_WIND_SPEED_LIMITS
+				).nullish()
+			),
+			windType: z
+				.enum(windTypes.map((t) => t.value) as [WindType, ...WindType[]], {
+					errorMap: () => ({ message: 'Choose headwind or tailwind' }),
+				})
+				.nullish(),
+		})
+		.superRefine((data, ctx) => {
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const speedLimits = createUnitLimits('speed', units.speed);
+			const isWithin =
+				(
+					limits: ReturnType<typeof createUnitLimits>,
+					{ min, max }: { min: number; max: number }
+				) =>
+				(value: unknown): value is number =>
+					typeof value === 'number' &&
+					Number.isFinite(value) &&
+					limits.isAtLeast(min)(value) &&
+					limits.isAtMost(max)(value);
+			const { altitude, terrainElevation, glideTrueAirspeed, windSpeed, windType } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (
+				isWithin(altitudeLimits, GLIDE_ALTITUDE_LIMITS)(altitude) &&
+				isWithin(altitudeLimits, GLIDE_TERRAIN_ELEVATION_LIMITS)(terrainElevation) &&
+				altitude <= terrainElevation
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['altitude'],
+					message: 'Altitude must be above the terrain elevation',
+				});
+			}
+
+			// A wind speed of 0 is no wind.
+			if (!isWithin(speedLimits, GLIDE_WIND_SPEED_LIMITS)(windSpeed) || !(windSpeed > 0)) {
+				return;
+			}
+
+			if (windType == null) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windType'],
+					message: 'Choose headwind or tailwind',
+				});
+			}
+
+			if (glideTrueAirspeed == null) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['glideTrueAirspeed'],
+					message: 'Glide true airspeed is required when a wind is entered',
+				});
+
+				return;
+			}
+
+			if (!isWithin(speedLimits, GLIDE_TRUE_AIRSPEED_LIMITS)(glideTrueAirspeed)) return;
+
+			// Both speeds are in the same unit, so this check holds in any unit.
+			if (
+				windType === 'headwind' &&
+				glideTrueAirspeed - windSpeed <= glideTrueAirspeed * GROUNDSPEED_TOLERANCE
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message: 'The headwind must be lower than the glide true airspeed',
+				});
+			}
+		})
+		// Saved calculations store no wind type without a wind.
+		.transform((data) => ({
+			...data,
+			windType: data.windSpeed != null && data.windSpeed > 0 ? data.windType : null,
+		}));
+
+export const glideDistanceFormDataSchema = createGlideDistanceFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

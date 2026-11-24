@@ -10,6 +10,7 @@ import {
 	EnterpriseValueReportProps,
 	EventProbabilityReportProps,
 	FuelPlanningReportProps,
+	GlideDistanceReportProps,
 	HeadingReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
@@ -22,6 +23,7 @@ import {
 	IEnterpriseValueFormData,
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
+	IGlideDistanceFormData,
 	IHeadingFormData,
 	IInvestmentTimeFormData,
 	ILiquidationPriceFormData,
@@ -41,7 +43,9 @@ import {
 	WindTriangleReportProps,
 } from '@/types/calculations';
 import {
+	FOOT_IN_METRES,
 	fromBaseUnit,
+	NAUTICAL_MILE_IN_METRES,
 	normalizeDegrees,
 	signedAngleDifference,
 	toBaseUnit,
@@ -549,5 +553,41 @@ export const calculateCloudBase = (formData: ICloudBaseFormData): CloudBaseRepor
 		spread,
 		cloudBaseAgl,
 		cloudBaseMsl: elevation == null ? null : cloudBaseAgl + elevation,
+	};
+};
+
+const NAUTICAL_MILE_IN_FEET = NAUTICAL_MILE_IN_METRES / FOOT_IN_METRES;
+
+export const calculateGlideDistance = (
+	formData: IGlideDistanceFormData
+): GlideDistanceReportProps => {
+	const { altitude, terrainElevation, glideRatio, glideTrueAirspeed, windSpeed, windType } =
+		formData;
+
+	// Distance = height × glide ratio, scaled by groundspeed / TAS (FAA AFH 3-21, 3-23; GFH 5-4).
+	const height = altitude - terrainElevation;
+	const stillAirDistance = (height * glideRatio) / NAUTICAL_MILE_IN_FEET;
+
+	if (glideTrueAirspeed == null) {
+		return {
+			...formData,
+			height,
+			glideDistance: stillAirDistance,
+			groundspeed: null,
+			glideTime: null,
+		};
+	}
+
+	const wind = windSpeed ?? 0;
+	const groundspeed =
+		windType === 'tailwind' ? glideTrueAirspeed + wind : glideTrueAirspeed - wind;
+
+	return {
+		...formData,
+		height,
+		glideDistance: (stillAirDistance * groundspeed) / glideTrueAirspeed,
+		groundspeed,
+		// The wind changes the distance, not the time aloft (GFH 5-5).
+		glideTime: (stillAirDistance / glideTrueAirspeed) * 60,
 	};
 };
