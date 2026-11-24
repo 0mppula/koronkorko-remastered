@@ -5,7 +5,7 @@ import {
 	timeSpeedDistanceSolveForOptions,
 	variationDirections,
 } from '@/constants/data';
-import { calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
+import { calculateCloudBase, calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formatUnitValue,
@@ -655,6 +655,89 @@ export const headingFormDataSchema = z.object({
 			.nullish()
 	),
 });
+
+const CLOUD_BASE_TEMPERATURE_LIMITS = { min: -60, max: 60 };
+const CLOUD_BASE_ELEVATION_LIMITS = { min: -1500, max: 30000 };
+const CLOUD_BASE_MAX_MSL = 60000;
+
+export const createCloudBaseFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			temperature: unitNumberFieldSchema(
+				'Temperature',
+				'temperature',
+				units.temperature,
+				CLOUD_BASE_TEMPERATURE_LIMITS
+			),
+			dewPoint: unitNumberFieldSchema(
+				'Dew point',
+				'temperature',
+				units.temperature,
+				CLOUD_BASE_TEMPERATURE_LIMITS
+			),
+			// Nullish to match Prisma's optional field; empty input means no elevation.
+			elevation: z.preprocess(
+				(value) => (value === '' || value === null ? undefined : value),
+				unitNumberFieldSchema(
+					'Elevation',
+					'altitude',
+					units.altitude,
+					CLOUD_BASE_ELEVATION_LIMITS
+				).nullish()
+			),
+		})
+		.superRefine((data, ctx) => {
+			const temperatureLimits = createUnitLimits('temperature', units.temperature);
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const { temperature, dewPoint, elevation } = data;
+			const isValidTemperature = (value: number) =>
+				Number.isFinite(value) &&
+				temperatureLimits.isAtLeast(CLOUD_BASE_TEMPERATURE_LIMITS.min)(value) &&
+				temperatureLimits.isAtMost(CLOUD_BASE_TEMPERATURE_LIMITS.max)(value);
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (!isValidTemperature(temperature) || !isValidTemperature(dewPoint)) return;
+
+			const baseTemperature = temperatureLimits.toBase(temperature);
+
+			if (!temperatureLimits.isAtMost(baseTemperature)(dewPoint)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['dewPoint'],
+					message: 'Dew point cannot be higher than the temperature',
+				});
+
+				return;
+			}
+
+			if (
+				typeof elevation !== 'number' ||
+				!Number.isFinite(elevation) ||
+				!altitudeLimits.isAtLeast(CLOUD_BASE_ELEVATION_LIMITS.min)(elevation) ||
+				!altitudeLimits.isAtMost(CLOUD_BASE_ELEVATION_LIMITS.max)(elevation)
+			) {
+				return;
+			}
+
+			const { cloudBaseMsl } = calculateCloudBase({
+				temperature: baseTemperature,
+				dewPoint: temperatureLimits.toBase(dewPoint),
+				elevation: altitudeLimits.toBase(elevation),
+			});
+
+			if (
+				cloudBaseMsl !== null &&
+				cloudBaseMsl > CLOUD_BASE_MAX_MSL + altitudeLimits.tolerance(CLOUD_BASE_MAX_MSL)
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['elevation'],
+					message: `The resulting cloud base would exceed ${altitudeLimits.formatShownMax(CLOUD_BASE_MAX_MSL)} MSL`,
+				});
+			}
+		});
+
+export const cloudBaseFormDataSchema = createCloudBaseFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

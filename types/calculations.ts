@@ -3,6 +3,7 @@ import {
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
+	cloudBaseFormDataSchema,
 	compoundInterestFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
@@ -24,6 +25,7 @@ import {
 import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
+	CloudBaseCalculation,
 	CompoundInterestCalculation,
 	CrosswindCalculation,
 	DensityAltitudeCalculation,
@@ -243,6 +245,16 @@ export interface HeadingReportProps extends IHeadingFormData {
 	compassHeading: number | null;
 }
 
+// Cloud Base Calculation
+export type ICloudBaseFormData = z.infer<typeof cloudBaseFormDataSchema>;
+
+export interface CloudBaseReportProps extends ICloudBaseFormData {
+	spread: number;
+	cloudBaseAgl: number;
+	// Null without an elevation.
+	cloudBaseMsl: number | null;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -262,4 +274,5 @@ export type CalculationType =
 	| FuelPlanningCalculation
 	| TrueAirspeedCalculation
 	| TimeSpeedDistanceCalculation
-	| HeadingCalculation;
+	| HeadingCalculation
+	| CloudBaseCalculation;

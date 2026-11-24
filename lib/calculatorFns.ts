@@ -1,6 +1,7 @@
 import {
 	AnnualizedReturnReportProps,
 	BreakEvenPointReportProps,
+	CloudBaseReportProps,
 	CompoundInterestReportProps,
 	CrosswindReportProps,
 	DensityAltitudeReportProps,
@@ -12,6 +13,7 @@ import {
 	HeadingReportProps,
 	IAnnualizedReturnFormData,
 	IBreakEvenPointFormData,
+	ICloudBaseFormData,
 	ICompoundInterestFormData,
 	ICrosswindFormData,
 	IDensityAltitudeFormData,
@@ -529,5 +531,23 @@ export const calculateHeading = (formData: IHeadingFormData): HeadingReportProps
 			deviationCorrection == null
 				? null
 				: normalizeDegrees(magneticHeading + deviationCorrection),
+	};
+};
+
+// Temperature and dew point converge at 4.4 °F per 1,000 ft (FAA PHAK, FAA-H-8083-25C, p. 12-14).
+const CLOUD_BASE_CONVERGENCE_F_PER_1000_FT = 4.4;
+
+export const calculateCloudBase = (formData: ICloudBaseFormData): CloudBaseReportProps => {
+	const { temperature, dewPoint, elevation } = formData;
+
+	// The schema allows the dew point a float tolerance above the temperature.
+	const spread = Math.max(0, temperature - dewPoint);
+	const cloudBaseAgl = ((spread * 9) / 5 / CLOUD_BASE_CONVERGENCE_F_PER_1000_FT) * 1000;
+
+	return {
+		...formData,
+		spread,
+		cloudBaseAgl,
+		cloudBaseMsl: elevation == null ? null : cloudBaseAgl + elevation,
 	};
 };

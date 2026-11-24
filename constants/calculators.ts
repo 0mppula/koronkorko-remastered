@@ -139,4 +139,11 @@ export const calculators = [
 		description:
 			'Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Cloud Base Calculator',
+		url: 'cloud-base-calculator',
+		category: 'aviation',
+		description:
+			'Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and field elevation. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

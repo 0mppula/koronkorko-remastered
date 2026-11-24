@@ -8,7 +8,9 @@ import {
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
+	cloudBaseFormDataSchema,
 	compoundInterestFormDataSchema,
+	createCloudBaseFormDataSchema,
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
 	createFuelPlanningFormDataSchema,
@@ -1804,6 +1806,193 @@ describe('headingFormDataSchema', () => {
 			variation: 10.5,
 			variationDirection: 'west',
 			deviationCorrection: -4,
+		});
+	});
+});
+
+describe('cloudBaseFormDataSchema', () => {
+	const base = { temperature: 15, dewPoint: 5 };
+	const withElevation = { ...base, elevation: 1000 };
+	const mslMessage = 'The resulting cloud base would exceed 60,000 ft MSL';
+
+	it('accepts valid input', () => {
+		expect(cloudBaseFormDataSchema.parse(base)).toEqual(base);
+		expect(cloudBaseFormDataSchema.parse(withElevation)).toEqual(withElevation);
+	});
+
+	itRejectsMissingFields(cloudBaseFormDataSchema, base);
+
+	it.each([undefined, '', null])('treats an elevation of %j as none', (elevation) => {
+		const result = cloudBaseFormDataSchema.safeParse({ ...base, elevation });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.elevation).toBeUndefined();
+	});
+
+	it.each([
+		[
+			{ temperature: -60, dewPoint: -60 },
+			{ temperature: -60.01, dewPoint: -60 },
+			'temperature',
+		],
+		[{ temperature: 60, dewPoint: 0 }, { temperature: 60.01, dewPoint: 0 }, 'temperature'],
+		[{ temperature: 0, dewPoint: -60 }, { temperature: 0, dewPoint: -60.01 }, 'dewPoint'],
+		[{ temperature: 60, dewPoint: 60 }, { temperature: 60, dewPoint: 60.01 }, 'dewPoint'],
+	])('accepts %j and rejects %j', (limit, beyond, field) => {
+		expect(cloudBaseFormDataSchema.safeParse(limit).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse(beyond);
+
+		expect(issueFields(result)).toEqual([field]);
+	});
+
+	it.each([
+		[-1500, -1500.1, 'Elevation cannot be lower than -1,500 ft'],
+		[30000, 30000.1, 'Elevation cannot be greater than 30,000 ft'],
+	])('accepts an elevation of %d and rejects %d', (limit, beyond, message) => {
+		expect(cloudBaseFormDataSchema.safeParse({ ...base, elevation: limit }).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse({ ...base, elevation: beyond });
+
+		expect(issueFields(result)).toEqual(['elevation']);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('rejects a dew point above the temperature and accepts an equal one', () => {
+		const result = cloudBaseFormDataSchema.safeParse({ temperature: 10, dewPoint: 10.01 });
+
+		expect(issueFields(result)).toEqual(['dewPoint']);
+		expect(issueMessages(result)).toEqual(['Dew point cannot be higher than the temperature']);
+		expect(cloudBaseFormDataSchema.safeParse({ temperature: 10, dewPoint: 10 }).success).toBe(
+			true
+		);
+	});
+
+	it('accepts a dew point a float tolerance above the temperature', () => {
+		const input = { temperature: 15, dewPoint: 15 + 1e-10 };
+
+		expect(cloudBaseFormDataSchema.safeParse(input).success).toBe(true);
+	});
+
+	// 120 °C spread: 49,090.91 ft AGL; + 10,909 ft = 59,999.91 ft, + 10,910 ft = 60,000.91 ft MSL.
+	it('rejects a cloud base above 60,000 ft MSL on the elevation', () => {
+		const extreme = { temperature: 60, dewPoint: -60 };
+
+		expect(cloudBaseFormDataSchema.safeParse({ ...extreme, elevation: 10909 }).success).toBe(
+			true
+		);
+		expect(cloudBaseFormDataSchema.safeParse(extreme).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse({ ...extreme, elevation: 10910 });
+
+		expect(issueFields(result)).toEqual(['elevation']);
+		expect(issueMessages(result)).toEqual([mslMessage]);
+	});
+
+	it.each([
+		[{ temperature: -61, dewPoint: 0 }, ['temperature']],
+		[{ temperature: 60, dewPoint: 61 }, ['dewPoint']],
+		[{ temperature: 60, dewPoint: -61, elevation: 20000 }, ['dewPoint']],
+		[{ temperature: 60, dewPoint: -60, elevation: 30001 }, ['elevation']],
+	])('adds no cross-field issue when a field already failed: %j', (input, fields) => {
+		const result = cloudBaseFormDataSchema.safeParse(input);
+
+		expect(issueFields(result)).toEqual(fields);
+		expect(issueMessages(result)).not.toContain(mslMessage);
+		expect(issueMessages(result)).not.toContain(
+			'Dew point cannot be higher than the temperature'
+		);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid elevation together with an invalid temperature', () => {
+		const result = cloudBaseFormDataSchema.safeParse({
+			temperature: 61,
+			dewPoint: 0,
+			elevation: 30001,
+		});
+
+		expect(issueFields(result)).toEqual(['temperature', 'elevation']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			cloudBaseFormDataSchema.parse({
+				temperature: '15.5',
+				dewPoint: '-3',
+				elevation: '1200',
+			})
+		).toEqual({ temperature: 15.5, dewPoint: -3, elevation: 1200 });
+	});
+
+	describe('in °F and m', () => {
+		const units = { ...BASE_UNITS, temperature: 'f', altitude: 'm' } as const;
+		const schema = createCloudBaseFormDataSchema(units);
+
+		// −60 °C = −76 °F, 60 °C = 140 °F, −1500 ft = −457.2 m, 30000 ft = 9144 m.
+		it.each([
+			[
+				{ temperature: 140, dewPoint: 32 },
+				{ temperature: 140.1, dewPoint: 32 },
+				'temperature',
+				'Temperature cannot be greater than 140.00 °F',
+			],
+			[
+				{ temperature: -76, dewPoint: -76 },
+				{ temperature: -76, dewPoint: -76.1 },
+				'dewPoint',
+				'Dew point cannot be lower than -76.00 °F',
+			],
+			[
+				{ temperature: 59, dewPoint: 41, elevation: 9144 },
+				{ temperature: 59, dewPoint: 41, elevation: 9145 },
+				'elevation',
+				'Elevation cannot be greater than 9,144 m',
+			],
+			[
+				{ temperature: 59, dewPoint: 41, elevation: -457 },
+				{ temperature: 59, dewPoint: 41, elevation: -458 },
+				'elevation',
+				'Elevation cannot be lower than -457 m',
+			],
+		])('accepts %j and rejects %j', (limit, beyond, field, message) => {
+			expect(schema.safeParse(limit).success).toBe(true);
+
+			const result = schema.safeParse(beyond);
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		// 3,325 m = 10,908.79 ft (59,999.70 ft MSL); 3,326 m = 10,912.07 ft (60,002.98 ft MSL).
+		it('shows the MSL limit in m', () => {
+			const extreme = { temperature: 140, dewPoint: -76 };
+
+			expect(schema.safeParse({ ...extreme, elevation: 3325 }).success).toBe(true);
+
+			const result = schema.safeParse({ ...extreme, elevation: 3326 });
+
+			expect(issueFields(result)).toEqual(['elevation']);
+			expect(issueMessages(result)).toEqual([
+				'The resulting cloud base would exceed 18,288 m MSL',
+			]);
+		});
+
+		it('rejects a dew point above the temperature', () => {
+			const result = schema.safeParse({ temperature: 50, dewPoint: 50.1 });
+
+			expect(issueFields(result)).toEqual(['dewPoint']);
+			expect(schema.safeParse({ temperature: 50, dewPoint: 50 }).success).toBe(true);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			const formData = formDataFromBaseUnits(
+				{ temperature: 60, dewPoint: -60, elevation: 10909 },
+				{ temperature: 'temperature', dewPoint: 'temperature', elevation: 'altitude' },
+				units
+			);
+
+			expect(schema.safeParse(formData).success).toBe(true);
 		});
 	});
 });

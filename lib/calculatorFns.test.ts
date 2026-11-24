@@ -4,6 +4,7 @@ import {
 	calcualteBreakEvenPoint,
 	calcualteCoumpoundInterest,
 	calculateAnnualizedReturn,
+	calculateCloudBase,
 	calculateCrosswind,
 	calculateDensityAltitude,
 	calculateDividendYield,
@@ -25,6 +26,8 @@ import {
 import {
 	BASE_UNITS,
 	formDataToBaseUnits,
+	formatBaseValue,
+	formatUnsignedTemperatureDifference,
 	fromBaseUnit,
 	normalizeDegrees,
 	signedAngleDifference,
@@ -1639,5 +1642,89 @@ describe('calculateHeading', () => {
 			calculateHeading({ trueHeading: 350, variation: 10, variationDirection: 'west' })
 				.magneticHeading
 		).toBe(0);
+	});
+});
+
+describe('calculateCloudBase', () => {
+	// FAA PHAK (FAA-H-8083-25C) p. 12-14: temperature and dew point converge at 4.4 °F per 1,000 ft
+	// (5.4 °F and 1 °F lapse rates); 85 °F / 71 °F gives 3,180 ft AGL. Expected values are exact
+	// rational arithmetic (spread × 1.8 / 4.4 × 1,000), computed with Python decimal, not by running
+	// calculateCloudBase.
+	const fToC = (f: number) => ((f - 32) * 5) / 9;
+
+	it.each([
+		{ t: fToC(85), d: fToC(71), e: null, spread: 7.777778, agl: 3181.82, msl: null },
+		{ t: 15, d: 5, e: 1000, spread: 10, agl: 4090.91, msl: 5090.91 },
+		{ t: 20, d: 20, e: null, spread: 0, agl: 0, msl: null },
+		{ t: 60, d: -60, e: 10909, spread: 120, agl: 49090.91, msl: 59999.91 },
+	])('temperature $t °C, dew point $d °C, elevation $e ft', ({ t, d, e, spread, agl, msl }) => {
+		const result = calculateCloudBase({ temperature: t, dewPoint: d, elevation: e });
+
+		expect(result.spread).toBeCloseTo(spread, 6);
+		expect(result.cloudBaseAgl).toBeCloseTo(agl, 2);
+
+		if (msl === null) {
+			expect(result.cloudBaseMsl).toBeNull();
+		} else {
+			expect(result.cloudBaseMsl).toBeCloseTo(msl, 2);
+		}
+	});
+
+	// PHAK rounds 14 / 4.4 to 3.18 before multiplying by 1,000; the code doesn't round.
+	it('is within 0.1 % of the PHAK example of 3,180 ft AGL', () => {
+		const { cloudBaseAgl } = calculateCloudBase({ temperature: fToC(85), dewPoint: fToC(71) });
+
+		expect(Math.abs(cloudBaseAgl - 3180) / 3180).toBeLessThan(0.001);
+	});
+
+	it.each([
+		[15, 5],
+		[fToC(85), fToC(71)],
+		[-10, -25.5],
+		[60, -60],
+	])('lifts %d °C / %d °C to the height where they meet at PHAK rates', (t, d) => {
+		const h = calculateCloudBase({ temperature: t, dewPoint: d }).cloudBaseAgl / 1000;
+		const cToF = (c: number) => (c * 9) / 5 + 32;
+
+		expect(cToF(t) - 5.4 * h).toBeCloseTo(cToF(d) - 1 * h, 9);
+	});
+
+	it('treats an undefined elevation as none', () => {
+		expect(calculateCloudBase({ temperature: 15, dewPoint: 5 }).cloudBaseMsl).toBeNull();
+	});
+
+	it('gives zero, not a negative value, for a dew point a float tolerance above', () => {
+		const result = calculateCloudBase({
+			temperature: 15,
+			dewPoint: 15 + 1e-10,
+			elevation: 500,
+		});
+
+		expect(result.spread).toBe(0);
+		expect(result.cloudBaseAgl).toBe(0);
+		expect(result.cloudBaseMsl).toBe(500);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { temperature: 12.3, dewPoint: -4.5, elevation: 1234.5 };
+
+		expect(calculateCloudBase(formData)).toMatchObject(formData);
+	});
+
+	// 59 °F / 41 °F = 15 / 5 °C; 4,090.91 ft × 0.3048 = 1,246.91 m; the spread is 18 °F.
+	it('works with values entered in °F and shown in m', () => {
+		const formData = formDataToBaseUnits(
+			{ temperature: 59, dewPoint: 41, elevation: null },
+			{ temperature: 'temperature', dewPoint: 'temperature', elevation: 'altitude' },
+			{ ...BASE_UNITS, temperature: 'f', altitude: 'm' }
+		);
+
+		const result = calculateCloudBase(formData);
+
+		expect(result.spread).toBeCloseTo(10, 9);
+		expect(result.cloudBaseAgl).toBeCloseTo(4090.91, 2);
+		expect(fromBaseUnit(result.cloudBaseAgl, 'altitude', 'm')).toBeCloseTo(1246.91, 2);
+		expect(formatUnsignedTemperatureDifference(result.spread, 'f')).toBe('18.00 °F');
+		expect(formatBaseValue(result.cloudBaseAgl, 'altitude', 'm')).toBe('1,247 m');
 	});
 });

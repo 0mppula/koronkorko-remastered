@@ -10,6 +10,7 @@ import {
 	formatTemperatureDifference,
 	formatUnitInputValue,
 	formatUnitValue,
+	formatUnsignedTemperatureDifference,
 	formatVariation,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
@@ -414,6 +415,16 @@ describe('temperature differences', () => {
 		expect(normalize(formatTemperatureDifference(-0.004, 'c'))).toBe('0.00 °C');
 		// 0.002 °C = 0.0036 °F
 		expect(normalize(formatTemperatureDifference(0.002, 'f'))).toBe('0.00 °F');
+	});
+
+	it('formats unsigned differences without a sign or the 32 °F offset', () => {
+		expect(normalize(formatUnsignedTemperatureDifference(10, 'c'))).toBe('10.00 °C');
+		expect(normalize(formatUnsignedTemperatureDifference(10, 'f'))).toBe('18.00 °F');
+		expect(normalize(formatUnsignedTemperatureDifference(0, 'c'))).toBe('0.00 °C');
+		expect(normalize(formatUnsignedTemperatureDifference(0, 'f'))).toBe('0.00 °F');
+		// 85 °F − 71 °F = 14 °F = 7.777778 °C (FAA PHAK p. 12-14)
+		expect(normalize(formatUnsignedTemperatureDifference(70 / 9, 'f'))).toBe('14.00 °F');
+		expect(normalize(formatUnsignedTemperatureDifference(70 / 9, 'c'))).toBe('7.78 °C');
 	});
 });
 

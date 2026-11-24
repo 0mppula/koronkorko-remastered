@@ -268,6 +268,10 @@ export const formatTemperatureDifference = (baseValue: number, unit: string): st
 	return `${formatted} ${getUnitSymbol('temperature', unit)}`;
 };
 
+// For differences that are never negative, such as a temperature/dew point spread.
+export const formatUnsignedTemperatureDifference = (baseValue: number, unit: string): string =>
+	formatUnitValue(fromBaseTemperatureDifference(baseValue, unit), 'temperature', unit);
+
 // Display only: form state keeps the unrounded value so validation at the limits stays exact.
 export const formatUnitInputValue = <T>(value: T): T | string =>
 	typeof value === 'number' && Number.isFinite(value)
