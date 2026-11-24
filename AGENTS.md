@@ -8,7 +8,8 @@ break-even point, markup, event probability, P/E ratio, dollar cost average, ent
 liquidation price, dividend yield. Aviation calculators are listed in `constants/calculators.ts`
 (`category: 'aviation'`). Anyone can use them; signed-in users can save, rename, update, import and delete
 calculations. Free-plan users are limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator;
-premium is bought via Stripe. Currency and unit preferences (speed, altitude, temperature) are kept
+premium is bought via Stripe. Currency and unit preferences (speed, altitude, temperature,
+pressure, fuel, distance, vertical speed; `unitQuantities` in `lib/units.ts`) are kept
 in persisted Zustand stores (localStorage) and synced to `User.preferences` for signed-in users.
 
 ## Stack
@@ -36,13 +37,17 @@ in persisted Zustand stores (localStorage) and synced to `User.preferences` for 
 - `app/actions/` – `auth.ts` (`authOptions`, `getAuthSession`), `subscription.ts` (server action)
 - `components/` – shared components by area (`Form/`, `Report/`, `Modals/`, `Nav/`, `providers/`);
   shadcn/ui in `components/ui/`. `Nav/UnitPreferencesModal.tsx` (units button + modal),
-  `Report/CalculatorDisclaimer.tsx`
-- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list + categories), `data.ts` (currencies, limits, `calculatorDisclaimers` per category)
+  `Report/CalculatorDisclaimer.tsx`, `Form/HoursMinutesInput.tsx` (durations)
+- `constants/` – `api.ts` (API URLs, query keys), `calculators.ts` (list + categories), `data.ts`
+  (currencies, limits, `calculatorDisclaimers` per category, option lists for selects and radio
+  groups such as `windTypes`, `descentSolveForOptions`)
 - `hooks/` – `useCalculator`, `useCalculationMutations`, Zustand stores (`useUnits` for unit preferences), misc hooks
-- `lib/` – `calculatorFns.ts`, `utils.ts` (formatting, `cn`), `units.ts` (unit definitions and
-  conversions), `db.ts`, `stripe.ts`, `queryFns/`
+- `lib/` – `calculatorFns.ts`, `utils.ts` (formatting, `cn`), `units.ts` (unit definitions,
+  conversions, unit/angle/temperature-difference formatting), `filterCalculators.ts` (landing
+  page search and category filter), `db.ts`, `stripe.ts`, `queryFns/`
 - `schemas/index.ts` – all zod schemas · `types/calculations.ts` – form/report/calculation types
-- `prisma/schema.prisma` · `public/assets/images/` · `docs/plans/` (plan files)
+- `prisma/schema.prisma` · `public/assets/images/` · `docs/plans/` (plan files; aviation in
+  `docs/plans/aviation/`, `00-epic.md` tracks status)
 
 ## Environment (names only)
 
@@ -53,6 +58,8 @@ in persisted Zustand stores (localStorage) and synced to `User.preferences` for 
 `http://localhost:3000` for local development, not needed on Vercel.
 
 ## Adding a calculator (mirror `dividend-yield-calculator`)
+
+Workflow (plans, prompts, review, PR): `docs/adding-a-calculator.md`; new plans start from `docs/plans/_template.md`.
 
 1. `prisma/schema.prisma`: `type <X>CalculationFormData`, `model <X>Calculation` (id, userId,
    name, formData, createdAt, updatedAt, `user` relation), and a back-relation on `User`. Run `npx prisma generate`.
@@ -78,16 +85,18 @@ in persisted Zustand stores (localStorage) and synced to `User.preferences` for 
 
 Follow "Adding a calculator" with these differences:
 
-1. Base units everywhere except the form: kt, ft, NM, hPa, °C, kg, L, degrees. Prisma formData,
+1. Base units everywhere except the form: kt, ft, NM, hPa, °C, L, ft/min, degrees. Prisma formData,
    API bodies, `calculate<X>` input/output and stored values use base units and are never rounded.
 2. `lib/units.ts`: if the calculator needs a quantity that has no preference yet, add it to
-   `unitQuantities`/`unitOptions` (exact conversion factors, cited) and `unitFractionDigits`, as
-   an optional field on the Prisma `unitPreferences` type, to `unitPreferencesSchema`, and test it
+   `unitQuantities`/`unitOptions` (exact conversion factors, cited) and `unitFractionDigits` (a
+   unit that needs other digits sets `fractionDigits` on its option), as an optional field on the Prisma `unitPreferences` type, to `unitPreferencesSchema`, and test it
    in `lib/units.test.ts`. The units modal picks it up automatically.
 3. `schemas/index.ts`: `create<X>FormDataSchema(units)` using `unitNumberFieldSchema` with limits
    in base units, plus `<x>FormDataSchema = create<X>FormDataSchema(BASE_UNITS)` for the API.
    Infer `I<X>FormData` from `<x>FormDataSchema`. Limits are checked in base units (same on client
-   and API); messages show them rounded inwards in the user's unit.
+   and API); messages show them rounded inwards in the user's unit. Optional fields wrap
+   `.nullish()` in `z.preprocess(emptyToUndefined, ...)`. A calculator without unit fields
+   (heading) uses a plain `<x>FormDataSchema` and no `unitFields`.
 4. `lib/calculatorFns.ts`: `calculate<X>` takes and returns base units. Cite the formula source in
    a one-line comment.
 5. `Calculator.tsx`: export a module-level `<x>UnitFields` map (`UnitFields<I<X>FormData>`, must
@@ -108,25 +117,37 @@ Follow "Adding a calculator" with these differences:
 ## Pitfalls in aviation calculators
 
 - Reports use `formatBaseValue`, never `formatUnitValue` on base values; 2 decimals, altitudes whole, headings whole degrees.
+- Display digits are per unit: use `getUnitFractionDigits(quantity, unit)` (ft/min whole, m/s 2), never `unitFractionDigits[quantity]`, for report values and limit messages.
 - zod `superRefine` runs even after field errors: run cross-field checks only when the involved fields passed their own checks.
 - No `NaN`/`Infinity` at exact limits: clamp `asin`/`acos` arguments, use tolerances; check computed results stay within their own limits.
 - Optional fields use `.nullish()` with `null` defaults (Prisma returns `null`); never turn empty optional values into 0.
+- Optional fields parse `''`/`null` to `undefined` (`emptyToUndefined`), not `null`; schema tests expect `undefined`.
+- A value that means "none" (wind 0) requires no dependent fields; `.transform` clears them (`windType: null`).
 - Inputs that allow negative values need `min0={false}` (keypad with a minus key).
 - A new unit quantity also goes in `unitPreferencesSchema`, the Prisma `unitPreferences` type and every test fixture listing all units.
 - Untouched fields keep exact base values; never round stored values.
 - `xs` is generated after `sm` in the CSS: don't combine `xs:` and `sm:` on the same property.
 - Only cite a source as confirming a value if it was actually opened and checked; otherwise say so.
+- Rules of thumb (in `Info.tsx` only) come from sources actually opened, with page, next to the exact value.
+- Cite the printed page: in text extracted from FAA PDFs the page number is a footer, so text belongs to the number after it.
+- When a source rounds intermediate steps (PHAK 3.18, IPH 750 fpm), assert the exact value and a stated tolerance to the source's figure, with a comment why.
+- Compute expected values in a standalone script (e.g. Python `decimal`), never with the code under test; name the method in a test comment.
 - Every calculator's tests need an independent verification method (vector addition, inverse formula, feeding results back).
 - After implementing, update the calculator's plan file (and the epic checklist) to match the code; when a plan and the code differ, follow the code.
 - Temperature differences (ISA deviation) convert without offset (`fromBaseTemperatureDifference`); never `fromBaseUnit` on a difference.
+- Signed differences use `formatTemperatureDifference` (`+5.00 °C`); never-negative ones (dew point spread) use `formatUnsignedTemperatureDifference`.
 - Derive labels from the displayed value: a WCA side or sign follows the rounded value (no side at `000°`, north shows `360°`).
 - Outside a formula's valid range (Mach ≥ 1, above the tropopause), reject the input or return `null` with a report message; never extrapolate.
 - `POST` saves optional/`null` fields as `?? undefined`; `PUT` replaces the whole `formData`, so cleared optional values are removed.
 - `unitFields` and `getUnitContext` must be stable module-level references, or `useCalculator`'s unit-conversion effect reruns on every render.
 - Aviation values are formatted in fixed `en-US` (dot decimals), not the browser locale (e.g. Mach `toFixed(3)`, not `formatNumber`).
 - Hidden inputs keep their form value: validate only the shown fields and clear form errors when switching which fields are shown.
+- "Solve for" fields are `z.unknown()`, validated in `superRefine` only when shown; `.transform` stores hidden fields as `null`.
+- Check computed results by running `calculate<X>` in `superRefine`; report only the first exceeded limit, on a field always involved (`solveFor`, `elevation`).
+- Cross-field comparisons (dew point vs temperature, headwind vs TAS) use the same relative tolerance as the unit limits.
+- Reuse shared constants and helpers (`NAUTICAL_MILE_IN_METRES`, `FOOT_IN_METRES`, `STANDARD_GRAVITY`, ISA and angle helpers); export them instead of redefining.
 - zod 3.22 `z.preprocess` skips its inner schema once an earlier field has an issue; document it as a `BUG:` test, don't work around it.
-- Calculators extending `lib/units.ts`, Prisma `unitPreferences` and the units modal: merge one before starting the next.
+- Calculators extending `lib/units.ts`, Prisma `unitPreferences` and the units modal: merge one before starting the next (or build them in sequence on one branch).
 
 ## Conventions
 
@@ -177,8 +198,8 @@ Follow "Adding a calculator" with these differences:
 - Data: client calls `lib/queryFns/*` (axios) via TanStack Query; calculation mutations go through
   `useCalculator` → `useCalculationMutations` (toasts + query invalidation). Route handlers do
   the DB work via `db` from `lib/db`. Server actions are rare (`getUsersSubscriptionData`).
-- Zustand: one store per file in `hooks/` (`useCurrency`, `useLoadingStore`, `useLoginModal`,
-  `usePremiumModal`), `create<Interface>()((set) => ...)`, default-exported; `persist` only for currency and units.
+- Zustand: one store per file in `hooks/` (`useCurrency`, `useUnits`, `useLoadingStore`,
+  `useLoginModal`, `usePremiumModal`), `create<Interface>()((set) => ...)`, default-exported; `persist` only for currency and units.
 
 ## Known issues (don't copy these patterns)
 
