@@ -270,6 +270,8 @@ export interface GlideDistanceReportProps extends IGlideDistanceFormData {
 	// Null without a glide true airspeed.
 	groundspeed: number | null;
 	glideTime: number | null;
+	// ft/min
+	descentRate: number | null;
 }
 
 // Turn Performance Calculation

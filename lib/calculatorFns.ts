@@ -579,6 +579,7 @@ export const calculateGlideDistance = (
 			glideDistance: stillAirDistance,
 			groundspeed: null,
 			glideTime: null,
+			descentRate: null,
 		};
 	}
 
@@ -593,6 +594,8 @@ export const calculateGlideDistance = (
 		groundspeed,
 		// The wind changes the distance, not the time aloft (GFH 5-5).
 		glideTime: (stillAirDistance / glideTrueAirspeed) * 60,
+		// Sink speed = airspeed / glide ratio (GFH 5-10: 50 kt / 2.1 kt ≈ 24:1).
+		descentRate: (glideTrueAirspeed * NAUTICAL_MILE_IN_FEET) / 60 / glideRatio,
 	};
 };
 
