@@ -6,15 +6,19 @@ import {
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
+	formatSignedDegrees,
 	formatTemperatureDifference,
 	formatUnitInputValue,
 	formatUnitValue,
+	formatUnsignedTemperatureDifference,
+	formatVariation,
 	formDataFromBaseUnits,
 	formDataToBaseUnits,
 	formDataToExactBaseUnits,
 	fromBaseTemperatureDifference,
 	fromBaseUnit,
 	getPairedFuelUnit,
+	getUnitFractionDigits,
 	getUnitSymbol,
 	normalizeDegrees,
 	signedAngleDifference,
@@ -77,6 +81,32 @@ describe('distance conversions', () => {
 		// 10,000 NM × 1852 / 1609.344 = 11,507.794 SM
 		expect(normalize(formatBaseValue(10000, 'distance', 'sm'))).toBe('11,507.79 SM');
 		expect(normalize(formatBaseValue(210, 'distance', 'km'))).toBe('388.92 km');
+	});
+});
+
+describe('vertical speed conversions', () => {
+	it('converts ft/min to and from m/s (1 ft = 0.3048 m)', () => {
+		// 600 ft/min × 0.3048 m / 60 s = 3.048 m/s
+		expect(toBaseUnit(3.048, 'verticalSpeed', 'ms')).toBeCloseTo(600, 10);
+		expect(fromBaseUnit(600, 'verticalSpeed', 'ms')).toBeCloseTo(3.048, 12);
+		expect(toBaseUnit(1, 'verticalSpeed', 'ms')).toBeCloseTo(196.850394, 6);
+	});
+
+	it('formats ft/min as whole numbers and m/s with 2 decimals', () => {
+		expect(normalize(formatUnitValue(6000, 'verticalSpeed', 'fpm'))).toBe('6,000 ft/min');
+		expect(normalize(formatBaseValue(636.87, 'verticalSpeed', 'fpm'))).toBe('637 ft/min');
+		// 6,000 ft/min × 0.3048 / 60 = 30.48 m/s
+		expect(normalize(formatBaseValue(6000, 'verticalSpeed', 'ms'))).toBe('30.48 m/s');
+	});
+});
+
+describe('getUnitFractionDigits', () => {
+	it('uses the unit override, else the quantity default', () => {
+		expect(getUnitFractionDigits('verticalSpeed', 'fpm')).toBe(0);
+		expect(getUnitFractionDigits('verticalSpeed', 'ms')).toBe(2);
+		expect(getUnitFractionDigits('altitude', 'm')).toBe(0);
+		expect(getUnitFractionDigits('speed', 'ms')).toBe(2);
+		expect(getUnitFractionDigits('pressure', 'inhg')).toBe(2);
 	});
 });
 
@@ -413,6 +443,16 @@ describe('temperature differences', () => {
 		// 0.002 °C = 0.0036 °F
 		expect(normalize(formatTemperatureDifference(0.002, 'f'))).toBe('0.00 °F');
 	});
+
+	it('formats unsigned differences without a sign or the 32 °F offset', () => {
+		expect(normalize(formatUnsignedTemperatureDifference(10, 'c'))).toBe('10.00 °C');
+		expect(normalize(formatUnsignedTemperatureDifference(10, 'f'))).toBe('18.00 °F');
+		expect(normalize(formatUnsignedTemperatureDifference(0, 'c'))).toBe('0.00 °C');
+		expect(normalize(formatUnsignedTemperatureDifference(0, 'f'))).toBe('0.00 °F');
+		// 85 °F − 71 °F = 14 °F = 7.777778 °C (FAA PHAK p. 12-14)
+		expect(normalize(formatUnsignedTemperatureDifference(70 / 9, 'f'))).toBe('14.00 °F');
+		expect(normalize(formatUnsignedTemperatureDifference(70 / 9, 'c'))).toBe('7.78 °C');
+	});
 });
 
 describe('base units', () => {
@@ -613,6 +653,34 @@ describe('formatDegrees', () => {
 	});
 });
 
+describe('formatSignedDegrees', () => {
+	it('shows whole degrees with a sign', () => {
+		expect(formatSignedDegrees(2)).toBe('+2°');
+		expect(formatSignedDegrees(-2)).toBe('-2°');
+		expect(formatSignedDegrees(-20)).toBe('-20°');
+		expect(formatSignedDegrees(1.6)).toBe('+2°');
+	});
+
+	it('shows values that round to 0 as 0° without a sign', () => {
+		expect(formatSignedDegrees(0)).toBe('0°');
+		expect(formatSignedDegrees(-0.4)).toBe('0°');
+		expect(formatSignedDegrees(0.4)).toBe('0°');
+	});
+});
+
+describe('formatVariation', () => {
+	it('shows whole degrees with East or West', () => {
+		expect(formatVariation(9, 'east')).toBe('9° E');
+		expect(formatVariation(10.4, 'west')).toBe('10° W');
+		expect(formatVariation(180, 'west')).toBe('180° W');
+	});
+
+	it('shows a variation that rounds to 0 as 0° without East or West', () => {
+		expect(formatVariation(0, 'east')).toBe('0°');
+		expect(formatVariation(0.4, 'west')).toBe('0°');
+	});
+});
+
 describe('withDefaultUnitPreferences', () => {
 	it('returns the defaults for missing preferences', () => {
 		expect(withDefaultUnitPreferences(null)).toEqual(DEFAULT_UNIT_PREFERENCES);
@@ -627,6 +695,7 @@ describe('withDefaultUnitPreferences', () => {
 			pressure: 'hpa',
 			fuel: 'l',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		});
 	});
 
@@ -647,6 +716,7 @@ describe('withDefaultUnitPreferences', () => {
 			pressure: 'hpa',
 			fuel: 'l',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		});
 	});
 
@@ -665,6 +735,7 @@ describe('withDefaultUnitPreferences', () => {
 			pressure: 'inhg',
 			fuel: 'l',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		});
 	});
 
@@ -684,7 +755,21 @@ describe('withDefaultUnitPreferences', () => {
 			pressure: 'inhg',
 			fuel: 'lb',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		});
+	});
+
+	it('keeps the other choices when only vertical speed is missing', () => {
+		const saved = {
+			speed: 'mph',
+			altitude: 'm',
+			temperature: 'f',
+			pressure: 'inhg',
+			fuel: 'lb',
+			distance: 'km',
+		} as const;
+
+		expect(withDefaultUnitPreferences(saved)).toEqual({ ...saved, verticalSpeed: 'fpm' });
 	});
 
 	it('falls back to the default for invalid values', () => {

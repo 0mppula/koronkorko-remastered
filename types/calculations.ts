@@ -3,14 +3,18 @@ import {
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
+	cloudBaseFormDataSchema,
 	compoundInterestFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
+	descentPlanningFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	glideDistanceFormDataSchema,
+	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -18,19 +22,24 @@ import {
 	priceToEarningsRatioFormDataSchema,
 	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
+	turnPerformanceFormDataSchema,
 	windTriangleFormDataSchema,
 } from '@/schemas';
 import {
 	AnnualizedReturnCalculation,
 	BreakEvenPointCalculation,
+	CloudBaseCalculation,
 	CompoundInterestCalculation,
 	CrosswindCalculation,
 	DensityAltitudeCalculation,
+	DescentPlanningCalculation,
 	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
 	EventProbabilityCalculation,
 	FuelPlanningCalculation,
+	GlideDistanceCalculation,
+	HeadingCalculation,
 	InvestmentTimeCalculation,
 	LiquidationPriceCalculation,
 	MarkupCalculation,
@@ -38,6 +47,7 @@ import {
 	PriceToEarningsRatioCalculation,
 	TimeSpeedDistanceCalculation,
 	TrueAirspeedCalculation,
+	TurnPerformanceCalculation,
 	WindTriangleCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
@@ -232,6 +242,64 @@ export interface TimeSpeedDistanceReportProps {
 	time: number;
 }
 
+// Heading Calculation
+export type IHeadingFormData = z.infer<typeof headingFormDataSchema>;
+
+export interface HeadingReportProps extends IHeadingFormData {
+	magneticHeading: number;
+	// Null without a deviation correction.
+	compassHeading: number | null;
+}
+
+// Cloud Base Calculation
+export type ICloudBaseFormData = z.infer<typeof cloudBaseFormDataSchema>;
+
+export interface CloudBaseReportProps extends ICloudBaseFormData {
+	spread: number;
+	cloudBaseAgl: number;
+	// Null without an elevation.
+	cloudBaseMsl: number | null;
+}
+
+// Glide Distance Calculation
+export type IGlideDistanceFormData = z.infer<typeof glideDistanceFormDataSchema>;
+
+export interface GlideDistanceReportProps extends IGlideDistanceFormData {
+	height: number;
+	glideDistance: number;
+	// Null without a glide true airspeed.
+	groundspeed: number | null;
+	glideTime: number | null;
+}
+
+// Turn Performance Calculation
+export type ITurnPerformanceFormData = z.infer<typeof turnPerformanceFormDataSchema>;
+
+export interface TurnPerformanceReportProps extends ITurnPerformanceFormData {
+	rateOfTurn: number;
+	turnRadius: number;
+	loadFactor: number;
+	fullTurnTime: number;
+	standardRateBankAngle: number;
+	// Null without a stall speed.
+	stallSpeedInTurn: number | null;
+}
+
+// Descent Planning Calculation
+export type IDescentPlanningFormData = z.infer<typeof descentPlanningFormDataSchema>;
+
+export interface DescentPlanningReportProps extends Omit<
+	IDescentPlanningFormData,
+	'verticalSpeed' | 'descentAngle' | 'distance'
+> {
+	distance: number;
+	verticalSpeed: number;
+	descentAngle: number;
+	descentTime: number;
+	gradientPercent: number;
+	gradientFeetPerNm: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -250,4 +318,9 @@ export type CalculationType =
 	| DensityAltitudeCalculation
 	| FuelPlanningCalculation
 	| TrueAirspeedCalculation
-	| TimeSpeedDistanceCalculation;
+	| TimeSpeedDistanceCalculation
+	| HeadingCalculation
+	| CloudBaseCalculation
+	| GlideDistanceCalculation
+	| TurnPerformanceCalculation
+	| DescentPlanningCalculation;

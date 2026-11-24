@@ -19,7 +19,7 @@ Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source cod
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
-Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel and distance) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
+Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel, distance and vertical speed) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 
@@ -129,6 +129,26 @@ Calculate the true airspeed, Mach number and density altitude, given the calibra
 ### [Time Speed Distance Calculator][18]
 
 Calculate the distance, groundspeed or flight time, given the other two.
+
+### [True, Magnetic and Compass Heading Calculator][19]
+
+Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction.
+
+### [Cloud Base Calculator][20]
+
+Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and optional field elevation.
+
+### [Glide Distance Calculator][21]
+
+Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed and glide time with a glide true airspeed and a headwind or tailwind.
+
+### [Turn Performance Calculator][22]
+
+Calculate the rate of turn, turn radius, load factor, time for a 360° turn and standard-rate bank angle of a coordinated level turn, given the true airspeed and bank angle, and optionally the stall speed in the turn.
+
+### [Descent Planning Calculator][23]
+
+Calculate where to start the descent (top of descent) from a vertical speed or descent angle, or the vertical speed needed to descend within a given distance, given the current and target altitude and the groundspeed. Also shows the time to descend and the descent gradient in %, ft/NM and degrees.
 
 ---
 
@@ -270,5 +290,10 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [16]: https://www.koronkorko.com/fuel-planning-calculator
 [17]: https://www.koronkorko.com/true-airspeed-calculator
 [18]: https://www.koronkorko.com/time-speed-distance-calculator
+[19]: https://www.koronkorko.com/heading-calculator
+[20]: https://www.koronkorko.com/cloud-base-calculator
+[21]: https://www.koronkorko.com/glide-distance-calculator
+[22]: https://www.koronkorko.com/turn-performance-calculator
+[23]: https://www.koronkorko.com/descent-planning-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko

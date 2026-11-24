@@ -4,14 +4,18 @@ import {
 	calcualteBreakEvenPoint,
 	calcualteCoumpoundInterest,
 	calculateAnnualizedReturn,
+	calculateCloudBase,
 	calculateCrosswind,
 	calculateDensityAltitude,
+	calculateDescentPlanning,
 	calculateDividendYield,
 	calculateDollarCostAverage,
 	calculateEarningsPerShare,
 	calculateEnterpriseValue,
 	calculateEventProbability,
 	calculateFuelPlanning,
+	calculateGlideDistance,
+	calculateHeading,
 	calculateInvestmentTime,
 	calculateLiquidationPrice,
 	calculateMach,
@@ -19,17 +23,23 @@ import {
 	calculatePresentValue,
 	calculateTimeSpeedDistance,
 	calculateTrueAirspeed,
+	calculateTurnPerformance,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formDataToBaseUnits,
+	formatBaseValue,
+	formatUnsignedTemperatureDifference,
 	fromBaseUnit,
+	normalizeDegrees,
+	signedAngleDifference,
 	UnitFields,
 	UnitPreferences,
 } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
+	IDescentPlanningFormData,
 	IDollarCostAverageFormData,
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
@@ -1540,5 +1550,777 @@ describe('calculateTimeSpeedDistance', () => {
 		const { distance } = calculateTimeSpeedDistance(formData);
 
 		expect(fromBaseUnit(distance, 'distance', 'sm')).toBeCloseTo(241.5, 6);
+	});
+});
+
+describe('calculateHeading', () => {
+	// FAA PHAK (FAA-H-8083-25C) worked examples, plus exact wrap-around cases.
+	const cases: [number, number, 'east' | 'west', number | null, number, number | null, string][] =
+		[
+			[360, 9, 'east', null, 351, null, 'PHAK 16-7, 9° E: 360 → 351'],
+			[90, 9, 'east', null, 81, null, 'PHAK 16-7, 9° E: 090 → 081'],
+			[180, 9, 'east', null, 171, null, 'PHAK 16-7, 9° E: 180 → 171'],
+			[270, 9, 'east', null, 261, null, 'PHAK 16-7, 9° E: 270 → 261'],
+			[60, 9, 'east', null, 51, null, 'PHAK 16-7, TH 060 → 051'],
+			[180, 10, 'west', -2, 190, 188, 'PHAK 8-24/8-25, Washington, D.C.'],
+			[180, 14, 'east', null, 166, null, 'PHAK 8-24, Los Angeles'],
+			[28, 7, 'east', 2, 21, 23, 'PHAK 16-20 flight planning example'],
+			[88, 10, 'east', -4, 78, 74, 'PHAK Figure 16-16'],
+			[5, 10, 'east', null, 355, null, 'wraps below 0'],
+			[355, 10, 'west', 20, 5, 25, 'wraps above 360'],
+			[90, 180, 'east', null, 270, null, '180° E'],
+			[90, 180, 'west', null, 270, null, '180° W gives the same as 180° E'],
+			[10, 0, 'east', -20, 10, 350, 'zero variation; correction wraps below 0'],
+		];
+
+	it.each(cases)(
+		'TH %d, variation %d %s, correction %j → MH %d, CH %j (%s)',
+		(trueHeading, variation, variationDirection, deviationCorrection, mh, ch) => {
+			const { magneticHeading, compassHeading } = calculateHeading({
+				trueHeading,
+				variation,
+				variationDirection,
+				deviationCorrection,
+			});
+
+			expect(magneticHeading).toBeCloseTo(mh, 6);
+
+			if (ch === null) {
+				expect(compassHeading).toBeNull();
+			} else {
+				expect(compassHeading).toBeCloseTo(ch, 6);
+			}
+		}
+	);
+
+	// PHAK 8-25 reverse rule: CH ∓ correction = MH, MH + E / − W variation = TH.
+	it.each(cases)(
+		'returns to TH %d from the compass heading by the reverse rule',
+		(trueHeading, variation, variationDirection, deviationCorrection) => {
+			const { magneticHeading, compassHeading } = calculateHeading({
+				trueHeading,
+				variation,
+				variationDirection,
+				deviationCorrection,
+			});
+			const backToMagnetic =
+				compassHeading === null
+					? magneticHeading
+					: normalizeDegrees(compassHeading - (deviationCorrection ?? 0));
+			const backToTrue = normalizeDegrees(
+				backToMagnetic + (variationDirection === 'east' ? variation : -variation)
+			);
+
+			expect(backToMagnetic).toBeCloseTo(magneticHeading, 9);
+			expect(signedAngleDifference(backToTrue, trueHeading)).toBeCloseTo(0, 9);
+		}
+	);
+
+	// PHAK Figure 16-12 deviation card (For → Steer), with zero variation.
+	it.each([
+		[30, -2, 28],
+		[210, 2, 212],
+	])('steers %d° with a %d° card correction as %d°', (heading, correction, steer) => {
+		expect(
+			calculateHeading({
+				trueHeading: heading,
+				variation: 0,
+				variationDirection: 'east',
+				deviationCorrection: correction,
+			}).compassHeading
+		).toBeCloseTo(steer, 6);
+	});
+
+	it('treats an undefined correction as none and returns the inputs unrounded', () => {
+		const input = { trueHeading: 87.6, variation: 9.4, variationDirection: 'west' } as const;
+
+		expect(calculateHeading(input)).toEqual({
+			...input,
+			magneticHeading: expect.closeTo(97, 9),
+			compassHeading: null,
+		});
+	});
+
+	it('returns a magnetic heading of 0 (not 360) for magnetic north', () => {
+		expect(
+			calculateHeading({ trueHeading: 350, variation: 10, variationDirection: 'west' })
+				.magneticHeading
+		).toBe(0);
+	});
+});
+
+describe('calculateCloudBase', () => {
+	// FAA PHAK (FAA-H-8083-25C) p. 12-14: temperature and dew point converge at 4.4 °F per 1,000 ft
+	// (5.4 °F and 1 °F lapse rates); 85 °F / 71 °F gives 3,180 ft AGL. Expected values are exact
+	// rational arithmetic (spread × 1.8 / 4.4 × 1,000), computed with Python decimal, not by running
+	// calculateCloudBase.
+	const fToC = (f: number) => ((f - 32) * 5) / 9;
+
+	it.each([
+		{ t: fToC(85), d: fToC(71), e: null, spread: 7.777778, agl: 3181.82, msl: null },
+		{ t: 15, d: 5, e: 1000, spread: 10, agl: 4090.91, msl: 5090.91 },
+		{ t: 20, d: 20, e: null, spread: 0, agl: 0, msl: null },
+		{ t: 60, d: -60, e: 10909, spread: 120, agl: 49090.91, msl: 59999.91 },
+	])('temperature $t °C, dew point $d °C, elevation $e ft', ({ t, d, e, spread, agl, msl }) => {
+		const result = calculateCloudBase({ temperature: t, dewPoint: d, elevation: e });
+
+		expect(result.spread).toBeCloseTo(spread, 6);
+		expect(result.cloudBaseAgl).toBeCloseTo(agl, 2);
+
+		if (msl === null) {
+			expect(result.cloudBaseMsl).toBeNull();
+		} else {
+			expect(result.cloudBaseMsl).toBeCloseTo(msl, 2);
+		}
+	});
+
+	// PHAK rounds 14 / 4.4 to 3.18 before multiplying by 1,000; the code doesn't round.
+	it('is within 0.1 % of the PHAK example of 3,180 ft AGL', () => {
+		const { cloudBaseAgl } = calculateCloudBase({ temperature: fToC(85), dewPoint: fToC(71) });
+
+		expect(Math.abs(cloudBaseAgl - 3180) / 3180).toBeLessThan(0.001);
+	});
+
+	it.each([
+		[15, 5],
+		[fToC(85), fToC(71)],
+		[-10, -25.5],
+		[60, -60],
+	])('lifts %d °C / %d °C to the height where they meet at PHAK rates', (t, d) => {
+		const h = calculateCloudBase({ temperature: t, dewPoint: d }).cloudBaseAgl / 1000;
+		const cToF = (c: number) => (c * 9) / 5 + 32;
+
+		expect(cToF(t) - 5.4 * h).toBeCloseTo(cToF(d) - 1 * h, 9);
+	});
+
+	it('treats an undefined elevation as none', () => {
+		expect(calculateCloudBase({ temperature: 15, dewPoint: 5 }).cloudBaseMsl).toBeNull();
+	});
+
+	it('gives zero, not a negative value, for a dew point a float tolerance above', () => {
+		const result = calculateCloudBase({
+			temperature: 15,
+			dewPoint: 15 + 1e-10,
+			elevation: 500,
+		});
+
+		expect(result.spread).toBe(0);
+		expect(result.cloudBaseAgl).toBe(0);
+		expect(result.cloudBaseMsl).toBe(500);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { temperature: 12.3, dewPoint: -4.5, elevation: 1234.5 };
+
+		expect(calculateCloudBase(formData)).toMatchObject(formData);
+	});
+
+	// 59 °F / 41 °F = 15 / 5 °C; 4,090.91 ft × 0.3048 = 1,246.91 m; the spread is 18 °F.
+	it('works with values entered in °F and shown in m', () => {
+		const formData = formDataToBaseUnits(
+			{ temperature: 59, dewPoint: 41, elevation: null },
+			{ temperature: 'temperature', dewPoint: 'temperature', elevation: 'altitude' },
+			{ ...BASE_UNITS, temperature: 'f', altitude: 'm' }
+		);
+
+		const result = calculateCloudBase(formData);
+
+		expect(result.spread).toBeCloseTo(10, 9);
+		expect(result.cloudBaseAgl).toBeCloseTo(4090.91, 2);
+		expect(fromBaseUnit(result.cloudBaseAgl, 'altitude', 'm')).toBeCloseTo(1246.91, 2);
+		expect(formatUnsignedTemperatureDifference(result.spread, 'f')).toBe('18.00 °F');
+		expect(formatBaseValue(result.cloudBaseAgl, 'altitude', 'm')).toBe('1,247 m');
+	});
+});
+
+describe('calculateGlideDistance', () => {
+	// FAA AFH (FAA-H-8083-3C) p. 3-21: a 10:1 glide ratio is 10,000 ft forward per 1,000 ft lost;
+	// p. 3-23: a headwind shortens and a tailwind lengthens the glide. FAA GFH (FAA-H-8083-13B)
+	// p. 5-4: 60 kt TAS with a 25 kt headwind is 35 kt GS, with a 25 kt tailwind 85 kt; p. 5-10:
+	// 24:1. Expected values are the formulas evaluated with Python decimal (50 digits), with
+	// 1 NM = 1852 / 0.3048 ft, not by running calculateGlideDistance.
+	const NM_IN_FEET = 1852 / 0.3048;
+	const gfh = {
+		altitude: 4000,
+		terrainElevation: 1000,
+		glideRatio: 24,
+		glideTrueAirspeed: 60,
+		windType: null,
+	};
+
+	it.each([
+		{
+			case: 'AFH 10:1, no TAS',
+			input: { altitude: 1500, terrainElevation: 500, glideRatio: 10, windType: null },
+			height: 1000,
+			distance: 1.645788,
+			gs: null,
+			time: null,
+		},
+		{
+			case: 'GFH 24:1, 60 kt, no wind',
+			input: gfh,
+			height: 3000,
+			distance: 11.849676,
+			gs: 60,
+			time: 11.849676,
+		},
+		{
+			case: 'GFH 25 kt headwind',
+			input: { ...gfh, windSpeed: 25, windType: 'headwind' as const },
+			height: 3000,
+			distance: 6.912311,
+			gs: 35,
+			time: 11.849676,
+		},
+		{
+			case: 'GFH 25 kt tailwind',
+			input: { ...gfh, windSpeed: 25, windType: 'tailwind' as const },
+			height: 3000,
+			distance: 16.787041,
+			gs: 85,
+			time: 11.849676,
+		},
+		{
+			case: '9:1, no TAS',
+			input: { altitude: 6000, terrainElevation: 1000, glideRatio: 9, windType: null },
+			height: 5000,
+			distance: 7.406048,
+			gs: null,
+			time: null,
+		},
+		{
+			case: 'all limits at their extremes (largest possible result)',
+			input: {
+				altitude: 60000,
+				terrainElevation: -1500,
+				glideRatio: 70,
+				glideTrueAirspeed: 20,
+				windSpeed: 200,
+				windType: 'tailwind' as const,
+			},
+			height: 61500,
+			distance: 7793.63067,
+			gs: 220,
+			time: 2125.535637,
+		},
+	])('$case', ({ input, height, distance, gs, time }) => {
+		const result = calculateGlideDistance(input);
+
+		expect(result.height).toBe(height);
+		expect(Number.isFinite(result.glideDistance)).toBe(true);
+		expect(result.glideDistance).toBeCloseTo(distance, 6);
+
+		if (gs === null || time === null) {
+			expect(result.groundspeed).toBeNull();
+			expect(result.glideTime).toBeNull();
+		} else {
+			expect(result.groundspeed).toBeCloseTo(gs, 9);
+			expect(result.glideTime).toBeCloseTo(time, 6);
+		}
+	});
+
+	it('treats a wind of 0 as no wind', () => {
+		const result = calculateGlideDistance({ ...gfh, windSpeed: 0, windType: null });
+
+		expect(result.groundspeed).toBe(60);
+		expect(result.glideDistance).toBeCloseTo(11.849676, 6);
+	});
+
+	it('gives the same glide time with a headwind, no wind and a tailwind', () => {
+		const headwind = calculateGlideDistance({ ...gfh, windSpeed: 25, windType: 'headwind' });
+		const noWind = calculateGlideDistance(gfh);
+		const tailwind = calculateGlideDistance({ ...gfh, windSpeed: 25, windType: 'tailwind' });
+
+		expect(headwind.glideTime).toBe(noWind.glideTime);
+		expect(tailwind.glideTime).toBe(noWind.glideTime);
+		expect(noWind.glideTime).toBeCloseTo(11.849676, 6);
+		expect(headwind.glideDistance).toBeLessThan(noWind.glideDistance);
+		expect(noWind.glideDistance).toBeLessThan(tailwind.glideDistance);
+	});
+
+	it.each([
+		{ windSpeed: 25, windType: 'headwind' as const },
+		{ windSpeed: 25, windType: 'tailwind' as const },
+		{ windSpeed: null, windType: null },
+		{ windSpeed: 200, windType: 'tailwind' as const },
+	])('flies the glide distance in the glide time at the groundspeed: %j', (wind) => {
+		const result = calculateGlideDistance({ ...gfh, ...wind });
+
+		expect(((result.glideTime as number) / 60) * (result.groundspeed as number)).toBeCloseTo(
+			result.glideDistance,
+			9
+		);
+	});
+
+	// The sink rate is TAS / glide ratio: 60 kt / 24 = 2.5 kt = 253.1715 ft/min.
+	it.each(['headwind', 'tailwind'] as const)(
+		'descends at TAS / glide ratio with a %s',
+		(windType) => {
+			const result = calculateGlideDistance({ ...gfh, windSpeed: 25, windType });
+
+			expect(result.height / (result.glideTime as number)).toBeCloseTo(
+				(60 * NM_IN_FEET) / 60 / 24,
+				9
+			);
+			expect(result.height / (result.glideTime as number)).toBeCloseTo(253.171479, 6);
+		}
+	);
+
+	it('gives the still-air distance without a wind', () => {
+		const withTas = calculateGlideDistance(gfh);
+		const withoutTas = calculateGlideDistance({ ...gfh, glideTrueAirspeed: null });
+
+		expect(withTas.glideDistance).toBeCloseTo(withoutTas.glideDistance, 12);
+		expect(withoutTas.glideDistance * NM_IN_FEET).toBeCloseTo(3000 * 24, 6);
+	});
+
+	it('returns the inputs unchanged', () => {
+		const formData = { ...gfh, windSpeed: 12.3, windType: 'headwind' as const };
+
+		expect(calculateGlideDistance(formData)).toMatchObject(formData);
+	});
+
+	// 1,219.2 m / 304.8 m = 4,000 / 1,000 ft; 111.12 km/h = 60 kt; 46.3 km/h = 25 kt;
+	// 6.912311 NM × 1.852 = 12.8016 km.
+	it('works with values entered in m and km/h and shown in km', () => {
+		const formData = formDataToBaseUnits(
+			{
+				altitude: 1219.2,
+				terrainElevation: 304.8,
+				glideRatio: 24,
+				glideTrueAirspeed: 111.12,
+				windSpeed: 46.3,
+				windType: 'headwind' as const,
+			},
+			{
+				altitude: 'altitude',
+				terrainElevation: 'altitude',
+				glideTrueAirspeed: 'speed',
+				windSpeed: 'speed',
+			},
+			{ ...BASE_UNITS, altitude: 'm', speed: 'kmh', distance: 'km' }
+		);
+
+		const result = calculateGlideDistance(formData);
+
+		expect(result.glideDistance).toBeCloseTo(6.912311, 6);
+		expect(fromBaseUnit(result.glideDistance, 'distance', 'km')).toBeCloseTo(12.8016, 6);
+		expect(fromBaseUnit(result.groundspeed as number, 'speed', 'kmh')).toBeCloseTo(64.82, 9);
+		expect(result.glideTime).toBeCloseTo(11.849676, 6);
+	});
+});
+
+describe('calculateTurnPerformance', () => {
+	// Exact SI formulas with g = 9.80665 m/s² (Aviation Formulary "Turns and pivotal altitude";
+	// FAA PHAK FAA-H-8083-25C pp. 5-35, 5-38..5-40), evaluated with Python decimal (50 digits),
+	// not by running calculateTurnPerformance.
+	const KT_IN_M_PER_S = 1852 / 3600;
+	const NM_IN_FEET = 1852 / 0.3048;
+	const expectWithinPercent = (actual: number, expected: number, percent: number) =>
+		expect(Math.abs(actual / expected - 1) * 100).toBeLessThan(percent);
+
+	it.each([
+		{
+			tas: 120,
+			bank: 30,
+			rot: 5.254882,
+			ft: 2208.3324,
+			nm: 0.363445,
+			n: 1.154701,
+			t: 68.5077,
+			std: 18.242631,
+		},
+		{
+			tas: 240,
+			bank: 30,
+			rot: 2.627441,
+			ft: 8833.3296,
+			nm: 1.453779,
+			n: 1.154701,
+			t: 137.0155,
+			std: 33.393506,
+		},
+		{
+			tas: 100,
+			bank: 45,
+			rot: 10.922067,
+			ft: 885.4037,
+			nm: 0.145719,
+			n: 1.414214,
+			t: 32.9608,
+			std: 15.358847,
+		},
+		{
+			tas: 240,
+			bank: 49,
+			rot: 5.235167,
+			ft: 4433.2974,
+			nm: 0.729627,
+			n: 1.524253,
+			t: 68.7657,
+			std: 33.393506,
+		},
+		{
+			tas: 100,
+			bank: 60,
+			rot: 18.917575,
+			ft: 511.1881,
+			nm: 0.084131,
+			n: 2,
+			t: 19.0299,
+			std: 15.358847,
+		},
+		{
+			tas: 400,
+			bank: 75,
+			rot: 10.190427,
+			ft: 3795.8912,
+			nm: 0.624723,
+			n: 3.863703,
+			t: 35.3273,
+			std: 47.692408,
+		},
+		{
+			tas: 20,
+			bank: 75,
+			rot: 203.80854,
+			ft: 9.4897,
+			nm: 0.001562,
+			n: 3.863703,
+			t: 1.7664,
+			std: 3.144364,
+		},
+		{
+			tas: 20,
+			bank: 0.1,
+			rot: 0.095313,
+			ft: 20291.9371,
+			nm: 3.339623,
+			n: 1.000002,
+			t: 3777.025,
+			std: 3.144364,
+		},
+	])('$tas kt at $bank°', ({ tas, bank, rot, ft, nm, n, t, std }) => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: tas,
+			bankAngle: bank,
+			stallSpeed: null,
+		});
+
+		expect(result.rateOfTurn).toBeCloseTo(rot, 4);
+		expect(result.turnRadius).toBeCloseTo(ft, 4);
+		expect(result.turnRadius / NM_IN_FEET).toBeCloseTo(nm, 4);
+		expect(result.loadFactor).toBeCloseTo(n, 4);
+		expect(result.fullTurnTime).toBeCloseTo(t, 3);
+		expect(result.standardRateBankAngle).toBeCloseTo(std, 4);
+		expect(result.stallSpeedInTurn).toBeNull();
+
+		// Formulary "v= w R": the speed equals the rate of turn (rad/s) times the radius (m).
+		const omega = (result.rateOfTurn * Math.PI) / 180;
+
+		expect(omega * result.turnRadius * 0.3048).toBeCloseTo(tas * KT_IN_M_PER_S, 9);
+	});
+
+	// PHAK's constants 1,091 and 11.26 are rounded (exact 1,092.2067 and 11.294283), so its
+	// examples differ from the exact values by up to ~0.4 %.
+	it('matches the PHAK 5-39/5-40 examples within 0.5 %', () => {
+		const at120 = calculateTurnPerformance({
+			trueAirspeed: 120,
+			bankAngle: 30,
+			stallSpeed: null,
+		});
+		const at240 = calculateTurnPerformance({
+			trueAirspeed: 240,
+			bankAngle: 30,
+			stallSpeed: null,
+		});
+		const at240Bank49 = calculateTurnPerformance({
+			trueAirspeed: 240,
+			bankAngle: 49,
+			stallSpeed: null,
+		});
+
+		expectWithinPercent(at120.rateOfTurn, 5.25, 0.5);
+		expectWithinPercent(at120.fullTurnTime, 68.6, 0.5);
+		expectWithinPercent(at120.turnRadius, 2215, 0.5);
+		expectWithinPercent(at240.rateOfTurn, 2.62, 0.5);
+		expectWithinPercent(at240.fullTurnTime, 137, 0.5);
+		expectWithinPercent(at240.turnRadius, 8861, 0.5);
+		expectWithinPercent(at240Bank49.rateOfTurn, 5.25, 0.5);
+	});
+
+	// The Formulary's 11.23 (exact 11.294) makes its radius 0.6 % larger than the exact 885.40 ft.
+	it('matches the Aviation Formulary examples at 100 kt', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 100,
+			bankAngle: 45,
+			stallSpeed: null,
+		});
+
+		expectWithinPercent(result.turnRadius, 891, 1);
+		expect(result.rateOfTurn).toBeCloseTo(10.9, 1);
+		expect(result.standardRateBankAngle).toBeCloseTo(15.4, 1);
+	});
+
+	it('gives 2 G at 60° and raises the stall speed by √n (PHAK 5-35)', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 100,
+			bankAngle: 60,
+			stallSpeed: 50,
+		});
+
+		expect(result.loadFactor).toBeCloseTo(2, 12);
+		expect(result.stallSpeedInTurn).toBeCloseTo(50 * Math.SQRT2, 9);
+		expect(result.stallSpeedInTurn).toBeCloseTo(70.7107, 4);
+		// PHAK Figure 5-52: the load factor is the vector sum √(1 + tan² 60°).
+		expect(result.loadFactor).toBeCloseTo(Math.sqrt(1 + Math.tan(Math.PI / 3) ** 2), 12);
+	});
+
+	// Outside the form limit (75°); called directly to check PHAK's 50 kt → 100 kt at 4 G.
+	it('doubles a 50 kt stall speed at 4 G', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 120,
+			bankAngle: (Math.acos(0.25) * 180) / Math.PI,
+			stallSpeed: 50,
+		});
+
+		expect(result.loadFactor).toBeCloseTo(4, 12);
+		expect(result.stallSpeedInTurn).toBeCloseTo(100, 9);
+	});
+
+	it('gives the stall speed in the turn at the limits', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 400,
+			bankAngle: 75,
+			stallSpeed: 200,
+		});
+
+		expect(result.stallSpeedInTurn).toBeCloseTo(393.1261, 4);
+	});
+
+	it('gives a stall speed above the TAS without comparing them', () => {
+		const result = calculateTurnPerformance({
+			trueAirspeed: 60,
+			bankAngle: 60,
+			stallSpeed: 50,
+		});
+
+		expect(result.stallSpeedInTurn).toBeCloseTo(70.7107, 4);
+	});
+
+	it.each([20, 100, 120, 240, 400])(
+		'turns at 3°/s and 360° in 120 s at the standard-rate bank for %d kt',
+		(tas) => {
+			const { standardRateBankAngle } = calculateTurnPerformance({
+				trueAirspeed: tas,
+				bankAngle: 30,
+				stallSpeed: null,
+			});
+			const result = calculateTurnPerformance({
+				trueAirspeed: tas,
+				bankAngle: standardRateBankAngle,
+				stallSpeed: null,
+			});
+
+			expect(result.rateOfTurn).toBeCloseTo(3, 9);
+			expect(result.fullTurnTime).toBeCloseTo(120, 9);
+		}
+	);
+
+	it('returns the inputs unchanged', () => {
+		const formData = { trueAirspeed: 123.4, bankAngle: 25, stallSpeed: 55 };
+
+		expect(calculateTurnPerformance(formData)).toMatchObject(formData);
+	});
+
+	// 222.24 km/h = 120 kt; radius 2,208.3324 ft = 673.0997 m = 0.363445 NM = 0.673100 km.
+	it('works with values entered in km/h and shown in m and km', () => {
+		const formData = formDataToBaseUnits(
+			{ trueAirspeed: 222.24, bankAngle: 30, stallSpeed: null },
+			{ trueAirspeed: 'speed', stallSpeed: 'speed' },
+			{ ...BASE_UNITS, speed: 'kmh', altitude: 'm', distance: 'km' }
+		);
+		const result = calculateTurnPerformance(formData);
+
+		expect(result.trueAirspeed).toBeCloseTo(120, 9);
+		expect(result.rateOfTurn).toBeCloseTo(5.254882, 4);
+		expect(fromBaseUnit(result.turnRadius, 'altitude', 'm')).toBeCloseTo(673.0997, 4);
+		expect(fromBaseUnit(result.turnRadius / NM_IN_FEET, 'distance', 'km')).toBeCloseTo(
+			0.6731,
+			4
+		);
+		expect(result.standardRateBankAngle).toBeCloseTo(18.242631, 4);
+	});
+});
+
+describe('calculateDescentPlanning', () => {
+	// FAA IPH (FAA-H-8083-16B) ch. 3 examples; values from the flat-earth formulas evaluated with
+	// 50-digit decimals in a standalone Python script (1 NM = 1852 / 0.3048 ft).
+	const base: IDescentPlanningFormData = {
+		solveFor: 'topOfDescent',
+		descentInput: 'verticalSpeed',
+		currentAltitude: 7000,
+		targetAltitude: 1000,
+		groundspeed: 120,
+		verticalSpeed: null,
+		descentAngle: null,
+		distance: null,
+	};
+
+	const cases: [
+		string,
+		Partial<IDescentPlanningFormData>,
+		[number, number, number, number, number, number],
+	][] = [
+		[
+			'IPH 3-4: lose 6,000 ft at 120 kt and 600 fpm, start 20 NM out, 10 min',
+			{ verticalSpeed: 600 },
+			[20, 600, 10, 300, 4.937365, 2.826606],
+		],
+		[
+			'IPH 3-20 HAYED: 12,000 → 6,000 ft at 180 kt and 500 fpm, 36 NM',
+			{ currentAltitude: 12000, targetAltitude: 6000, groundspeed: 180, verticalSpeed: 500 },
+			[36, 500, 12, 166.6667, 2.742981, 1.571218],
+		],
+		[
+			'IPH 3-8 inputs: 11,000 → 3,000 ft at 180 kt and 1,000 fpm (exact)',
+			{ currentAltitude: 11000, targetAltitude: 3000, groundspeed: 180, verticalSpeed: 1000 },
+			[24, 1000, 8, 333.3333, 5.485961, 3.140077],
+		],
+		[
+			'IPH 3-20 RACKI: 12,000 → 6,000 ft within 23 NM at 180 kt',
+			{
+				solveFor: 'verticalSpeed',
+				currentAltitude: 12000,
+				targetAltitude: 6000,
+				groundspeed: 180,
+				distance: 23,
+			},
+			[23, 782.6087, 7.6667, 260.8696, 4.293361, 2.458405],
+		],
+		[
+			'IPH 3-12: a 3° path from 7,000 to 1,000 ft at 120 kt',
+			{ descentInput: 'angle', descentAngle: 3 },
+			[18.842107, 636.8714, 9.4211, 318.4357, 5.240778, 3],
+		],
+	];
+
+	it.each(cases)('%s', (_, input, expected) => {
+		const [distance, verticalSpeed, descentTime, feetPerNm, percent, angle] = expected;
+		const result = calculateDescentPlanning({ ...base, ...input });
+
+		expect(result.distance).toBeCloseTo(distance, 6);
+		expect(result.verticalSpeed).toBeCloseTo(verticalSpeed, 4);
+		expect(result.descentTime).toBeCloseTo(descentTime, 4);
+		expect(result.gradientFeetPerNm).toBeCloseTo(feetPerNm, 4);
+		expect(result.gradientPercent).toBeCloseTo(percent, 6);
+		expect(result.descentAngle).toBeCloseTo(angle, 6);
+	});
+
+	// IPH rounds 7.6 min up to 8 and divides 6,000 ft by 8 min: "at least 750 feet per minute".
+	it('needs more than the 750 fpm IPH rounds to for RACKI', () => {
+		const { verticalSpeed } = calculateDescentPlanning({
+			...base,
+			solveFor: 'verticalSpeed',
+			currentAltitude: 12000,
+			targetAltitude: 6000,
+			groundspeed: 180,
+			distance: 23,
+		});
+
+		expect(verticalSpeed).toBeGreaterThan(750);
+	});
+
+	// IPH's rules of thumb (÷ 300, GS × 5) approximate the 3° path; "about 318 ft/NM" (p. 3-12).
+	it('matches the IPH 318 ft/NM for 3° within 0.2 %', () => {
+		const { gradientFeetPerNm } = calculateDescentPlanning({
+			...base,
+			descentInput: 'angle',
+			descentAngle: 3,
+		});
+
+		expect(Math.abs(gradientFeetPerNm / 318 - 1)).toBeLessThan(0.002);
+	});
+
+	it('reproduces the inputs when a result is fed back in the other mode', () => {
+		const byVerticalSpeed = calculateDescentPlanning({ ...base, verticalSpeed: 600 });
+
+		expect(
+			calculateDescentPlanning({
+				...base,
+				solveFor: 'verticalSpeed',
+				distance: byVerticalSpeed.distance,
+			}).verticalSpeed
+		).toBeCloseTo(600, 9);
+
+		const byAngle = calculateDescentPlanning({
+			...base,
+			descentInput: 'angle',
+			descentAngle: 3,
+		});
+
+		expect(
+			calculateDescentPlanning({ ...base, verticalSpeed: byAngle.verticalSpeed }).distance
+		).toBeCloseTo(byAngle.distance, 9);
+	});
+
+	it('takes as long to fly the distance at the groundspeed as to descend', () => {
+		for (const input of cases.map(([, input]) => input)) {
+			const result = calculateDescentPlanning({ ...base, ...input });
+
+			expect((result.distance / result.groundspeed) * 60).toBeCloseTo(result.descentTime, 9);
+		}
+	});
+
+	it('ignores the values of fields not given in the chosen mode', () => {
+		const hidden = { verticalSpeed: 5000, descentAngle: 9, distance: 999 };
+
+		expect(
+			calculateDescentPlanning({ ...base, ...hidden, verticalSpeed: 600 }).distance
+		).toBeCloseTo(20, 9);
+		expect(
+			calculateDescentPlanning({ ...base, ...hidden, descentInput: 'angle', descentAngle: 3 })
+				.distance
+		).toBeCloseTo(18.842107, 6);
+		expect(
+			calculateDescentPlanning({
+				...base,
+				...hidden,
+				solveFor: 'verticalSpeed',
+				distance: 20,
+			}).verticalSpeed
+		).toBeCloseTo(600, 9);
+	});
+
+	// 2,133.6 m = 7,000 ft; 304.8 m = 1,000 ft; 222.24 km/h = 120 kt; 3.048 m/s = 600 ft/min.
+	it('works with values entered in m, km/h and m/s and shown in km', () => {
+		const formData = formDataToBaseUnits<IDescentPlanningFormData>(
+			{
+				...base,
+				currentAltitude: 2133.6,
+				targetAltitude: 304.8,
+				groundspeed: 222.24,
+				verticalSpeed: 3.048,
+			},
+			{
+				currentAltitude: 'altitude',
+				targetAltitude: 'altitude',
+				groundspeed: 'speed',
+				verticalSpeed: 'verticalSpeed',
+				distance: 'distance',
+			},
+			{
+				...BASE_UNITS,
+				altitude: 'm',
+				speed: 'kmh',
+				verticalSpeed: 'ms',
+				distance: 'km',
+			}
+		);
+		const { distance } = calculateDescentPlanning(formData);
+
+		expect(distance).toBeCloseTo(20, 9);
+		expect(fromBaseUnit(distance, 'distance', 'km')).toBeCloseTo(37.04, 9);
 	});
 });

@@ -1,15 +1,29 @@
-import { currencies, fuelTypes, themes, timeSpeedDistanceSolveForOptions } from '@/constants/data';
-import { calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
+import {
+	currencies,
+	descentInputOptions,
+	descentSolveForOptions,
+	fuelTypes,
+	themes,
+	timeSpeedDistanceSolveForOptions,
+	variationDirections,
+	windTypes,
+} from '@/constants/data';
+import {
+	calculateCloudBase,
+	calculateDescentPlanning,
+	calculateMach,
+	calculateTimeSpeedDistance,
+} from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formatUnitValue,
 	fromBaseUnit,
+	getUnitFractionDigits,
 	getUnitOptions,
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
 	UnitContext,
-	unitFractionDigits,
 	UnitPreferences,
 	UnitQuantity,
 	UnitValue,
@@ -91,7 +105,7 @@ const createUnitLimits = (
 	unit: string,
 	{ context, symbolSuffix = '' }: { context?: UnitContext; symbolSuffix?: string } = {}
 ) => {
-	const digits = unitFractionDigits[quantity];
+	const digits = getUnitFractionDigits(quantity, unit);
 	const step = 10 ** -digits;
 
 	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
@@ -629,6 +643,468 @@ export const createTimeSpeedDistanceFormDataSchema = (units: UnitPreferences) =>
 
 export const timeSpeedDistanceFormDataSchema = createTimeSpeedDistanceFormDataSchema(BASE_UNITS);
 
+type VariationDirection = (typeof variationDirections)[number]['value'];
+
+export const headingFormDataSchema = z.object({
+	trueHeading: headingFieldSchema('True heading'),
+	variation: numberFieldSchema('Variation')
+		.min(0, { message: 'Variation cannot be negative' })
+		.max(180, { message: 'Variation cannot be greater than 180°' }),
+	variationDirection: z.enum(
+		variationDirections.map((d) => d.value) as [VariationDirection, ...VariationDirection[]],
+		{ errorMap: () => ({ message: 'Variation must be East or West' }) }
+	),
+	// Nullish to match Prisma's optional field; empty input means no compass heading.
+	deviationCorrection: z.preprocess(
+		(value) => (value === '' || value === null ? undefined : value),
+		numberFieldSchema('Deviation correction')
+			.min(-20, { message: 'Deviation correction must be between -20° and +20°' })
+			.max(20, { message: 'Deviation correction must be between -20° and +20°' })
+			.nullish()
+	),
+});
+
+const CLOUD_BASE_TEMPERATURE_LIMITS = { min: -60, max: 60 };
+const CLOUD_BASE_ELEVATION_LIMITS = { min: -1500, max: 30000 };
+const CLOUD_BASE_MAX_MSL = 60000;
+
+export const createCloudBaseFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			temperature: unitNumberFieldSchema(
+				'Temperature',
+				'temperature',
+				units.temperature,
+				CLOUD_BASE_TEMPERATURE_LIMITS
+			),
+			dewPoint: unitNumberFieldSchema(
+				'Dew point',
+				'temperature',
+				units.temperature,
+				CLOUD_BASE_TEMPERATURE_LIMITS
+			),
+			// Nullish to match Prisma's optional field; empty input means no elevation.
+			elevation: z.preprocess(
+				(value) => (value === '' || value === null ? undefined : value),
+				unitNumberFieldSchema(
+					'Elevation',
+					'altitude',
+					units.altitude,
+					CLOUD_BASE_ELEVATION_LIMITS
+				).nullish()
+			),
+		})
+		.superRefine((data, ctx) => {
+			const temperatureLimits = createUnitLimits('temperature', units.temperature);
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const { temperature, dewPoint, elevation } = data;
+			const isValidTemperature = (value: number) =>
+				Number.isFinite(value) &&
+				temperatureLimits.isAtLeast(CLOUD_BASE_TEMPERATURE_LIMITS.min)(value) &&
+				temperatureLimits.isAtMost(CLOUD_BASE_TEMPERATURE_LIMITS.max)(value);
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (!isValidTemperature(temperature) || !isValidTemperature(dewPoint)) return;
+
+			const baseTemperature = temperatureLimits.toBase(temperature);
+
+			if (!temperatureLimits.isAtMost(baseTemperature)(dewPoint)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['dewPoint'],
+					message: 'Dew point cannot be higher than the temperature',
+				});
+
+				return;
+			}
+
+			if (
+				typeof elevation !== 'number' ||
+				!Number.isFinite(elevation) ||
+				!altitudeLimits.isAtLeast(CLOUD_BASE_ELEVATION_LIMITS.min)(elevation) ||
+				!altitudeLimits.isAtMost(CLOUD_BASE_ELEVATION_LIMITS.max)(elevation)
+			) {
+				return;
+			}
+
+			const { cloudBaseMsl } = calculateCloudBase({
+				temperature: baseTemperature,
+				dewPoint: temperatureLimits.toBase(dewPoint),
+				elevation: altitudeLimits.toBase(elevation),
+			});
+
+			if (
+				cloudBaseMsl !== null &&
+				cloudBaseMsl > CLOUD_BASE_MAX_MSL + altitudeLimits.tolerance(CLOUD_BASE_MAX_MSL)
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['elevation'],
+					message: `The resulting cloud base would exceed ${altitudeLimits.formatShownMax(CLOUD_BASE_MAX_MSL)} MSL`,
+				});
+			}
+		});
+
+export const cloudBaseFormDataSchema = createCloudBaseFormDataSchema(BASE_UNITS);
+
+type WindType = (typeof windTypes)[number]['value'];
+
+const GLIDE_ALTITUDE_LIMITS = { min: -1500, max: 60000 };
+const GLIDE_TERRAIN_ELEVATION_LIMITS = { min: -1500, max: 30000 };
+const GLIDE_TRUE_AIRSPEED_LIMITS = { min: 20, max: 400 };
+const GLIDE_WIND_SPEED_LIMITS = { min: 0, max: 200 };
+
+const emptyToUndefined = (value: unknown) => (value === '' || value === null ? undefined : value);
+
+export const createGlideDistanceFormDataSchema = (units: UnitPreferences) =>
+	z
+		.object({
+			altitude: unitNumberFieldSchema(
+				'Altitude',
+				'altitude',
+				units.altitude,
+				GLIDE_ALTITUDE_LIMITS
+			),
+			terrainElevation: unitNumberFieldSchema(
+				'Terrain elevation',
+				'altitude',
+				units.altitude,
+				GLIDE_TERRAIN_ELEVATION_LIMITS
+			),
+			glideRatio: greaterThanZeroNumberFieldSchema('Glide ratio').max(70, {
+				message: 'Glide ratio cannot be greater than 70',
+			}),
+			// Nullish to match Prisma's optional fields; empty input means none.
+			glideTrueAirspeed: z.preprocess(
+				emptyToUndefined,
+				unitNumberFieldSchema(
+					'Glide true airspeed',
+					'speed',
+					units.speed,
+					GLIDE_TRUE_AIRSPEED_LIMITS
+				).nullish()
+			),
+			windSpeed: z.preprocess(
+				emptyToUndefined,
+				unitNumberFieldSchema(
+					'Wind speed',
+					'speed',
+					units.speed,
+					GLIDE_WIND_SPEED_LIMITS
+				).nullish()
+			),
+			windType: z
+				.enum(windTypes.map((t) => t.value) as [WindType, ...WindType[]], {
+					errorMap: () => ({ message: 'Choose headwind or tailwind' }),
+				})
+				.nullish(),
+		})
+		.superRefine((data, ctx) => {
+			const altitudeLimits = createUnitLimits('altitude', units.altitude);
+			const speedLimits = createUnitLimits('speed', units.speed);
+			const isWithin =
+				(
+					limits: ReturnType<typeof createUnitLimits>,
+					{ min, max }: { min: number; max: number }
+				) =>
+				(value: unknown): value is number =>
+					typeof value === 'number' &&
+					Number.isFinite(value) &&
+					limits.isAtLeast(min)(value) &&
+					limits.isAtMost(max)(value);
+			const { altitude, terrainElevation, glideTrueAirspeed, windSpeed, windType } = data;
+
+			// Zod runs this even when a field failed its own checks; avoid duplicate issues.
+			if (
+				isWithin(altitudeLimits, GLIDE_ALTITUDE_LIMITS)(altitude) &&
+				isWithin(altitudeLimits, GLIDE_TERRAIN_ELEVATION_LIMITS)(terrainElevation) &&
+				altitude <= terrainElevation
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['altitude'],
+					message: 'Altitude must be above the terrain elevation',
+				});
+			}
+
+			// A wind speed of 0 is no wind.
+			if (!isWithin(speedLimits, GLIDE_WIND_SPEED_LIMITS)(windSpeed) || !(windSpeed > 0)) {
+				return;
+			}
+
+			if (windType == null) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windType'],
+					message: 'Choose headwind or tailwind',
+				});
+			}
+
+			if (glideTrueAirspeed == null) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['glideTrueAirspeed'],
+					message: 'Glide true airspeed is required when a wind is entered',
+				});
+
+				return;
+			}
+
+			if (!isWithin(speedLimits, GLIDE_TRUE_AIRSPEED_LIMITS)(glideTrueAirspeed)) return;
+
+			// Both speeds are in the same unit, so this check holds in any unit.
+			if (
+				windType === 'headwind' &&
+				glideTrueAirspeed - windSpeed <= glideTrueAirspeed * GROUNDSPEED_TOLERANCE
+			) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['windSpeed'],
+					message: 'The headwind must be lower than the glide true airspeed',
+				});
+			}
+		})
+		// Saved calculations store no wind type without a wind.
+		.transform((data) => ({
+			...data,
+			windType: data.windSpeed != null && data.windSpeed > 0 ? data.windType : null,
+		}));
+
+export const glideDistanceFormDataSchema = createGlideDistanceFormDataSchema(BASE_UNITS);
+
+export const createTurnPerformanceFormDataSchema = (units: UnitPreferences) =>
+	z.object({
+		trueAirspeed: unitNumberFieldSchema('True airspeed', 'speed', units.speed, {
+			min: 20,
+			max: 400,
+		}),
+		bankAngle: numberFieldSchema('Bank angle')
+			.gt(0, { message: 'Bank angle must be greater than 0°' })
+			.max(75, { message: 'Bank angle cannot be greater than 75°' }),
+		// Nullish to match Prisma's optional field; empty input means no stall speed.
+		stallSpeed: z.preprocess(
+			emptyToUndefined,
+			unitNumberFieldSchema('Stall speed', 'speed', units.speed, {
+				min: 0,
+				minExclusive: true,
+				max: 200,
+			}).nullish()
+		),
+	});
+
+export const turnPerformanceFormDataSchema = createTurnPerformanceFormDataSchema(BASE_UNITS);
+
+type DescentSolveFor = (typeof descentSolveForOptions)[number]['value'];
+type DescentInput = (typeof descentInputOptions)[number]['value'];
+type DescentGivenField = 'verticalSpeed' | 'descentAngle' | 'distance';
+
+const DESCENT_ALTITUDE_LIMITS = { min: -1500, max: 60000 };
+const DESCENT_GROUNDSPEED_LIMITS = { min: 20, max: 1000 };
+const DESCENT_LIMITS = { verticalSpeed: 6000, descentAngle: 10, distance: 500 } as const;
+
+const getDescentGivenField = (
+	solveFor: DescentSolveFor,
+	descentInput: DescentInput
+): DescentGivenField => {
+	if (solveFor === 'verticalSpeed') return 'distance';
+
+	return descentInput === 'angle' ? 'descentAngle' : 'verticalSpeed';
+};
+
+export const createDescentPlanningFormDataSchema = (units: UnitPreferences) => {
+	const altitudeLimits = createUnitLimits('altitude', units.altitude);
+	const speedLimits = createUnitLimits('speed', units.speed);
+	const verticalSpeedLimits = createUnitLimits('verticalSpeed', units.verticalSpeed);
+	const distanceLimits = createUnitLimits('distance', units.distance);
+
+	const givenFields = {
+		verticalSpeed: {
+			name: 'Vertical speed',
+			schema: unitNumberFieldSchema('Vertical speed', 'verticalSpeed', units.verticalSpeed, {
+				min: 0,
+				minExclusive: true,
+				max: DESCENT_LIMITS.verticalSpeed,
+			}),
+			toBase: verticalSpeedLimits.toBase,
+		},
+		descentAngle: {
+			name: 'Descent angle',
+			schema: numberFieldSchema('Descent angle')
+				.gt(0, { message: 'Descent angle must be greater than 0°' })
+				.max(DESCENT_LIMITS.descentAngle, {
+					message: 'Descent angle cannot be greater than 10°',
+				}),
+			toBase: (value: number) => value,
+		},
+		distance: {
+			name: 'Distance',
+			schema: unitNumberFieldSchema('Distance', 'distance', units.distance, {
+				min: 0,
+				minExclusive: true,
+				max: DESCENT_LIMITS.distance,
+			}),
+			toBase: distanceLimits.toBase,
+		},
+	} as const;
+
+	const solveForValues = descentSolveForOptions.map((o) => o.value) as [
+		DescentSolveFor,
+		...DescentSolveFor[],
+	];
+	const descentInputValues = descentInputOptions.map((o) => o.value) as [
+		DescentInput,
+		...DescentInput[],
+	];
+
+	const isAltitude = (value: unknown): value is number =>
+		typeof value === 'number' &&
+		Number.isFinite(value) &&
+		altitudeLimits.isAtLeast(DESCENT_ALTITUDE_LIMITS.min)(value) &&
+		altitudeLimits.isAtMost(DESCENT_ALTITUDE_LIMITS.max)(value);
+	const isGroundspeed = (value: unknown): value is number =>
+		typeof value === 'number' &&
+		Number.isFinite(value) &&
+		speedLimits.isAtLeast(DESCENT_GROUNDSPEED_LIMITS.min)(value) &&
+		speedLimits.isAtMost(DESCENT_GROUNDSPEED_LIMITS.max)(value);
+
+	return (
+		z
+			.object({
+				solveFor: z.enum(solveForValues, {
+					errorMap: () => ({
+						message: 'Solve for must be top of descent or required vertical speed',
+					}),
+				}),
+				descentInput: z.enum(descentInputValues, {
+					errorMap: () => ({
+						message: 'Descent by must be vertical speed or descent angle',
+					}),
+				}),
+				currentAltitude: unitNumberFieldSchema(
+					'Current altitude',
+					'altitude',
+					units.altitude,
+					DESCENT_ALTITUDE_LIMITS
+				),
+				targetAltitude: unitNumberFieldSchema(
+					'Target altitude',
+					'altitude',
+					units.altitude,
+					DESCENT_ALTITUDE_LIMITS
+				),
+				groundspeed: unitNumberFieldSchema(
+					'Groundspeed',
+					'speed',
+					units.speed,
+					DESCENT_GROUNDSPEED_LIMITS
+				),
+				// Checked below, only when given: hidden fields may hold any form value.
+				verticalSpeed: z.unknown(),
+				descentAngle: z.unknown(),
+				distance: z.unknown(),
+			})
+			.superRefine((data, ctx) => {
+				const { solveFor, descentInput, currentAltitude, targetAltitude, groundspeed } =
+					data;
+
+				// Zod runs this even when fields failed their own checks; avoid duplicate issues.
+				if (
+					!solveForValues.includes(solveFor) ||
+					!descentInputValues.includes(descentInput)
+				) {
+					return;
+				}
+
+				const altitudesValid = isAltitude(currentAltitude) && isAltitude(targetAltitude);
+
+				// Both altitudes are in the same unit, so this check holds in any unit.
+				if (altitudesValid && targetAltitude >= currentAltitude) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['targetAltitude'],
+						message: 'Target altitude must be below the current altitude',
+					});
+				}
+
+				const givenField = getDescentGivenField(solveFor, descentInput);
+				const { name, schema, toBase } = givenFields[givenField];
+				const value = data[givenField];
+				const result = isEmptyValue(value) ? null : schema.safeParse(value);
+
+				if (!result?.success) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: [givenField],
+						message: result?.error.issues[0].message ?? `${name} is required`,
+					});
+
+					return;
+				}
+
+				if (
+					!altitudesValid ||
+					targetAltitude >= currentAltitude ||
+					!isGroundspeed(groundspeed)
+				) {
+					return;
+				}
+
+				const given = toBase(result.data);
+				const report = calculateDescentPlanning({
+					solveFor,
+					descentInput,
+					currentAltitude: altitudeLimits.toBase(currentAltitude),
+					targetAltitude: altitudeLimits.toBase(targetAltitude),
+					groundspeed: speedLimits.toBase(groundspeed),
+					verticalSpeed: givenField === 'verticalSpeed' ? given : null,
+					descentAngle: givenField === 'descentAngle' ? given : null,
+					distance: givenField === 'distance' ? given : null,
+				});
+
+				const exceeded = [
+					{
+						value: report.distance,
+						limit: DESCENT_LIMITS.distance,
+						message: `The resulting distance would exceed ${distanceLimits.formatShownMax(DESCENT_LIMITS.distance)}`,
+					},
+					{
+						value: report.verticalSpeed,
+						limit: DESCENT_LIMITS.verticalSpeed,
+						message: `The resulting vertical speed would exceed ${verticalSpeedLimits.formatShownMax(DESCENT_LIMITS.verticalSpeed)}`,
+					},
+					{
+						value: report.descentAngle,
+						limit: DESCENT_LIMITS.descentAngle,
+						message: 'The resulting descent angle would exceed 10°',
+					},
+				].find(({ value, limit }) => value > limit + UNIT_LIMIT_TOLERANCE * limit);
+
+				if (exceeded) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['solveFor'],
+						message: exceeded.message,
+					});
+				}
+			})
+			// Saved calculations store the fields not given in the chosen mode as null.
+			.transform(({ verticalSpeed, descentAngle, distance, ...values }) => {
+				const givenField = getDescentGivenField(values.solveFor, values.descentInput);
+				const toNumber = (field: DescentGivenField, value: unknown) =>
+					field === givenField ? Number(value) : null;
+
+				return {
+					...values,
+					verticalSpeed: toNumber('verticalSpeed', verticalSpeed),
+					descentAngle: toNumber('descentAngle', descentAngle),
+					distance: toNumber('distance', distance),
+				};
+			})
+	);
+};
+
+export const descentPlanningFormDataSchema = createDescentPlanningFormDataSchema(BASE_UNITS);
+
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);
 
@@ -645,6 +1121,7 @@ export const unitPreferencesSchema = z.object(
 		pressure: unitValueSchema('pressure'),
 		fuel: unitValueSchema('fuel'),
 		distance: unitValueSchema('distance'),
+		verticalSpeed: unitValueSchema('verticalSpeed'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

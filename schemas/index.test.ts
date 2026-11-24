@@ -8,20 +8,28 @@ import {
 	breakEvenPointFormDataSchema,
 	calculationNameFormDataSchema,
 	calculationNameStringSchema,
+	cloudBaseFormDataSchema,
 	compoundInterestFormDataSchema,
+	createCloudBaseFormDataSchema,
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
+	createDescentPlanningFormDataSchema,
 	createFuelPlanningFormDataSchema,
+	createGlideDistanceFormDataSchema,
 	createTimeSpeedDistanceFormDataSchema,
 	createTrueAirspeedFormDataSchema,
+	createTurnPerformanceFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
+	descentPlanningFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
 	eventProbabilityFormDataSchema,
 	fuelPlanningFormDataSchema,
+	glideDistanceFormDataSchema,
+	headingFormDataSchema,
 	investmentTimeFormDataSchema,
 	liquidationPriceFormDataSchema,
 	markupFormDataSchema,
@@ -29,6 +37,7 @@ import {
 	priceToEarningsRatioFormDataSchema,
 	timeSpeedDistanceFormDataSchema,
 	trueAirspeedFormDataSchema,
+	turnPerformanceFormDataSchema,
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
 	userPreferencesSchema,
@@ -1707,6 +1716,1035 @@ describe('timeSpeedDistanceFormDataSchema', () => {
 	});
 });
 
+describe('headingFormDataSchema', () => {
+	const base = { trueHeading: 88, variation: 10, variationDirection: 'east' };
+	const withCorrection = { ...base, deviationCorrection: -4 };
+
+	it('accepts valid input', () => {
+		expect(headingFormDataSchema.parse(base)).toEqual(base);
+		expect(headingFormDataSchema.parse(withCorrection)).toEqual(withCorrection);
+		expect(headingFormDataSchema.parse({ ...base, variationDirection: 'west' })).toEqual({
+			...base,
+			variationDirection: 'west',
+		});
+	});
+
+	itRejectsMissingFields(headingFormDataSchema, base);
+
+	it('accepts a true heading of 1 and 360', () => {
+		expect(headingFormDataSchema.safeParse({ ...base, trueHeading: 1 }).success).toBe(true);
+		expect(headingFormDataSchema.safeParse({ ...base, trueHeading: 360 }).success).toBe(true);
+	});
+
+	it.each([0, 360.01])('rejects a true heading of %d', (trueHeading) => {
+		const result = headingFormDataSchema.safeParse({ ...base, trueHeading });
+
+		expect(issueFields(result)).toEqual(['trueHeading']);
+		expect(issueMessages(result)).toEqual(['True heading must be between 1 and 360']);
+	});
+
+	it('accepts a variation of 0 and 180', () => {
+		expect(headingFormDataSchema.safeParse({ ...base, variation: 0 }).success).toBe(true);
+		expect(headingFormDataSchema.safeParse({ ...base, variation: 180 }).success).toBe(true);
+	});
+
+	it.each([
+		[-0.01, 'Variation cannot be negative'],
+		[180.01, 'Variation cannot be greater than 180°'],
+	])('rejects a variation of %d', (variation, message) => {
+		const result = headingFormDataSchema.safeParse({ ...base, variation });
+
+		expect(issueFields(result)).toEqual(['variation']);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it.each(['north', 'E', ''])('rejects a variation direction of %j', (variationDirection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, variationDirection });
+
+		expect(issueFields(result)).toEqual(['variationDirection']);
+		expect(issueMessages(result)).toEqual(['Variation must be East or West']);
+	});
+
+	it.each([undefined, '', null])('treats a correction of %j as none', (deviationCorrection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, deviationCorrection });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.deviationCorrection).toBeUndefined();
+	});
+
+	it.each([-20, 0, 20])('accepts a correction of %d', (deviationCorrection) => {
+		expect(headingFormDataSchema.parse({ ...base, deviationCorrection })).toEqual({
+			...base,
+			deviationCorrection,
+		});
+	});
+
+	it.each([-20.01, 20.01])('rejects a correction of %d', (deviationCorrection) => {
+		const result = headingFormDataSchema.safeParse({ ...base, deviationCorrection });
+
+		expect(issueFields(result)).toEqual(['deviationCorrection']);
+		expect(issueMessages(result)).toEqual([
+			'Deviation correction must be between -20° and +20°',
+		]);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid correction together with an invalid true heading', () => {
+		const result = headingFormDataSchema.safeParse({
+			...base,
+			trueHeading: 0,
+			deviationCorrection: 30,
+		});
+
+		expect(issueFields(result)).toEqual(['trueHeading', 'deviationCorrection']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			headingFormDataSchema.parse({
+				trueHeading: '088',
+				variation: '10.5',
+				variationDirection: 'west',
+				deviationCorrection: '-4',
+			})
+		).toEqual({
+			trueHeading: 88,
+			variation: 10.5,
+			variationDirection: 'west',
+			deviationCorrection: -4,
+		});
+	});
+});
+
+describe('cloudBaseFormDataSchema', () => {
+	const base = { temperature: 15, dewPoint: 5 };
+	const withElevation = { ...base, elevation: 1000 };
+	const mslMessage = 'The resulting cloud base would exceed 60,000 ft MSL';
+
+	it('accepts valid input', () => {
+		expect(cloudBaseFormDataSchema.parse(base)).toEqual(base);
+		expect(cloudBaseFormDataSchema.parse(withElevation)).toEqual(withElevation);
+	});
+
+	itRejectsMissingFields(cloudBaseFormDataSchema, base);
+
+	it.each([undefined, '', null])('treats an elevation of %j as none', (elevation) => {
+		const result = cloudBaseFormDataSchema.safeParse({ ...base, elevation });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.elevation).toBeUndefined();
+	});
+
+	it.each([
+		[
+			{ temperature: -60, dewPoint: -60 },
+			{ temperature: -60.01, dewPoint: -60 },
+			'temperature',
+		],
+		[{ temperature: 60, dewPoint: 0 }, { temperature: 60.01, dewPoint: 0 }, 'temperature'],
+		[{ temperature: 0, dewPoint: -60 }, { temperature: 0, dewPoint: -60.01 }, 'dewPoint'],
+		[{ temperature: 60, dewPoint: 60 }, { temperature: 60, dewPoint: 60.01 }, 'dewPoint'],
+	])('accepts %j and rejects %j', (limit, beyond, field) => {
+		expect(cloudBaseFormDataSchema.safeParse(limit).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse(beyond);
+
+		expect(issueFields(result)).toEqual([field]);
+	});
+
+	it.each([
+		[-1500, -1500.1, 'Elevation cannot be lower than -1,500 ft'],
+		[30000, 30000.1, 'Elevation cannot be greater than 30,000 ft'],
+	])('accepts an elevation of %d and rejects %d', (limit, beyond, message) => {
+		expect(cloudBaseFormDataSchema.safeParse({ ...base, elevation: limit }).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse({ ...base, elevation: beyond });
+
+		expect(issueFields(result)).toEqual(['elevation']);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('rejects a dew point above the temperature and accepts an equal one', () => {
+		const result = cloudBaseFormDataSchema.safeParse({ temperature: 10, dewPoint: 10.01 });
+
+		expect(issueFields(result)).toEqual(['dewPoint']);
+		expect(issueMessages(result)).toEqual(['Dew point cannot be higher than the temperature']);
+		expect(cloudBaseFormDataSchema.safeParse({ temperature: 10, dewPoint: 10 }).success).toBe(
+			true
+		);
+	});
+
+	it('accepts a dew point a float tolerance above the temperature', () => {
+		const input = { temperature: 15, dewPoint: 15 + 1e-10 };
+
+		expect(cloudBaseFormDataSchema.safeParse(input).success).toBe(true);
+	});
+
+	// 120 °C spread: 49,090.91 ft AGL; + 10,909 ft = 59,999.91 ft, + 10,910 ft = 60,000.91 ft MSL.
+	it('rejects a cloud base above 60,000 ft MSL on the elevation', () => {
+		const extreme = { temperature: 60, dewPoint: -60 };
+
+		expect(cloudBaseFormDataSchema.safeParse({ ...extreme, elevation: 10909 }).success).toBe(
+			true
+		);
+		expect(cloudBaseFormDataSchema.safeParse(extreme).success).toBe(true);
+
+		const result = cloudBaseFormDataSchema.safeParse({ ...extreme, elevation: 10910 });
+
+		expect(issueFields(result)).toEqual(['elevation']);
+		expect(issueMessages(result)).toEqual([mslMessage]);
+	});
+
+	it.each([
+		[{ temperature: -61, dewPoint: 0 }, ['temperature']],
+		[{ temperature: 60, dewPoint: 61 }, ['dewPoint']],
+		[{ temperature: 60, dewPoint: -61, elevation: 20000 }, ['dewPoint']],
+		[{ temperature: 60, dewPoint: -60, elevation: 30001 }, ['elevation']],
+	])('adds no cross-field issue when a field already failed: %j', (input, fields) => {
+		const result = cloudBaseFormDataSchema.safeParse(input);
+
+		expect(issueFields(result)).toEqual(fields);
+		expect(issueMessages(result)).not.toContain(mslMessage);
+		expect(issueMessages(result)).not.toContain(
+			'Dew point cannot be higher than the temperature'
+		);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid elevation together with an invalid temperature', () => {
+		const result = cloudBaseFormDataSchema.safeParse({
+			temperature: 61,
+			dewPoint: 0,
+			elevation: 30001,
+		});
+
+		expect(issueFields(result)).toEqual(['temperature', 'elevation']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			cloudBaseFormDataSchema.parse({
+				temperature: '15.5',
+				dewPoint: '-3',
+				elevation: '1200',
+			})
+		).toEqual({ temperature: 15.5, dewPoint: -3, elevation: 1200 });
+	});
+
+	describe('in °F and m', () => {
+		const units = { ...BASE_UNITS, temperature: 'f', altitude: 'm' } as const;
+		const schema = createCloudBaseFormDataSchema(units);
+
+		// −60 °C = −76 °F, 60 °C = 140 °F, −1500 ft = −457.2 m, 30000 ft = 9144 m.
+		it.each([
+			[
+				{ temperature: 140, dewPoint: 32 },
+				{ temperature: 140.1, dewPoint: 32 },
+				'temperature',
+				'Temperature cannot be greater than 140.00 °F',
+			],
+			[
+				{ temperature: -76, dewPoint: -76 },
+				{ temperature: -76, dewPoint: -76.1 },
+				'dewPoint',
+				'Dew point cannot be lower than -76.00 °F',
+			],
+			[
+				{ temperature: 59, dewPoint: 41, elevation: 9144 },
+				{ temperature: 59, dewPoint: 41, elevation: 9145 },
+				'elevation',
+				'Elevation cannot be greater than 9,144 m',
+			],
+			[
+				{ temperature: 59, dewPoint: 41, elevation: -457 },
+				{ temperature: 59, dewPoint: 41, elevation: -458 },
+				'elevation',
+				'Elevation cannot be lower than -457 m',
+			],
+		])('accepts %j and rejects %j', (limit, beyond, field, message) => {
+			expect(schema.safeParse(limit).success).toBe(true);
+
+			const result = schema.safeParse(beyond);
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		// 3,325 m = 10,908.79 ft (59,999.70 ft MSL); 3,326 m = 10,912.07 ft (60,002.98 ft MSL).
+		it('shows the MSL limit in m', () => {
+			const extreme = { temperature: 140, dewPoint: -76 };
+
+			expect(schema.safeParse({ ...extreme, elevation: 3325 }).success).toBe(true);
+
+			const result = schema.safeParse({ ...extreme, elevation: 3326 });
+
+			expect(issueFields(result)).toEqual(['elevation']);
+			expect(issueMessages(result)).toEqual([
+				'The resulting cloud base would exceed 18,288 m MSL',
+			]);
+		});
+
+		it('rejects a dew point above the temperature', () => {
+			const result = schema.safeParse({ temperature: 50, dewPoint: 50.1 });
+
+			expect(issueFields(result)).toEqual(['dewPoint']);
+			expect(schema.safeParse({ temperature: 50, dewPoint: 50 }).success).toBe(true);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			const formData = formDataFromBaseUnits(
+				{ temperature: 60, dewPoint: -60, elevation: 10909 },
+				{ temperature: 'temperature', dewPoint: 'temperature', elevation: 'altitude' },
+				units
+			);
+
+			expect(schema.safeParse(formData).success).toBe(true);
+		});
+	});
+});
+
+describe('glideDistanceFormDataSchema', () => {
+	const schema = glideDistanceFormDataSchema;
+	const base = { altitude: 4000, terrainElevation: 1000, glideRatio: 9 };
+	const withWind = { ...base, glideTrueAirspeed: 60, windSpeed: 25, windType: 'headwind' };
+	const TAS_REQUIRED = 'Glide true airspeed is required when a wind is entered';
+	const TYPE_REQUIRED = 'Choose headwind or tailwind';
+	const HEADWIND_MESSAGE = 'The headwind must be lower than the glide true airspeed';
+	const ABOVE_TERRAIN = 'Altitude must be above the terrain elevation';
+
+	it('accepts valid input with and without a TAS and wind', () => {
+		expect(schema.parse(base)).toEqual({ ...base, windType: null });
+		expect(schema.parse({ ...base, glideTrueAirspeed: 60 })).toEqual({
+			...base,
+			glideTrueAirspeed: 60,
+			windType: null,
+		});
+		expect(schema.parse(withWind)).toEqual(withWind);
+		expect(schema.parse({ ...withWind, windType: 'tailwind' })).toEqual({
+			...withWind,
+			windType: 'tailwind',
+		});
+	});
+
+	itRejectsMissingFields(schema, base);
+
+	it.each([undefined, '', null])('treats a TAS and wind of %j as none', (value) => {
+		const result = schema.safeParse({
+			...base,
+			glideTrueAirspeed: value,
+			windSpeed: value,
+			windType: 'headwind',
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.glideTrueAirspeed).toBeUndefined();
+		expect(result.success && result.data.windSpeed).toBeUndefined();
+		expect(result.success && result.data.windType).toBeNull();
+	});
+
+	it('treats a wind of 0 as no wind: no TAS or wind type needed', () => {
+		for (const windType of [undefined, null, 'tailwind']) {
+			const result = schema.safeParse({ ...base, windSpeed: 0, windType });
+
+			expect(result.success).toBe(true);
+			expect(result.success && result.data.windSpeed).toBe(0);
+			expect(result.success && result.data.windType).toBeNull();
+		}
+	});
+
+	it('requires a TAS with a wind above 0', () => {
+		const result = schema.safeParse({ ...withWind, glideTrueAirspeed: '' });
+
+		expect(issueFields(result)).toEqual(['glideTrueAirspeed']);
+		expect(issueMessages(result)).toEqual([TAS_REQUIRED]);
+	});
+
+	it.each([undefined, null])('requires a wind type of %j with a wind above 0', (windType) => {
+		const result = schema.safeParse({ ...withWind, windType });
+
+		expect(issueFields(result)).toEqual(['windType']);
+		expect(issueMessages(result)).toEqual([TYPE_REQUIRED]);
+	});
+
+	it('reports both a missing TAS and a missing wind type', () => {
+		const result = schema.safeParse({ ...base, windSpeed: 25 });
+
+		expect(issueFields(result)).toEqual(['windType', 'glideTrueAirspeed']);
+	});
+
+	it.each(['crosswind', 'Headwind'])('rejects a wind type of %j', (windType) => {
+		const result = schema.safeParse({ ...withWind, windType });
+
+		expect(issueFields(result)).toEqual(['windType']);
+		expect(issueMessages(result)).toEqual([TYPE_REQUIRED]);
+	});
+
+	it('accepts a headwind of 59.99 kt at 60 kt and rejects 60 kt and more', () => {
+		expect(schema.safeParse({ ...withWind, windSpeed: 59.99 }).success).toBe(true);
+
+		for (const windSpeed of [60, 70]) {
+			const result = schema.safeParse({ ...withWind, windSpeed });
+
+			expect(issueFields(result)).toEqual(['windSpeed']);
+			expect(issueMessages(result)).toEqual([HEADWIND_MESSAGE]);
+		}
+	});
+
+	it('accepts a 200 kt tailwind at a TAS of 20 kt', () => {
+		const input = { ...withWind, glideTrueAirspeed: 20, windSpeed: 200, windType: 'tailwind' };
+
+		expect(schema.safeParse(input).success).toBe(true);
+	});
+
+	it.each([4000, 3999])('rejects an altitude of %d ft above 4,000 ft terrain', (altitude) => {
+		const result = schema.safeParse({ ...base, altitude, terrainElevation: 4000 });
+
+		expect(issueFields(result)).toEqual(['altitude']);
+		expect(issueMessages(result)).toEqual([ABOVE_TERRAIN]);
+	});
+
+	it.each([
+		['altitude', 60000, 60000.1, 'Altitude cannot be greater than 60,000 ft'],
+		['altitude', -1000, -1500.1, 'Altitude cannot be lower than -1,500 ft'],
+		['terrainElevation', -1500, -1500.1, 'Terrain elevation cannot be lower than -1,500 ft'],
+		['terrainElevation', 30000, 30000.1, 'Terrain elevation cannot be greater than 30,000 ft'],
+		['glideRatio', 70, 70.01, 'Glide ratio cannot be greater than 70'],
+		['glideRatio', 0.01, 0, 'Glide ratio must be greater than 0'],
+		['glideTrueAirspeed', 20, 19.99, 'Glide true airspeed cannot be lower than 20.00 kt'],
+		['glideTrueAirspeed', 400, 400.01, 'Glide true airspeed cannot be greater than 400.00 kt'],
+		['windSpeed', 0, -0.01, 'Wind speed cannot be lower than 0.00 kt'],
+		['windSpeed', 200, 200.01, 'Wind speed cannot be greater than 200.00 kt'],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		const input = {
+			...withWind,
+			terrainElevation: -1500,
+			altitude: 40000,
+			glideTrueAirspeed: 400,
+			windType: 'tailwind',
+		};
+
+		expect(schema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = schema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('rejects a negative glide ratio', () => {
+		expect(issueMessages(schema.safeParse({ ...base, glideRatio: -1 }))).toEqual([
+			'Glide ratio must be greater than 0',
+		]);
+	});
+
+	it.each([
+		[{ altitude: -1501, terrainElevation: 1000 }, ['altitude']],
+		[{ altitude: 4000, terrainElevation: 30001 }, ['terrainElevation']],
+		[{ glideTrueAirspeed: 19, windSpeed: 25 }, ['glideTrueAirspeed']],
+		[{ glideTrueAirspeed: 401, windSpeed: 25 }, ['glideTrueAirspeed']],
+		[{ glideTrueAirspeed: '', windSpeed: 201 }, ['windSpeed']],
+	])('adds no cross-field issue when a field already failed: %j', (input, fields) => {
+		const result = schema.safeParse({ ...withWind, ...input });
+
+		expect(issueFields(result)).toEqual(fields);
+		expect(issueMessages(result)).not.toContain(ABOVE_TERRAIN);
+		expect(issueMessages(result)).not.toContain(TAS_REQUIRED);
+		expect(issueMessages(result)).not.toContain(HEADWIND_MESSAGE);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid TAS together with an invalid altitude', () => {
+		const result = schema.safeParse({ ...base, altitude: 60001, glideTrueAirspeed: 401 });
+
+		expect(issueFields(result)).toEqual(['altitude', 'glideTrueAirspeed']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({
+				altitude: '4500.5',
+				terrainElevation: '-200',
+				glideRatio: '8.5',
+				glideTrueAirspeed: '65',
+				windSpeed: '10',
+				windType: 'tailwind',
+			})
+		).toEqual({
+			altitude: 4500.5,
+			terrainElevation: -200,
+			glideRatio: 8.5,
+			glideTrueAirspeed: 65,
+			windSpeed: 10,
+			windType: 'tailwind',
+		});
+	});
+
+	describe('in m and km/h', () => {
+		const units = { ...BASE_UNITS, altitude: 'm', speed: 'kmh' } as const;
+		const userSchema = createGlideDistanceFormDataSchema(units);
+		// 1,219.2 m / 304.8 m = 4,000 / 1,000 ft; 111.12 km/h = 60 kt; 46.3 km/h = 25 kt.
+		const userBase = {
+			altitude: 1219.2,
+			terrainElevation: 304.8,
+			glideRatio: 24,
+			glideTrueAirspeed: 111.12,
+			windSpeed: 46.3,
+			windType: 'headwind',
+		};
+
+		it('accepts valid input', () => {
+			expect(userSchema.safeParse(userBase).success).toBe(true);
+		});
+
+		// 60,000 ft = 18,288 m, −1,500 ft = −457.2 m, 30,000 ft = 9,144 m, 20 kt = 37.04 km/h,
+		// 400 kt = 740.8 km/h, 200 kt = 370.4 km/h. Shown limits are rounded inwards.
+		it.each([
+			['altitude', 18288, 18289, 'Altitude cannot be greater than 18,288 m'],
+			['terrainElevation', -457, -458, 'Terrain elevation cannot be lower than -457 m'],
+			['terrainElevation', 9144, 9145, 'Terrain elevation cannot be greater than 9,144 m'],
+			[
+				'glideTrueAirspeed',
+				37.04,
+				37.03,
+				'Glide true airspeed cannot be lower than 37.04 km/h',
+			],
+			[
+				'glideTrueAirspeed',
+				740.8,
+				740.81,
+				'Glide true airspeed cannot be greater than 740.80 km/h',
+			],
+			['windSpeed', 370.4, 370.41, 'Wind speed cannot be greater than 370.40 km/h'],
+		])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+			const input = { ...userBase, altitude: 12000, windType: 'tailwind' };
+
+			expect(userSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+			const result = userSchema.safeParse({ ...input, [field]: beyond });
+
+			expect(issueFields(result)).toEqual([field]);
+			expect(issueMessages(result)).toEqual([message]);
+		});
+
+		it('rejects a headwind equal to the TAS', () => {
+			const result = userSchema.safeParse({ ...userBase, windSpeed: 111.12 });
+
+			expect(issueFields(result)).toEqual(['windSpeed']);
+			expect(issueMessages(result)).toEqual([HEADWIND_MESSAGE]);
+		});
+
+		it('rejects an altitude equal to the terrain elevation', () => {
+			const result = userSchema.safeParse({ ...userBase, altitude: 304.8 });
+
+			expect(issueMessages(result)).toEqual([ABOVE_TERRAIN]);
+		});
+
+		it('accepts the form values of the limits set from base units', () => {
+			const formData = formDataFromBaseUnits(
+				{
+					altitude: 60000,
+					terrainElevation: 30000,
+					glideRatio: 70,
+					glideTrueAirspeed: 20,
+					windSpeed: 200,
+					windType: 'tailwind',
+				},
+				{
+					altitude: 'altitude',
+					terrainElevation: 'altitude',
+					glideTrueAirspeed: 'speed',
+					windSpeed: 'speed',
+				},
+				units
+			);
+
+			expect(userSchema.safeParse(formData).success).toBe(true);
+		});
+	});
+
+	// 20 kt = 23.0156 mph, 400 kt = 460.3115 mph, 200 kt = 230.1558 mph (rounded inwards).
+	it.each([
+		['glideTrueAirspeed', 23.02, 23.01, 'Glide true airspeed cannot be lower than 23.02 mph'],
+		[
+			'glideTrueAirspeed',
+			460.31,
+			460.32,
+			'Glide true airspeed cannot be greater than 460.31 mph',
+		],
+		['windSpeed', 230.15, 230.16, 'Wind speed cannot be greater than 230.15 mph'],
+	])('shows the %s limit in mph: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const mphSchema = createGlideDistanceFormDataSchema({ ...BASE_UNITS, speed: 'mph' });
+		const input = { ...withWind, glideTrueAirspeed: 460, windType: 'tailwind' };
+
+		expect(mphSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = mphSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+});
+
+describe('turnPerformanceFormDataSchema', () => {
+	const schema = turnPerformanceFormDataSchema;
+	const base = { trueAirspeed: 120, bankAngle: 30 };
+
+	it('accepts valid input with and without a stall speed', () => {
+		expect(schema.parse(base)).toEqual(base);
+		expect(schema.parse({ ...base, stallSpeed: 50 })).toEqual({ ...base, stallSpeed: 50 });
+	});
+
+	itRejectsMissingFields(schema, base);
+
+	it.each([undefined, '', null])('treats a stall speed of %j as none', (stallSpeed) => {
+		const result = schema.safeParse({ ...base, stallSpeed });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.stallSpeed).toBeUndefined();
+	});
+
+	it.each([
+		['trueAirspeed', 20, 19.99, 'True airspeed cannot be lower than 20.00 kt'],
+		['trueAirspeed', 400, 400.01, 'True airspeed cannot be greater than 400.00 kt'],
+		['bankAngle', 0.01, 0, 'Bank angle must be greater than 0°'],
+		['bankAngle', 75, 75.01, 'Bank angle cannot be greater than 75°'],
+		['stallSpeed', 0.01, 0, 'Stall speed must be greater than 0.00 kt'],
+		['stallSpeed', 200, 200.01, 'Stall speed cannot be greater than 200.00 kt'],
+	])('accepts %s of %d and rejects %d', (field, limit, beyond, message) => {
+		const input = { ...base, stallSpeed: 50 };
+
+		expect(schema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = schema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it.each(['trueAirspeed', 'bankAngle', 'stallSpeed'])('rejects a negative %s', (field) => {
+		const result = schema.safeParse({ ...base, stallSpeed: 50, [field]: -1 });
+
+		expect(issueFields(result)).toEqual([field]);
+	});
+
+	it('accepts a stall speed above the TAS (no comparison)', () => {
+		expect(schema.safeParse({ trueAirspeed: 40, bankAngle: 30, stallSpeed: 60 }).success).toBe(
+			true
+		);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid stall speed together with an invalid bank angle', () => {
+		const result = schema.safeParse({ ...base, bankAngle: 80, stallSpeed: 201 });
+
+		expect(issueFields(result)).toEqual(['bankAngle', 'stallSpeed']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({ trueAirspeed: '120.5', bankAngle: '30', stallSpeed: '48.5' })
+		).toEqual({ trueAirspeed: 120.5, bankAngle: 30, stallSpeed: 48.5 });
+	});
+
+	// 20 kt = 37.04 km/h, 400 kt = 740.8 km/h, 200 kt = 370.4 km/h.
+	it.each([
+		['trueAirspeed', 37.04, 37.03, 'True airspeed cannot be lower than 37.04 km/h'],
+		['trueAirspeed', 740.8, 740.81, 'True airspeed cannot be greater than 740.80 km/h'],
+		['stallSpeed', 370.4, 370.41, 'Stall speed cannot be greater than 370.40 km/h'],
+	])('shows the %s limit in km/h: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const kmhSchema = createTurnPerformanceFormDataSchema({ ...BASE_UNITS, speed: 'kmh' });
+		const input = { trueAirspeed: 222.24, bankAngle: 30, stallSpeed: 92.6 };
+
+		expect(kmhSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = kmhSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	// 20 kt = 23.0156 mph, 400 kt = 460.3115 mph, 200 kt = 230.1558 mph (rounded inwards).
+	it.each([
+		['trueAirspeed', 23.02, 23.01, 'True airspeed cannot be lower than 23.02 mph'],
+		['trueAirspeed', 460.31, 460.32, 'True airspeed cannot be greater than 460.31 mph'],
+		['stallSpeed', 230.15, 230.16, 'Stall speed cannot be greater than 230.15 mph'],
+	])('shows the %s limit in mph: accepts %d and rejects %d', (field, limit, beyond, message) => {
+		const mphSchema = createTurnPerformanceFormDataSchema({ ...BASE_UNITS, speed: 'mph' });
+		const input = { trueAirspeed: 138, bankAngle: 30, stallSpeed: 57.5 };
+
+		expect(mphSchema.safeParse({ ...input, [field]: limit }).success).toBe(true);
+
+		const result = mphSchema.safeParse({ ...input, [field]: beyond });
+
+		expect(issueFields(result)).toEqual([field]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('accepts the form values of the limits set from base units', () => {
+		const units = { ...BASE_UNITS, speed: 'kmh' } as const;
+		const formData = formDataFromBaseUnits(
+			{ trueAirspeed: 400, bankAngle: 75, stallSpeed: 200 },
+			{ trueAirspeed: 'speed', stallSpeed: 'speed' },
+			units
+		);
+
+		expect(createTurnPerformanceFormDataSchema(units).safeParse(formData).success).toBe(true);
+	});
+});
+
+describe('descentPlanningFormDataSchema', () => {
+	const schema = descentPlanningFormDataSchema;
+	const schemaIn = (units: Partial<typeof BASE_UNITS>) =>
+		createDescentPlanningFormDataSchema({ ...BASE_UNITS, ...units });
+
+	// FAA IPH p. 3-4: 7,000 → 1,000 ft at 120 kt.
+	const common = {
+		descentInput: 'verticalSpeed',
+		currentAltitude: 7000,
+		targetAltitude: 1000,
+		groundspeed: 120,
+	} as const;
+
+	const modes = {
+		'top of descent by vertical speed': {
+			base: { ...common, solveFor: 'topOfDescent', verticalSpeed: 600 },
+			given: 'verticalSpeed',
+			hidden: ['descentAngle', 'distance'],
+			name: 'Vertical speed',
+		},
+		'top of descent by angle': {
+			base: { ...common, solveFor: 'topOfDescent', descentInput: 'angle', descentAngle: 3 },
+			given: 'descentAngle',
+			hidden: ['verticalSpeed', 'distance'],
+			name: 'Descent angle',
+		},
+		'required vertical speed': {
+			base: { ...common, solveFor: 'verticalSpeed', distance: 20 },
+			given: 'distance',
+			hidden: ['verticalSpeed', 'descentAngle'],
+			name: 'Distance',
+		},
+	} as const;
+
+	describe.each(Object.keys(modes) as (keyof typeof modes)[])('%s', (mode) => {
+		const { base, given, hidden, name } = modes[mode];
+
+		it('accepts valid input and outputs the hidden fields as null', () => {
+			expect(schema.parse(base)).toEqual({
+				verticalSpeed: null,
+				descentAngle: null,
+				distance: null,
+				...base,
+			});
+		});
+
+		it.each(hidden)('ignores any hidden %s', (field) => {
+			for (const value of [undefined, '', null, -1, 1e9, 'abc']) {
+				const result = schema.safeParse({ ...base, [field]: value });
+
+				expect(result.success).toBe(true);
+				expect(result.success && result.data[field]).toBeNull();
+			}
+		});
+
+		it('requires the given field', () => {
+			for (const value of [undefined, '', null]) {
+				const result = schema.safeParse({ ...base, [given]: value });
+
+				expect(issueFields(result)).toEqual([given]);
+				expect(issueMessages(result)).toEqual([`${name} is required`]);
+			}
+		});
+
+		it('rejects a given value of 0 or less', () => {
+			for (const value of [0, -1]) {
+				expect(issueFields(schema.safeParse({ ...base, [given]: value }))).toEqual([given]);
+			}
+		});
+
+		itRejectsMissingFields(schema, base);
+	});
+
+	const byVerticalSpeed = modes['top of descent by vertical speed'].base;
+	const byAngle = modes['top of descent by angle'].base;
+	const requiredVerticalSpeed = modes['required vertical speed'].base;
+
+	it('shows the minimum messages', () => {
+		expect(issueMessages(schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 0 }))).toEqual([
+			'Vertical speed must be greater than 0 ft/min',
+		]);
+		expect(issueMessages(schema.safeParse({ ...byAngle, descentAngle: 0 }))).toEqual([
+			'Descent angle must be greater than 0°',
+		]);
+		expect(issueMessages(schema.safeParse({ ...requiredVerticalSpeed, distance: 0 }))).toEqual([
+			'Distance must be greater than 0.00 NM',
+		]);
+		expect(
+			issueMessages(
+				schemaIn({ verticalSpeed: 'ms' }).safeParse({
+					...byVerticalSpeed,
+					verticalSpeed: 0,
+				})
+			)
+		).toEqual(['Vertical speed must be greater than 0.00 m/s']);
+	});
+
+	// −1,500 ft = −457.2 m; 60,000 ft = 18,288 m (× 0.3048).
+	it.each([
+		['ft', -1500, -1500.01, 60000, 60000.01, '-1,500 ft', '60,000 ft'],
+		['m', -457.2, -457.21, 18288, 18288.01, '-457 m', '18,288 m'],
+	] as const)(
+		'accepts altitudes at the limits and rejects beyond them in %s',
+		(altitude, min, belowMin, max, aboveMax, shownMin, shownMax) => {
+			const s = schemaIn({ altitude });
+			// 61,500 ft at 1,000 kt and 2,050 ft/min is 500 NM.
+			const input = { ...byVerticalSpeed, groundspeed: 1000, verticalSpeed: 2050 };
+
+			expect(
+				s.safeParse({ ...input, currentAltitude: max, targetAltitude: min }).success
+			).toBe(true);
+			expect(
+				issueMessages(
+					s.safeParse({ ...input, currentAltitude: aboveMax, targetAltitude: 0 })
+				)
+			).toEqual([`Current altitude cannot be greater than ${shownMax}`]);
+			expect(
+				issueMessages(
+					s.safeParse({ ...input, currentAltitude: 0, targetAltitude: belowMin })
+				)
+			).toEqual([`Target altitude cannot be lower than ${shownMin}`]);
+		}
+	);
+
+	// 20 kt = 37.04 km/h; 1,000 kt = 1,852 km/h.
+	it.each([
+		['kt', 19.99, 20, 1000, 1000.01, '20.00 kt', '1,000.00 kt'],
+		['kmh', 37.03, 37.04, 1852, 1852.01, '37.04 km/h', '1,852.00 km/h'],
+	] as const)(
+		'accepts groundspeeds at the limits and rejects beyond them in %s',
+		(speed, belowMin, min, max, aboveMax, shownMin, shownMax) => {
+			const s = schemaIn({ speed });
+			const input = { ...requiredVerticalSpeed, distance: 100 };
+
+			expect(s.safeParse({ ...input, groundspeed: min }).success).toBe(true);
+			expect(s.safeParse({ ...input, groundspeed: max }).success).toBe(true);
+			expect(issueMessages(s.safeParse({ ...input, groundspeed: belowMin }))).toEqual([
+				`Groundspeed cannot be lower than ${shownMin}`,
+			]);
+			expect(issueMessages(s.safeParse({ ...input, groundspeed: aboveMax }))).toEqual([
+				`Groundspeed cannot be greater than ${shownMax}`,
+			]);
+		}
+	);
+
+	// 6,000 ft/min = 30.48 m/s (× 0.3048 / 60). At 1,000 kt it is 16.67 NM and 3.39°.
+	it.each([
+		['fpm', 6000, 6000.01, '6,000 ft/min'],
+		['ms', 30.48, 30.49, '30.48 m/s'],
+	] as const)(
+		'accepts a vertical speed at the limit and rejects more in %s',
+		(verticalSpeed, atLimit, over, shown) => {
+			const s = schemaIn({ verticalSpeed });
+			const input = { ...byVerticalSpeed, groundspeed: 1000 };
+
+			expect(s.safeParse({ ...input, verticalSpeed: atLimit }).success).toBe(true);
+			expect(issueMessages(s.safeParse({ ...input, verticalSpeed: over }))).toEqual([
+				`Vertical speed cannot be greater than ${shown}`,
+			]);
+		}
+	);
+
+	it('accepts a descent angle of 10° and rejects more', () => {
+		expect(schema.safeParse({ ...byAngle, descentAngle: 10 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...byAngle, descentAngle: 10.01 }))).toEqual([
+			'Descent angle cannot be greater than 10°',
+		]);
+	});
+
+	// 500 NM = 926 km (× 1.852).
+	it.each([
+		['nm', 500, 500.01, '500.00 NM'],
+		['km', 926, 926.01, '926.00 km'],
+	] as const)(
+		'accepts a distance at the limit and rejects more in %s',
+		(distance, atLimit, over, shown) => {
+			const s = schemaIn({ distance });
+
+			expect(s.safeParse({ ...requiredVerticalSpeed, distance: atLimit }).success).toBe(true);
+			expect(
+				issueMessages(s.safeParse({ ...requiredVerticalSpeed, distance: over }))
+			).toEqual([`Distance cannot be greater than ${shown}`]);
+		}
+	);
+
+	it('rejects a target altitude at or above the current altitude', () => {
+		for (const targetAltitude of [7000, 8000]) {
+			const result = schema.safeParse({ ...byVerticalSpeed, targetAltitude });
+
+			expect(issueFields(result)).toEqual(['targetAltitude']);
+			expect(issueMessages(result)).toEqual([
+				'Target altitude must be below the current altitude',
+			]);
+		}
+	});
+
+	describe('the computed values', () => {
+		// 61,500 ft × 1,000 kt / (60 × 2,050 ft/min) = 500 NM.
+		it.each([
+			['nm', '500.00 NM'],
+			['km', '926.00 km'],
+		] as const)('accept a distance at its limit and reject more in %s', (distance, shown) => {
+			const input = {
+				...byVerticalSpeed,
+				currentAltitude: 60000,
+				targetAltitude: -1500,
+				groundspeed: 1000,
+			};
+
+			expect(
+				schemaIn({ distance }).safeParse({ ...input, verticalSpeed: 2050 }).success
+			).toBe(true);
+
+			const result = schemaIn({ distance }).safeParse({ ...input, verticalSpeed: 2049.99 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual([`The resulting distance would exceed ${shown}`]);
+		});
+
+		// At 1,000 kt, 6,000 ft/min is a 3.390718° path.
+		it.each([
+			['fpm', '6,000 ft/min'],
+			['ms', '30.48 m/s'],
+		] as const)(
+			'accept a vertical speed at its limit and reject more in %s',
+			(verticalSpeed, shown) => {
+				const s = schemaIn({ verticalSpeed });
+				const message = [`The resulting vertical speed would exceed ${shown}`];
+				const angle = { ...byAngle, groundspeed: 1000 };
+
+				expect(s.safeParse({ ...angle, descentAngle: 3.39 }).success).toBe(true);
+				expect(issueMessages(s.safeParse({ ...angle, descentAngle: 3.391 }))).toEqual(
+					message
+				);
+
+				// 6,000 ft × 1,000 kt / (60 × 16.67 NM) = 5,998.80 ft/min.
+				const required = { ...requiredVerticalSpeed, groundspeed: 1000 };
+
+				expect(s.safeParse({ ...required, distance: 16.67 }).success).toBe(true);
+
+				const result = s.safeParse({ ...required, distance: 16.66 });
+
+				expect(issueFields(result)).toEqual(['solveFor']);
+				expect(issueMessages(result)).toEqual(message);
+			}
+		);
+
+		// At 120 kt, a 10° path from 7,000 to 1,000 ft is 2,142.7662 ft/min.
+		it('accept a descent angle at its limit and reject more', () => {
+			expect(schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 2142.76 }).success).toBe(
+				true
+			);
+
+			const result = schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 2142.77 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual(['The resulting descent angle would exceed 10°']);
+		});
+
+		it('are not checked when a field already failed', () => {
+			expect(
+				issueFields(
+					schema.safeParse({ ...byVerticalSpeed, groundspeed: 1000.01, verticalSpeed: 1 })
+				)
+			).toEqual(['groundspeed']);
+			expect(
+				issueFields(
+					schema.safeParse({
+						...byVerticalSpeed,
+						targetAltitude: 7000,
+						verticalSpeed: 1,
+					})
+				)
+			).toEqual(['targetAltitude']);
+			expect(
+				issueFields(
+					schema.safeParse({ ...requiredVerticalSpeed, groundspeed: 1000, distance: 0 })
+				)
+			).toEqual(['distance']);
+		});
+	});
+
+	it('accepts imported values in every altitude, speed, vertical speed and distance unit', () => {
+		const unitFields = {
+			currentAltitude: 'altitude',
+			targetAltitude: 'altitude',
+			groundspeed: 'speed',
+			verticalSpeed: 'verticalSpeed',
+			distance: 'distance',
+		} as const;
+		// 500 NM at the altitude limits.
+		const stored = {
+			...byVerticalSpeed,
+			currentAltitude: 60000,
+			targetAltitude: -1500,
+			groundspeed: 1000,
+			verticalSpeed: 2050,
+			descentAngle: null,
+			distance: null,
+		};
+
+		for (const altitude of ['ft', 'm'] as const) {
+			for (const speed of ['kt', 'kmh', 'mph', 'ms'] as const) {
+				for (const verticalSpeed of ['fpm', 'ms'] as const) {
+					for (const distance of ['nm', 'km', 'sm'] as const) {
+						const units = { ...BASE_UNITS, altitude, speed, verticalSpeed, distance };
+
+						expect(
+							schemaIn(units).safeParse(
+								formDataFromBaseUnits(stored, unitFields, units)
+							).success
+						).toBe(true);
+					}
+				}
+			}
+		}
+	});
+
+	it('rejects an unknown solveFor or descentInput with one issue', () => {
+		let result = schema.safeParse({ ...byVerticalSpeed, solveFor: 'climb' });
+
+		expect(issueFields(result)).toEqual(['solveFor']);
+		expect(issueMessages(result)).toEqual([
+			'Solve for must be top of descent or required vertical speed',
+		]);
+
+		result = schema.safeParse({ ...byVerticalSpeed, descentInput: 'gradient' });
+
+		expect(issueFields(result)).toEqual(['descentInput']);
+		expect(issueMessages(result)).toEqual([
+			'Descent by must be vertical speed or descent angle',
+		]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({
+				...requiredVerticalSpeed,
+				currentAltitude: '7000',
+				targetAltitude: '1000',
+				groundspeed: '120.5',
+				verticalSpeed: '',
+				distance: '20',
+			})
+		).toEqual({
+			...requiredVerticalSpeed,
+			groundspeed: 120.5,
+			verticalSpeed: null,
+			descentAngle: null,
+		});
+	});
+});
+
 describe('unitPreferencesSchema', () => {
 	const base = {
 		speed: 'kmh',
@@ -1715,10 +2753,26 @@ describe('unitPreferencesSchema', () => {
 		pressure: 'inhg',
 		fuel: 'lb',
 		distance: 'sm',
+		verticalSpeed: 'ms',
 	};
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every vertical speed unit', () => {
+		for (const verticalSpeed of ['fpm', 'ms']) {
+			expect(unitPreferencesSchema.parse({ ...base, verticalSpeed }).verticalSpeed).toBe(
+				verticalSpeed
+			);
+		}
+	});
+
+	it('rejects an unknown vertical speed unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, verticalSpeed: 'kt' });
+
+		expect(issueFields(result)).toEqual(['verticalSpeed']);
+		expect(issueMessages(result)).toEqual(['Invalid verticalSpeed unit']);
 	});
 
 	it('accepts every distance unit', () => {
@@ -1768,6 +2822,7 @@ describe('userPreferencesSchema', () => {
 			pressure: 'hpa',
 			fuel: 'l',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		},
 	};
 

@@ -220,6 +220,26 @@ export const timeSpeedDistanceSolveForOptions = [
 	{ value: 'time', label: 'Time' },
 ] as const;
 
+export const variationDirections = [
+	{ value: 'east', label: 'East' },
+	{ value: 'west', label: 'West' },
+] as const;
+
+export const windTypes = [
+	{ value: 'headwind', label: 'Headwind' },
+	{ value: 'tailwind', label: 'Tailwind' },
+] as const;
+
+export const descentSolveForOptions = [
+	{ value: 'topOfDescent', label: 'Top of descent' },
+	{ value: 'verticalSpeed', label: 'Required vertical speed' },
+] as const;
+
+export const descentInputOptions = [
+	{ value: 'verticalSpeed', label: 'Vertical speed' },
+	{ value: 'angle', label: 'Descent angle' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',

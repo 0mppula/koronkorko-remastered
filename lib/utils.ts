@@ -89,6 +89,14 @@ export const formatHoursMinutes = (minutes: number) => {
 	return `${hours} h ${totalMinutes - hours * 60} min`;
 };
 
+// Rounded to whole seconds, so 59.6 s is "1 min 0 s", not "0 min 60 s".
+export const formatMinutesSeconds = (seconds: number) => {
+	const totalSeconds = Math.round(isNaN(seconds) ? 0 : seconds);
+	const minutes = Math.floor(totalSeconds / 60);
+
+	return `${minutes} min ${totalSeconds - minutes * 60} s`;
+};
+
 export const formatMinutes = (minutes: number) => {
 	const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(
 		isNaN(minutes) ? 0 : minutes

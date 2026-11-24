@@ -27,12 +27,13 @@ model Account {
 }
 
 type unitPreferences {
-  speed       String?
-  altitude    String?
-  temperature String?
-  pressure    String?
-  fuel        String?
-  distance    String?
+  speed         String?
+  altitude      String?
+  temperature   String?
+  pressure      String?
+  fuel          String?
+  distance      String?
+  verticalSpeed String?
 }
 
 type preferences {
@@ -72,6 +73,11 @@ model User {
   FuelPlanningCalculations         FuelPlanningCalculation[]
   TrueAirspeedCalculations         TrueAirspeedCalculation[]
   TimeSpeedDistanceCalculations    TimeSpeedDistanceCalculation[]
+  HeadingCalculations              HeadingCalculation[]
+  CloudBaseCalculations            CloudBaseCalculation[]
+  GlideDistanceCalculations        GlideDistanceCalculation[]
+  TurnPerformanceCalculations      TurnPerformanceCalculation[]
+  DescentPlanningCalculations      DescentPlanningCalculation[]
 }
 
 enum Plan {
@@ -429,6 +435,121 @@ model TimeSpeedDistanceCalculation {
   formData  TimeSpeedDistanceCalculationFormData
   createdAt DateTime                             @default(now())
   updatedAt DateTime                             @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum VariationDirection {
+  east
+  west
+}
+
+type HeadingCalculationFormData {
+  trueHeading         Float
+  variation           Float
+  variationDirection  VariationDirection
+  deviationCorrection Float?
+}
+
+model HeadingCalculation {
+  id        String                     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                     @db.ObjectId
+  name      String
+  formData  HeadingCalculationFormData
+  createdAt DateTime                   @default(now())
+  updatedAt DateTime                   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type CloudBaseCalculationFormData {
+  temperature Float
+  dewPoint    Float
+  elevation   Float?
+}
+
+model CloudBaseCalculation {
+  id        String                       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                       @db.ObjectId
+  name      String
+  formData  CloudBaseCalculationFormData
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum GlideWindType {
+  headwind
+  tailwind
+}
+
+type GlideDistanceCalculationFormData {
+  altitude          Float
+  terrainElevation  Float
+  glideRatio        Float
+  glideTrueAirspeed Float?
+  windSpeed         Float?
+  windType          GlideWindType?
+}
+
+model GlideDistanceCalculation {
+  id        String                           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                           @db.ObjectId
+  name      String
+  formData  GlideDistanceCalculationFormData
+  createdAt DateTime                         @default(now())
+  updatedAt DateTime                         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+type TurnPerformanceCalculationFormData {
+  trueAirspeed Float
+  bankAngle    Float
+  stallSpeed   Float?
+}
+
+model TurnPerformanceCalculation {
+  id        String                             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                             @db.ObjectId
+  name      String
+  formData  TurnPerformanceCalculationFormData
+  createdAt DateTime                           @default(now())
+  updatedAt DateTime                           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum DescentPlanningSolveFor {
+  topOfDescent
+  verticalSpeed
+}
+
+enum DescentInput {
+  verticalSpeed
+  angle
+}
+
+// Fields not given in the chosen mode are null.
+type DescentPlanningCalculationFormData {
+  solveFor        DescentPlanningSolveFor
+  descentInput    DescentInput
+  currentAltitude Float
+  targetAltitude  Float
+  groundspeed     Float
+  verticalSpeed   Float?
+  descentAngle    Float?
+  distance        Float?
+}
+
+model DescentPlanningCalculation {
+  id        String                             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                             @db.ObjectId
+  name      String
+  formData  DescentPlanningCalculationFormData
+  createdAt DateTime                           @default(now())
+  updatedAt DateTime                           @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

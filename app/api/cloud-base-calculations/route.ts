@@ -1,0 +1,77 @@
+import { getAuthSession } from '@/app/actions/auth';
+import { FREE_PLAN_CALCULATION_LIMIT } from '@/constants/data';
+import db from '@/lib/db';
+import { calculationNameStringSchema, cloudBaseFormDataSchema } from '@/schemas';
+import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
+
+export async function POST(req: Request) {
+	const session = await getAuthSession();
+	const body = await req.json();
+
+	try {
+		if (!session) {
+			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
+		}
+
+		if (session?.user.plan === 'free') {
+			const calcCount = await db.cloudBaseCalculation.count({
+				where: {
+					userId: session?.user.id,
+				},
+			});
+
+			if (calcCount >= FREE_PLAN_CALCULATION_LIMIT) {
+				return NextResponse.json(
+					{
+						error: 'You have reached the maximum number of calculations allowed for your plan.',
+					},
+					{ status: 400 }
+				);
+			}
+		}
+
+		const { temperature, dewPoint, elevation } = cloudBaseFormDataSchema.parse(body.formData);
+		const name = calculationNameStringSchema.parse(body.name);
+
+		const calculation = await db.cloudBaseCalculation.create({
+			data: {
+				name,
+				formData: {
+					temperature,
+					dewPoint,
+					elevation: elevation ?? undefined,
+				},
+				userId: session?.user.id,
+			},
+		});
+
+		return NextResponse.json(calculation);
+	} catch (error) {
+		if (error instanceof ZodError) {
+			return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
+		}
+
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+	}
+}
+
+export async function GET() {
+	const session = await getAuthSession();
+
+	try {
+		if (!session) {
+			return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
+		}
+
+		const calculations = await db.cloudBaseCalculation.findMany({
+			where: {
+				userId: session?.user.id,
+			},
+		});
+
+		return NextResponse.json(calculations);
+	} catch (error) {
+		return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+	}
+}

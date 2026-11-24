@@ -12,6 +12,7 @@ const units = {
 	pressure: 'inhg',
 	fuel: 'usgal',
 	distance: 'km',
+	verticalSpeed: 'ms',
 } as const;
 
 describe('updateUserPreferences', () => {

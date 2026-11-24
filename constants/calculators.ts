@@ -132,4 +132,39 @@ export const calculators = [
 		description:
 			'Calculate the distance, groundspeed or flight time, given the other two. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'True, Magnetic and Compass Heading Calculator',
+		url: 'heading-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction. Additionally, logged in users can save their calculations.',
+	},
+	{
+		name: 'Cloud Base Calculator',
+		url: 'cloud-base-calculator',
+		category: 'aviation',
+		description:
+			'Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and field elevation. Additionally, logged in users can save their calculations.',
+	},
+	{
+		name: 'Glide Distance Calculator',
+		url: 'glide-distance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the glide distance and time, given the altitude, terrain elevation, glide ratio and wind. Additionally, logged in users can save their calculations.',
+	},
+	{
+		name: 'Turn Performance Calculator',
+		url: 'turn-performance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the rate of turn, turn radius, load factor and standard-rate bank angle, given the true airspeed and bank angle. Additionally, logged in users can save their calculations.',
+	},
+	{
+		name: 'Descent Planning Calculator',
+		url: 'descent-planning-calculator',
+		category: 'aviation',
+		description:
+			'Calculate where to start the descent or the vertical speed needed, and the descent gradient, given the altitudes and groundspeed. Additionally, logged in users can save their calculations.',
+	},
 ] as const;
