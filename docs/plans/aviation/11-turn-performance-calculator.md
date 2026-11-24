@@ -26,6 +26,12 @@ altitude and distance units; no new unit preference.
   stalls at altitude. `Info.tsx` says to compare it with the indicated airspeed.
 - **Exact physics** with standard gravity `g = 9.80665 m/s²`; the PHAK and Formulary constants
   (1,091, 11.26, 11.23, 96.7, 362.1) and rules of thumb appear in `Info.tsx` only.
+- **Rules of thumb for the standard-rate bank** (only rules found in a source that was opened and
+  checked): Aviation Formulary `TAS ÷ 7` ("accurate to ~1 degree for speeds less than 250
+  knots"; 120 kt → about 17°); FAA Instrument Flying Handbook FAA-H-8083-15B p. 4-11 "divide the
+  airspeed by ten and add 7" (120 kt → 19°) and p. 7-19 "15 percent of the true airspeed"
+  (120 kt → 18°). The exact value at 120 kt is 18.2°. The PHAK, AFH, IPH and GFH extracts were
+  searched and have no such rule.
 - **Limits (base units):** TAS ≥ 20 kt and ≤ 400 kt (same minimum as the glide TAS in 10),
   bank > 0° and ≤ 75° (load factor 3.86), stall speed > 0 and ≤ 200 kt.
 - No cross-field checks: the standard-rate bank at 400 kt is 47.69°, within any limit.
@@ -100,22 +106,27 @@ differ from the exact values by up to 0.6 % (see "Test cases").
   `"Bank angle must be greater than 0°"`, `"Bank angle cannot be greater than 75°"`), `stallSpeed`
   ("Stall speed", `min: 0, minExclusive: true, max: 200`, `.nullish()`);
   `turnPerformanceFormDataSchema = createTurnPerformanceFormDataSchema(BASE_UNITS)`.
-- Messages in the user's unit, rounded inwards (01): e.g. `"True airspeed must be at least 37.04
-km/h"`, `"True airspeed cannot be greater than 740.80 km/h"`.
+- Messages in the user's unit, rounded inwards (01): e.g. `"True airspeed cannot be lower than
+37.04 km/h"`, `"True airspeed cannot be greater than 740.80 km/h"`, `"Stall speed must be greater
+than 0.00 kt"`.
+- The stall speed uses the shared `emptyToUndefined` preprocess: `''`, `null` and a missing value
+  parse to `undefined` (not `null`). Form defaults and Prisma data still use `null`.
 
 ## UI
 
 - `Calculator.tsx`: defaults (base units) `{ trueAirspeed: 120, bankAngle: 30, stallSpeed: null }`
-  (PHAK example). Inputs: "True Airspeed (TAS)" (`DynamicFormLabel`, short "TAS"; speed symbol),
-  "Bank Angle" (`°`), "Stall Speed (optional)" (speed symbol, placeholder "Optional").
-- `Report.tsx`: inputs, `ReportDivider`, Rate of Turn (`5.25°/s`), Turn Radius (`2,208 ft` and
-  `0.36 NM`, both in the user's units), Load Factor (`1.15 G`), Time for 360° (`1 min 9 s`),
-  Standard-Rate Bank Angle (`18.2°`), Stall Speed in the Turn (when given),
-  `<CalculatorDisclaimer category="aviation" />`.
-- `Info.tsx`: coordinated level turn, the PHAK formulas and examples, standard-rate turn (3°/s,
-  2 min for 360°) and the Formulary rule of thumb `TAS/7`, load factor and stall speed (PHAK
-  50 kt → 100 kt at 4 G), compare the stall speed in the turn with the indicated airspeed, not the
-  TAS; `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to the PHAK page.
+  (PHAK example). Inputs: "True Airspeed (TAS)" (`DynamicFormLabel`, short "TAS"; speed symbol)
+  and "Bank Angle" (`°`) in one row, "Stall Speed (optional)" (speed symbol, empty placeholder
+  like the other optional aviation inputs) below.
+- `Report.tsx`: inputs (TAS, bank angle, stall speed when given), `ReportDivider`, Rate of Turn
+  (`5.25°/s`), Turn Radius in one group (`2,208 ft (0.36 NM)`, both in the user's units), Load
+  Factor (`1.15 G`), Time for 360° (`1 min 9 s`), Standard-Rate Bank Angle (`18.2°`), Stall Speed
+  in the Turn (when given), `<CalculatorDisclaimer category="aviation" />`.
+- `Info.tsx`: coordinated level turn, the PHAK formulas and examples (and why the calculator
+  shows 2,208 ft, not 2,215 ft), standard-rate turn (3°/s, 2 min for 360°) with the exact value
+  and the three rules of thumb above, load factor and stall speed (PHAK 60° → 2 G, 50 kt → 100 kt
+  at 4 G), compare the stall speed in the turn with the indicated airspeed, not the TAS;
+  `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to the PHAK page.
 
 ## Files to create or change
 
@@ -125,8 +136,8 @@ TurnPerformanceCalculation[]` on `User`. Run `npx prisma generate`.
 2. `schemas/index.ts` + test.
 3. `types/calculations.ts`: `ITurnPerformanceFormData`, `TurnPerformanceReportProps` (outputs
    above), add to `CalculationType`.
-4. `lib/calculatorFns.ts` + test: `calculateTurnPerformance`; add `STANDARD_GRAVITY = 9.80665`
-   next to the ISA constants.
+4. `lib/calculatorFns.ts` + test: `calculateTurnPerformance`, reusing the existing
+   `STANDARD_GRAVITY = 9.80665` ISA constant.
 5. `lib/utils.ts` + test: `formatMinutesSeconds`.
 6. `constants/api.ts`: `TURN_PERFORMANCE_CALCULATIONS_API_URL =
 '/api/turn-performance-calculations'`, `TURN_PERFORMANCE_CALCULATIONS_QUERY_KEY =
@@ -153,6 +164,7 @@ running `calculateTurnPerformance`; `toBeCloseTo(x, 4)` unless stated):
 | 240      | 49°  | 5.235167  | 4,433.2974  | 0.729627    | 1.524253 | 68.7657  | 33.393506°    |
 | 100      | 60°  | 18.917575 | 511.1881    | 0.084131    | 2        | 19.0299  | 15.358847°    |
 | 400      | 75°  | 10.190427 | 3,795.8912  | 0.624723    | 3.863703 | 35.3273  | 47.692408°    |
+| 20       | 75°  | 203.80854 | 9.4897      | 0.001562    | 3.863703 | 1.7664   | 3.144364°     |
 | 20       | 0.1° | 0.095313  | 20,291.9371 | 3.339623    | 1.000002 | 3777.025 | 3.144364°     |
 
 Against the published (rounded) values, with a relative tolerance and a comment explaining why:
@@ -178,8 +190,10 @@ Units: 222.24 km/h (= 120 kt) at 30° gives the same results; radius in m 673.09
 
 Schema: valid input passes; missing TAS or bank; TAS 20 and 400 accepted, 19.99 and 400.01
 rejected (messages in km/h and mph); bank 0 rejected, 0.01 and 75 accepted, 75.01 rejected; stall
-`null`/missing/`''` accepted as `null`, 0 rejected, 200 accepted, 200.01 rejected; a stall speed
-above the TAS is accepted (no comparison); numeric strings coerced.
+`null`/missing/`''` accepted as `undefined`, 0 rejected, 200 accepted, 200.01 rejected; negative
+values rejected; a stall speed above the TAS is accepted (no comparison); numeric strings
+coerced; form values of the limits set from base units accepted; `BUG:` (`it.fails`) an invalid
+stall speed isn't reported together with an invalid bank angle (zod 3.22 `z.preprocess`).
 
 ## Acceptance criteria
 

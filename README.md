@@ -142,6 +142,10 @@ Estimate the cloud base above ground level and mean sea level, given the tempera
 
 Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed and glide time with a glide true airspeed and a headwind or tailwind.
 
+### [Turn Performance Calculator][22]
+
+Calculate the rate of turn, turn radius, load factor, time for a 360° turn and standard-rate bank angle of a coordinated level turn, given the true airspeed and bank angle, and optionally the stall speed in the turn.
+
 ---
 
 ## How to set up the project locally
@@ -285,5 +289,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [19]: https://www.koronkorko.com/heading-calculator
 [20]: https://www.koronkorko.com/cloud-base-calculator
 [21]: https://www.koronkorko.com/glide-distance-calculator
+[22]: https://www.koronkorko.com/turn-performance-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
