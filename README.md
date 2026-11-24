@@ -15,32 +15,42 @@
 
 Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source code][KoronKorkoCodeOld].
 
-[KoronKorko][site] is a full-stack web-app developed by [Omar Kraidié][dev]. KoronKorko has finance and aviation calculators. All the available calculators are listed below in this `README.md` file.
+[KoronKorko][site] is a full-stack web-app developed by [Omar Kraidié][dev]. KoronKorko has 12 finance calculators (investing, business and trading) and 12 aviation calculators (for pilots and student pilots). Anyone can use the calculators without an account. All the available calculators are listed below in this `README.md` file.
+
+The calculators on the home page can be searched by name or description and filtered by category (All, Finance or Aviation). The search and the selected category are kept in the URL (e.g. `/?q=wind&category=aviation`), so a filtered list can be shared as a link.
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
-Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel, distance, vertical speed, weight and arm) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
+Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel, distance, vertical speed, weight and arm) for the aviation calculators. The unit preferences are stored the same way as the preferred currency, and so is the preferred theme (light, dark or system).
+
+Every calculator shows a disclaimer: the finance calculators are for informational and educational purposes only and are not financial advice, and the aviation calculators are for training and educational use only and not for flight planning or navigation.
 
 Authenticated users can:
 
-- create new and save new calculations
-- edit existing calculations
+- save new calculations
+- rename and update existing calculations
 - import previously saved calculations
 - delete previously saved calculations
 
-## Calculators of KoronKorko
+Users on the free plan can save a limited number of calculations per calculator. A premium plan (weekly, monthly or yearly, paid with Stripe) removes the limit.
+
+## Finance Calculators
+
+Calculators for investing, business and trading. Monetary values are shown in the preferred currency.
 
 ### [Compound Interest Calculator][1]
 
 Calculate the compound interest of an investment or determine how long your invested money can last.
 
-The compound interest is calculated from various inputs such as starting balance, interest rate, duration, contribution and more. The calculated interest data can be viewed in both numerical and visual form.
+The compound interest is calculated from various inputs such as starting balance, interest rate, duration, contribution and more. The calculated interest data can be viewed in both numerical and visual form, and the breakdown can be downloaded as an Excel (`.xlsx`) file.
 
 ---
 
 ### [Annualized Return Calculator][2]
 
 Calculate the annualized return (CAGR), total percent return, and total profit of an investment.
+
+---
 
 ### [Present Value Calculator][3]
 
@@ -110,45 +120,67 @@ Calculators for pilots and student pilots. Values can be entered and shown in th
 
 Calculate the crosswind and headwind or tailwind components for a runway, given the runway heading and the wind direction and speed, including gust components when a gust speed is given.
 
+---
+
 ### [Wind Triangle Calculator][14]
 
 Calculate the true heading, wind correction angle and groundspeed, given the true course, true airspeed and the wind direction and speed.
+
+---
 
 ### [Density Altitude Calculator][15]
 
 Calculate the pressure altitude, ISA temperature deviation and density altitude, given the field elevation, QNH and outside air temperature.
 
+---
+
 ### [Fuel Planning Calculator][16]
 
 Calculate the trip fuel, reserve fuel and total fuel by volume or mass, given the fuel burn rate, flight time, reserve time, optional taxi and extra fuel, and fuel type (AVGAS or Jet A).
+
+---
 
 ### [True Airspeed Calculator][17]
 
 Calculate the true airspeed, Mach number and density altitude, given the calibrated airspeed, pressure altitude and outside air temperature.
 
+---
+
 ### [Time Speed Distance Calculator][18]
 
 Calculate the distance, groundspeed or flight time, given the other two.
+
+---
 
 ### [True, Magnetic and Compass Heading Calculator][19]
 
 Calculate the magnetic and compass heading, given the true heading, magnetic variation and compass deviation correction.
 
+---
+
 ### [Cloud Base Calculator][20]
 
 Estimate the cloud base above ground level and mean sea level, given the temperature, dew point and optional field elevation.
+
+---
 
 ### [Glide Distance Calculator][21]
 
 Calculate the glide distance over the ground, given the altitude, terrain elevation and glide ratio, and optionally the groundspeed, glide time and descent rate with a glide true airspeed and a headwind or tailwind.
 
+---
+
 ### [Turn Performance Calculator][22]
 
 Calculate the rate of turn, turn radius, load factor, time for a 360° turn and standard-rate bank angle of a coordinated level turn, given the true airspeed and bank angle, and optionally the stall speed in the turn.
 
+---
+
 ### [Descent Planning Calculator][23]
 
 Calculate where to start the descent (top of descent) from a vertical speed or descent angle, or the vertical speed needed to descend within a given distance, given the current and target altitude and the groundspeed. Also shows the time to descend and the descent gradient in %, ft/NM and degrees.
+
+---
 
 ### [Weight and Balance Calculator][24]
 
@@ -264,8 +296,8 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 
 - [Next.js](https://nextjs.org/) 14 (App Router), [React](https://react.dev/) 18 and [TypeScript](https://www.typescriptlang.org/) 5
 - [Prisma](https://www.prisma.io/) 5 with [MongoDB](https://www.mongodb.com/)
-- [NextAuth.js](https://next-auth.js.org/) 4 (GitHub and Google)
-- [Tailwind CSS](https://tailwindcss.com/) 3, [shadcn/ui](https://ui.shadcn.com/) (Radix UI), lucide-react and React Icons 5
+- [NextAuth.js](https://next-auth.js.org/) 4 (GitHub and Google, JWT sessions) with the Prisma adapter
+- [Tailwind CSS](https://tailwindcss.com/) 3, [shadcn/ui](https://ui.shadcn.com/) (Radix UI), lucide-react, React Icons 5 and next-themes
 - [TanStack Query](https://tanstack.com/query) 5 and axios 1
 - [Zustand](https://zustand-demo.pmnd.rs/) 4
 - [React Hook Form](https://react-hook-form.com/) 7 and [Zod](https://zod.dev/) 3
