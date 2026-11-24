@@ -7,6 +7,7 @@ import {
 	compoundInterestFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
+	descentPlanningFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -31,6 +32,7 @@ import {
 	CompoundInterestCalculation,
 	CrosswindCalculation,
 	DensityAltitudeCalculation,
+	DescentPlanningCalculation,
 	DividendYieldCalculation,
 	DollarCostAverageCalculation,
 	EnterpriseValueCalculation,
@@ -283,6 +285,21 @@ export interface TurnPerformanceReportProps extends ITurnPerformanceFormData {
 	stallSpeedInTurn: number | null;
 }
 
+// Descent Planning Calculation
+export type IDescentPlanningFormData = z.infer<typeof descentPlanningFormDataSchema>;
+
+export interface DescentPlanningReportProps extends Omit<
+	IDescentPlanningFormData,
+	'verticalSpeed' | 'descentAngle' | 'distance'
+> {
+	distance: number;
+	verticalSpeed: number;
+	descentAngle: number;
+	descentTime: number;
+	gradientPercent: number;
+	gradientFeetPerNm: number;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -305,4 +322,5 @@ export type CalculationType =
 	| HeadingCalculation
 	| CloudBaseCalculation
 	| GlideDistanceCalculation
-	| TurnPerformanceCalculation;
+	| TurnPerformanceCalculation
+	| DescentPlanningCalculation;

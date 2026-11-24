@@ -13,6 +13,7 @@ import {
 	createCloudBaseFormDataSchema,
 	createCrosswindFormDataSchema,
 	createDensityAltitudeFormDataSchema,
+	createDescentPlanningFormDataSchema,
 	createFuelPlanningFormDataSchema,
 	createGlideDistanceFormDataSchema,
 	createTimeSpeedDistanceFormDataSchema,
@@ -21,6 +22,7 @@ import {
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
+	descentPlanningFormDataSchema,
 	dividendYieldFormDataSchema,
 	dollarCostAverageFormDataSchema,
 	enterpriseValueFormDataSchema,
@@ -2387,6 +2389,359 @@ describe('turnPerformanceFormDataSchema', () => {
 		);
 
 		expect(createTurnPerformanceFormDataSchema(units).safeParse(formData).success).toBe(true);
+	});
+});
+
+describe('descentPlanningFormDataSchema', () => {
+	const schema = descentPlanningFormDataSchema;
+	const schemaIn = (units: Partial<typeof BASE_UNITS>) =>
+		createDescentPlanningFormDataSchema({ ...BASE_UNITS, ...units });
+
+	// FAA IPH p. 3-4: 7,000 → 1,000 ft at 120 kt.
+	const common = {
+		descentInput: 'verticalSpeed',
+		currentAltitude: 7000,
+		targetAltitude: 1000,
+		groundspeed: 120,
+	} as const;
+
+	const modes = {
+		'top of descent by vertical speed': {
+			base: { ...common, solveFor: 'topOfDescent', verticalSpeed: 600 },
+			given: 'verticalSpeed',
+			hidden: ['descentAngle', 'distance'],
+			name: 'Vertical speed',
+		},
+		'top of descent by angle': {
+			base: { ...common, solveFor: 'topOfDescent', descentInput: 'angle', descentAngle: 3 },
+			given: 'descentAngle',
+			hidden: ['verticalSpeed', 'distance'],
+			name: 'Descent angle',
+		},
+		'required vertical speed': {
+			base: { ...common, solveFor: 'verticalSpeed', distance: 20 },
+			given: 'distance',
+			hidden: ['verticalSpeed', 'descentAngle'],
+			name: 'Distance',
+		},
+	} as const;
+
+	describe.each(Object.keys(modes) as (keyof typeof modes)[])('%s', (mode) => {
+		const { base, given, hidden, name } = modes[mode];
+
+		it('accepts valid input and outputs the hidden fields as null', () => {
+			expect(schema.parse(base)).toEqual({
+				verticalSpeed: null,
+				descentAngle: null,
+				distance: null,
+				...base,
+			});
+		});
+
+		it.each(hidden)('ignores any hidden %s', (field) => {
+			for (const value of [undefined, '', null, -1, 1e9, 'abc']) {
+				const result = schema.safeParse({ ...base, [field]: value });
+
+				expect(result.success).toBe(true);
+				expect(result.success && result.data[field]).toBeNull();
+			}
+		});
+
+		it('requires the given field', () => {
+			for (const value of [undefined, '', null]) {
+				const result = schema.safeParse({ ...base, [given]: value });
+
+				expect(issueFields(result)).toEqual([given]);
+				expect(issueMessages(result)).toEqual([`${name} is required`]);
+			}
+		});
+
+		it('rejects a given value of 0 or less', () => {
+			for (const value of [0, -1]) {
+				expect(issueFields(schema.safeParse({ ...base, [given]: value }))).toEqual([given]);
+			}
+		});
+
+		itRejectsMissingFields(schema, base);
+	});
+
+	const byVerticalSpeed = modes['top of descent by vertical speed'].base;
+	const byAngle = modes['top of descent by angle'].base;
+	const requiredVerticalSpeed = modes['required vertical speed'].base;
+
+	it('shows the minimum messages', () => {
+		expect(issueMessages(schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 0 }))).toEqual([
+			'Vertical speed must be greater than 0 ft/min',
+		]);
+		expect(issueMessages(schema.safeParse({ ...byAngle, descentAngle: 0 }))).toEqual([
+			'Descent angle must be greater than 0°',
+		]);
+		expect(issueMessages(schema.safeParse({ ...requiredVerticalSpeed, distance: 0 }))).toEqual([
+			'Distance must be greater than 0.00 NM',
+		]);
+		expect(
+			issueMessages(
+				schemaIn({ verticalSpeed: 'ms' }).safeParse({
+					...byVerticalSpeed,
+					verticalSpeed: 0,
+				})
+			)
+		).toEqual(['Vertical speed must be greater than 0.00 m/s']);
+	});
+
+	// −1,500 ft = −457.2 m; 60,000 ft = 18,288 m (× 0.3048).
+	it.each([
+		['ft', -1500, -1500.01, 60000, 60000.01, '-1,500 ft', '60,000 ft'],
+		['m', -457.2, -457.21, 18288, 18288.01, '-457 m', '18,288 m'],
+	] as const)(
+		'accepts altitudes at the limits and rejects beyond them in %s',
+		(altitude, min, belowMin, max, aboveMax, shownMin, shownMax) => {
+			const s = schemaIn({ altitude });
+			// 61,500 ft at 1,000 kt and 2,050 ft/min is 500 NM.
+			const input = { ...byVerticalSpeed, groundspeed: 1000, verticalSpeed: 2050 };
+
+			expect(
+				s.safeParse({ ...input, currentAltitude: max, targetAltitude: min }).success
+			).toBe(true);
+			expect(
+				issueMessages(
+					s.safeParse({ ...input, currentAltitude: aboveMax, targetAltitude: 0 })
+				)
+			).toEqual([`Current altitude cannot be greater than ${shownMax}`]);
+			expect(
+				issueMessages(
+					s.safeParse({ ...input, currentAltitude: 0, targetAltitude: belowMin })
+				)
+			).toEqual([`Target altitude cannot be lower than ${shownMin}`]);
+		}
+	);
+
+	// 20 kt = 37.04 km/h; 1,000 kt = 1,852 km/h.
+	it.each([
+		['kt', 19.99, 20, 1000, 1000.01, '20.00 kt', '1,000.00 kt'],
+		['kmh', 37.03, 37.04, 1852, 1852.01, '37.04 km/h', '1,852.00 km/h'],
+	] as const)(
+		'accepts groundspeeds at the limits and rejects beyond them in %s',
+		(speed, belowMin, min, max, aboveMax, shownMin, shownMax) => {
+			const s = schemaIn({ speed });
+			const input = { ...requiredVerticalSpeed, distance: 100 };
+
+			expect(s.safeParse({ ...input, groundspeed: min }).success).toBe(true);
+			expect(s.safeParse({ ...input, groundspeed: max }).success).toBe(true);
+			expect(issueMessages(s.safeParse({ ...input, groundspeed: belowMin }))).toEqual([
+				`Groundspeed cannot be lower than ${shownMin}`,
+			]);
+			expect(issueMessages(s.safeParse({ ...input, groundspeed: aboveMax }))).toEqual([
+				`Groundspeed cannot be greater than ${shownMax}`,
+			]);
+		}
+	);
+
+	// 6,000 ft/min = 30.48 m/s (× 0.3048 / 60). At 1,000 kt it is 16.67 NM and 3.39°.
+	it.each([
+		['fpm', 6000, 6000.01, '6,000 ft/min'],
+		['ms', 30.48, 30.49, '30.48 m/s'],
+	] as const)(
+		'accepts a vertical speed at the limit and rejects more in %s',
+		(verticalSpeed, atLimit, over, shown) => {
+			const s = schemaIn({ verticalSpeed });
+			const input = { ...byVerticalSpeed, groundspeed: 1000 };
+
+			expect(s.safeParse({ ...input, verticalSpeed: atLimit }).success).toBe(true);
+			expect(issueMessages(s.safeParse({ ...input, verticalSpeed: over }))).toEqual([
+				`Vertical speed cannot be greater than ${shown}`,
+			]);
+		}
+	);
+
+	it('accepts a descent angle of 10° and rejects more', () => {
+		expect(schema.safeParse({ ...byAngle, descentAngle: 10 }).success).toBe(true);
+		expect(issueMessages(schema.safeParse({ ...byAngle, descentAngle: 10.01 }))).toEqual([
+			'Descent angle cannot be greater than 10°',
+		]);
+	});
+
+	// 500 NM = 926 km (× 1.852).
+	it.each([
+		['nm', 500, 500.01, '500.00 NM'],
+		['km', 926, 926.01, '926.00 km'],
+	] as const)(
+		'accepts a distance at the limit and rejects more in %s',
+		(distance, atLimit, over, shown) => {
+			const s = schemaIn({ distance });
+
+			expect(s.safeParse({ ...requiredVerticalSpeed, distance: atLimit }).success).toBe(true);
+			expect(
+				issueMessages(s.safeParse({ ...requiredVerticalSpeed, distance: over }))
+			).toEqual([`Distance cannot be greater than ${shown}`]);
+		}
+	);
+
+	it('rejects a target altitude at or above the current altitude', () => {
+		for (const targetAltitude of [7000, 8000]) {
+			const result = schema.safeParse({ ...byVerticalSpeed, targetAltitude });
+
+			expect(issueFields(result)).toEqual(['targetAltitude']);
+			expect(issueMessages(result)).toEqual([
+				'Target altitude must be below the current altitude',
+			]);
+		}
+	});
+
+	describe('the computed values', () => {
+		// 61,500 ft × 1,000 kt / (60 × 2,050 ft/min) = 500 NM.
+		it.each([
+			['nm', '500.00 NM'],
+			['km', '926.00 km'],
+		] as const)('accept a distance at its limit and reject more in %s', (distance, shown) => {
+			const input = {
+				...byVerticalSpeed,
+				currentAltitude: 60000,
+				targetAltitude: -1500,
+				groundspeed: 1000,
+			};
+
+			expect(
+				schemaIn({ distance }).safeParse({ ...input, verticalSpeed: 2050 }).success
+			).toBe(true);
+
+			const result = schemaIn({ distance }).safeParse({ ...input, verticalSpeed: 2049.99 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual([`The resulting distance would exceed ${shown}`]);
+		});
+
+		// At 1,000 kt, 6,000 ft/min is a 3.390718° path.
+		it.each([
+			['fpm', '6,000 ft/min'],
+			['ms', '30.48 m/s'],
+		] as const)(
+			'accept a vertical speed at its limit and reject more in %s',
+			(verticalSpeed, shown) => {
+				const s = schemaIn({ verticalSpeed });
+				const message = [`The resulting vertical speed would exceed ${shown}`];
+				const angle = { ...byAngle, groundspeed: 1000 };
+
+				expect(s.safeParse({ ...angle, descentAngle: 3.39 }).success).toBe(true);
+				expect(issueMessages(s.safeParse({ ...angle, descentAngle: 3.391 }))).toEqual(
+					message
+				);
+
+				// 6,000 ft × 1,000 kt / (60 × 16.67 NM) = 5,998.80 ft/min.
+				const required = { ...requiredVerticalSpeed, groundspeed: 1000 };
+
+				expect(s.safeParse({ ...required, distance: 16.67 }).success).toBe(true);
+
+				const result = s.safeParse({ ...required, distance: 16.66 });
+
+				expect(issueFields(result)).toEqual(['solveFor']);
+				expect(issueMessages(result)).toEqual(message);
+			}
+		);
+
+		// At 120 kt, a 10° path from 7,000 to 1,000 ft is 2,142.7662 ft/min.
+		it('accept a descent angle at its limit and reject more', () => {
+			expect(schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 2142.76 }).success).toBe(
+				true
+			);
+
+			const result = schema.safeParse({ ...byVerticalSpeed, verticalSpeed: 2142.77 });
+
+			expect(issueFields(result)).toEqual(['solveFor']);
+			expect(issueMessages(result)).toEqual(['The resulting descent angle would exceed 10°']);
+		});
+
+		it('are not checked when a field already failed', () => {
+			expect(
+				issueFields(
+					schema.safeParse({ ...byVerticalSpeed, groundspeed: 1000.01, verticalSpeed: 1 })
+				)
+			).toEqual(['groundspeed']);
+			expect(
+				issueFields(
+					schema.safeParse({
+						...byVerticalSpeed,
+						targetAltitude: 7000,
+						verticalSpeed: 1,
+					})
+				)
+			).toEqual(['targetAltitude']);
+			expect(
+				issueFields(
+					schema.safeParse({ ...requiredVerticalSpeed, groundspeed: 1000, distance: 0 })
+				)
+			).toEqual(['distance']);
+		});
+	});
+
+	it('accepts imported values in every altitude, speed, vertical speed and distance unit', () => {
+		const unitFields = {
+			currentAltitude: 'altitude',
+			targetAltitude: 'altitude',
+			groundspeed: 'speed',
+			verticalSpeed: 'verticalSpeed',
+			distance: 'distance',
+		} as const;
+		// 500 NM at the altitude limits.
+		const stored = {
+			...byVerticalSpeed,
+			currentAltitude: 60000,
+			targetAltitude: -1500,
+			groundspeed: 1000,
+			verticalSpeed: 2050,
+			descentAngle: null,
+			distance: null,
+		};
+
+		for (const altitude of ['ft', 'm'] as const) {
+			for (const speed of ['kt', 'kmh', 'mph', 'ms'] as const) {
+				for (const verticalSpeed of ['fpm', 'ms'] as const) {
+					for (const distance of ['nm', 'km', 'sm'] as const) {
+						const units = { ...BASE_UNITS, altitude, speed, verticalSpeed, distance };
+
+						expect(
+							schemaIn(units).safeParse(
+								formDataFromBaseUnits(stored, unitFields, units)
+							).success
+						).toBe(true);
+					}
+				}
+			}
+		}
+	});
+
+	it('rejects an unknown solveFor or descentInput with one issue', () => {
+		let result = schema.safeParse({ ...byVerticalSpeed, solveFor: 'climb' });
+
+		expect(issueFields(result)).toEqual(['solveFor']);
+		expect(issueMessages(result)).toEqual([
+			'Solve for must be top of descent or required vertical speed',
+		]);
+
+		result = schema.safeParse({ ...byVerticalSpeed, descentInput: 'gradient' });
+
+		expect(issueFields(result)).toEqual(['descentInput']);
+		expect(issueMessages(result)).toEqual([
+			'Descent by must be vertical speed or descent angle',
+		]);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({
+				...requiredVerticalSpeed,
+				currentAltitude: '7000',
+				targetAltitude: '1000',
+				groundspeed: '120.5',
+				verticalSpeed: '',
+				distance: '20',
+			})
+		).toEqual({
+			...requiredVerticalSpeed,
+			groundspeed: 120.5,
+			verticalSpeed: null,
+			descentAngle: null,
+		});
 	});
 });
 

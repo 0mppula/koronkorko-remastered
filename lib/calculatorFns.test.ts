@@ -7,6 +7,7 @@ import {
 	calculateCloudBase,
 	calculateCrosswind,
 	calculateDensityAltitude,
+	calculateDescentPlanning,
 	calculateDividendYield,
 	calculateDollarCostAverage,
 	calculateEarningsPerShare,
@@ -38,6 +39,7 @@ import {
 } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
+	IDescentPlanningFormData,
 	IDollarCostAverageFormData,
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
@@ -2149,5 +2151,176 @@ describe('calculateTurnPerformance', () => {
 			4
 		);
 		expect(result.standardRateBankAngle).toBeCloseTo(18.242631, 4);
+	});
+});
+
+describe('calculateDescentPlanning', () => {
+	// FAA IPH (FAA-H-8083-16B) ch. 3 examples; values from the flat-earth formulas evaluated with
+	// 50-digit decimals in a standalone Python script (1 NM = 1852 / 0.3048 ft).
+	const base: IDescentPlanningFormData = {
+		solveFor: 'topOfDescent',
+		descentInput: 'verticalSpeed',
+		currentAltitude: 7000,
+		targetAltitude: 1000,
+		groundspeed: 120,
+		verticalSpeed: null,
+		descentAngle: null,
+		distance: null,
+	};
+
+	const cases: [
+		string,
+		Partial<IDescentPlanningFormData>,
+		[number, number, number, number, number, number],
+	][] = [
+		[
+			'IPH 3-4: lose 6,000 ft at 120 kt and 600 fpm, start 20 NM out, 10 min',
+			{ verticalSpeed: 600 },
+			[20, 600, 10, 300, 4.937365, 2.826606],
+		],
+		[
+			'IPH 3-20 HAYED: 12,000 → 6,000 ft at 180 kt and 500 fpm, 36 NM',
+			{ currentAltitude: 12000, targetAltitude: 6000, groundspeed: 180, verticalSpeed: 500 },
+			[36, 500, 12, 166.6667, 2.742981, 1.571218],
+		],
+		[
+			'IPH 3-8 inputs: 11,000 → 3,000 ft at 180 kt and 1,000 fpm (exact)',
+			{ currentAltitude: 11000, targetAltitude: 3000, groundspeed: 180, verticalSpeed: 1000 },
+			[24, 1000, 8, 333.3333, 5.485961, 3.140077],
+		],
+		[
+			'IPH 3-20 RACKI: 12,000 → 6,000 ft within 23 NM at 180 kt',
+			{
+				solveFor: 'verticalSpeed',
+				currentAltitude: 12000,
+				targetAltitude: 6000,
+				groundspeed: 180,
+				distance: 23,
+			},
+			[23, 782.6087, 7.6667, 260.8696, 4.293361, 2.458405],
+		],
+		[
+			'IPH 3-12: a 3° path from 7,000 to 1,000 ft at 120 kt',
+			{ descentInput: 'angle', descentAngle: 3 },
+			[18.842107, 636.8714, 9.4211, 318.4357, 5.240778, 3],
+		],
+	];
+
+	it.each(cases)('%s', (_, input, expected) => {
+		const [distance, verticalSpeed, descentTime, feetPerNm, percent, angle] = expected;
+		const result = calculateDescentPlanning({ ...base, ...input });
+
+		expect(result.distance).toBeCloseTo(distance, 6);
+		expect(result.verticalSpeed).toBeCloseTo(verticalSpeed, 4);
+		expect(result.descentTime).toBeCloseTo(descentTime, 4);
+		expect(result.gradientFeetPerNm).toBeCloseTo(feetPerNm, 4);
+		expect(result.gradientPercent).toBeCloseTo(percent, 6);
+		expect(result.descentAngle).toBeCloseTo(angle, 6);
+	});
+
+	// IPH rounds 7.6 min up to 8 and divides 6,000 ft by 8 min: "at least 750 feet per minute".
+	it('needs more than the 750 fpm IPH rounds to for RACKI', () => {
+		const { verticalSpeed } = calculateDescentPlanning({
+			...base,
+			solveFor: 'verticalSpeed',
+			currentAltitude: 12000,
+			targetAltitude: 6000,
+			groundspeed: 180,
+			distance: 23,
+		});
+
+		expect(verticalSpeed).toBeGreaterThan(750);
+	});
+
+	// IPH's rules of thumb (÷ 300, GS × 5) approximate the 3° path; "about 318 ft/NM" (p. 3-12).
+	it('matches the IPH 318 ft/NM for 3° within 0.2 %', () => {
+		const { gradientFeetPerNm } = calculateDescentPlanning({
+			...base,
+			descentInput: 'angle',
+			descentAngle: 3,
+		});
+
+		expect(Math.abs(gradientFeetPerNm / 318 - 1)).toBeLessThan(0.002);
+	});
+
+	it('reproduces the inputs when a result is fed back in the other mode', () => {
+		const byVerticalSpeed = calculateDescentPlanning({ ...base, verticalSpeed: 600 });
+
+		expect(
+			calculateDescentPlanning({
+				...base,
+				solveFor: 'verticalSpeed',
+				distance: byVerticalSpeed.distance,
+			}).verticalSpeed
+		).toBeCloseTo(600, 9);
+
+		const byAngle = calculateDescentPlanning({
+			...base,
+			descentInput: 'angle',
+			descentAngle: 3,
+		});
+
+		expect(
+			calculateDescentPlanning({ ...base, verticalSpeed: byAngle.verticalSpeed }).distance
+		).toBeCloseTo(byAngle.distance, 9);
+	});
+
+	it('takes as long to fly the distance at the groundspeed as to descend', () => {
+		for (const input of cases.map(([, input]) => input)) {
+			const result = calculateDescentPlanning({ ...base, ...input });
+
+			expect((result.distance / result.groundspeed) * 60).toBeCloseTo(result.descentTime, 9);
+		}
+	});
+
+	it('ignores the values of fields not given in the chosen mode', () => {
+		const hidden = { verticalSpeed: 5000, descentAngle: 9, distance: 999 };
+
+		expect(
+			calculateDescentPlanning({ ...base, ...hidden, verticalSpeed: 600 }).distance
+		).toBeCloseTo(20, 9);
+		expect(
+			calculateDescentPlanning({ ...base, ...hidden, descentInput: 'angle', descentAngle: 3 })
+				.distance
+		).toBeCloseTo(18.842107, 6);
+		expect(
+			calculateDescentPlanning({
+				...base,
+				...hidden,
+				solveFor: 'verticalSpeed',
+				distance: 20,
+			}).verticalSpeed
+		).toBeCloseTo(600, 9);
+	});
+
+	// 2,133.6 m = 7,000 ft; 304.8 m = 1,000 ft; 222.24 km/h = 120 kt; 3.048 m/s = 600 ft/min.
+	it('works with values entered in m, km/h and m/s and shown in km', () => {
+		const formData = formDataToBaseUnits<IDescentPlanningFormData>(
+			{
+				...base,
+				currentAltitude: 2133.6,
+				targetAltitude: 304.8,
+				groundspeed: 222.24,
+				verticalSpeed: 3.048,
+			},
+			{
+				currentAltitude: 'altitude',
+				targetAltitude: 'altitude',
+				groundspeed: 'speed',
+				verticalSpeed: 'verticalSpeed',
+				distance: 'distance',
+			},
+			{
+				...BASE_UNITS,
+				altitude: 'm',
+				speed: 'kmh',
+				verticalSpeed: 'ms',
+				distance: 'km',
+			}
+		);
+		const { distance } = calculateDescentPlanning(formData);
+
+		expect(distance).toBeCloseTo(20, 9);
+		expect(fromBaseUnit(distance, 'distance', 'km')).toBeCloseTo(37.04, 9);
 	});
 });

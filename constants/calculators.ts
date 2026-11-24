@@ -160,4 +160,11 @@ export const calculators = [
 		description:
 			'Calculate the rate of turn, turn radius, load factor and standard-rate bank angle, given the true airspeed and bank angle. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Descent Planning Calculator',
+		url: 'descent-planning-calculator',
+		category: 'aviation',
+		description:
+			'Calculate where to start the descent or the vertical speed needed, and the descent gradient, given the altitudes and groundspeed. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

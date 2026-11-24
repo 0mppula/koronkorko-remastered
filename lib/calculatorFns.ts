@@ -5,6 +5,7 @@ import {
 	CompoundInterestReportProps,
 	CrosswindReportProps,
 	DensityAltitudeReportProps,
+	DescentPlanningReportProps,
 	DividendYieldReportProps,
 	DollarCostAverageReportProps,
 	EnterpriseValueReportProps,
@@ -18,6 +19,7 @@ import {
 	ICompoundInterestFormData,
 	ICrosswindFormData,
 	IDensityAltitudeFormData,
+	IDescentPlanningFormData,
 	IDividendYieldFormData,
 	IDollarCostAverageFormData,
 	IEnterpriseValueFormData,
@@ -619,5 +621,45 @@ export const calculateTurnPerformance = (
 		standardRateBankAngle,
 		// Stall speed rises with the square root of the load factor (PHAK 5-35).
 		stallSpeedInTurn: stallSpeed == null ? null : stallSpeed * Math.sqrt(loadFactor),
+	};
+};
+
+export const calculateDescentPlanning = (
+	formData: IDescentPlanningFormData
+): DescentPlanningReportProps => {
+	const { solveFor, descentInput, currentAltitude, targetAltitude, groundspeed } = formData;
+
+	// Flat earth: distance = Δh / gradient, VS = gradient × GS / 60 (FAA IPH, FAA-H-8083-16B, ch. 3).
+	const height = currentAltitude - targetAltitude;
+	let distance: number;
+	let verticalSpeed: number;
+
+	if (solveFor === 'verticalSpeed') {
+		distance = formData.distance ?? NaN;
+		verticalSpeed = (height * groundspeed) / (60 * distance);
+	} else if (descentInput === 'angle') {
+		const gradient = Math.tan(toRadians(formData.descentAngle ?? NaN)) * NAUTICAL_MILE_IN_FEET;
+
+		distance = height / gradient;
+		verticalSpeed = (gradient * groundspeed) / 60;
+	} else {
+		verticalSpeed = formData.verticalSpeed ?? NaN;
+		distance = (height * groundspeed) / (60 * verticalSpeed);
+	}
+
+	const gradientFeetPerNm = height / distance;
+
+	return {
+		solveFor,
+		descentInput,
+		currentAltitude,
+		targetAltitude,
+		groundspeed,
+		distance,
+		verticalSpeed,
+		descentAngle: (Math.atan(gradientFeetPerNm / NAUTICAL_MILE_IN_FEET) * 180) / Math.PI,
+		descentTime: height / verticalSpeed,
+		gradientPercent: (gradientFeetPerNm / NAUTICAL_MILE_IN_FEET) * 100,
+		gradientFeetPerNm,
 	};
 };

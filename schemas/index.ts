@@ -1,12 +1,19 @@
 import {
 	currencies,
+	descentInputOptions,
+	descentSolveForOptions,
 	fuelTypes,
 	themes,
 	timeSpeedDistanceSolveForOptions,
 	variationDirections,
 	windTypes,
 } from '@/constants/data';
-import { calculateCloudBase, calculateMach, calculateTimeSpeedDistance } from '@/lib/calculatorFns';
+import {
+	calculateCloudBase,
+	calculateDescentPlanning,
+	calculateMach,
+	calculateTimeSpeedDistance,
+} from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formatUnitValue,
@@ -886,6 +893,217 @@ export const createTurnPerformanceFormDataSchema = (units: UnitPreferences) =>
 	});
 
 export const turnPerformanceFormDataSchema = createTurnPerformanceFormDataSchema(BASE_UNITS);
+
+type DescentSolveFor = (typeof descentSolveForOptions)[number]['value'];
+type DescentInput = (typeof descentInputOptions)[number]['value'];
+type DescentGivenField = 'verticalSpeed' | 'descentAngle' | 'distance';
+
+const DESCENT_ALTITUDE_LIMITS = { min: -1500, max: 60000 };
+const DESCENT_GROUNDSPEED_LIMITS = { min: 20, max: 1000 };
+const DESCENT_LIMITS = { verticalSpeed: 6000, descentAngle: 10, distance: 500 } as const;
+
+const getDescentGivenField = (
+	solveFor: DescentSolveFor,
+	descentInput: DescentInput
+): DescentGivenField => {
+	if (solveFor === 'verticalSpeed') return 'distance';
+
+	return descentInput === 'angle' ? 'descentAngle' : 'verticalSpeed';
+};
+
+export const createDescentPlanningFormDataSchema = (units: UnitPreferences) => {
+	const altitudeLimits = createUnitLimits('altitude', units.altitude);
+	const speedLimits = createUnitLimits('speed', units.speed);
+	const verticalSpeedLimits = createUnitLimits('verticalSpeed', units.verticalSpeed);
+	const distanceLimits = createUnitLimits('distance', units.distance);
+
+	const givenFields = {
+		verticalSpeed: {
+			name: 'Vertical speed',
+			schema: unitNumberFieldSchema('Vertical speed', 'verticalSpeed', units.verticalSpeed, {
+				min: 0,
+				minExclusive: true,
+				max: DESCENT_LIMITS.verticalSpeed,
+			}),
+			toBase: verticalSpeedLimits.toBase,
+		},
+		descentAngle: {
+			name: 'Descent angle',
+			schema: numberFieldSchema('Descent angle')
+				.gt(0, { message: 'Descent angle must be greater than 0°' })
+				.max(DESCENT_LIMITS.descentAngle, {
+					message: 'Descent angle cannot be greater than 10°',
+				}),
+			toBase: (value: number) => value,
+		},
+		distance: {
+			name: 'Distance',
+			schema: unitNumberFieldSchema('Distance', 'distance', units.distance, {
+				min: 0,
+				minExclusive: true,
+				max: DESCENT_LIMITS.distance,
+			}),
+			toBase: distanceLimits.toBase,
+		},
+	} as const;
+
+	const solveForValues = descentSolveForOptions.map((o) => o.value) as [
+		DescentSolveFor,
+		...DescentSolveFor[],
+	];
+	const descentInputValues = descentInputOptions.map((o) => o.value) as [
+		DescentInput,
+		...DescentInput[],
+	];
+
+	const isAltitude = (value: unknown): value is number =>
+		typeof value === 'number' &&
+		Number.isFinite(value) &&
+		altitudeLimits.isAtLeast(DESCENT_ALTITUDE_LIMITS.min)(value) &&
+		altitudeLimits.isAtMost(DESCENT_ALTITUDE_LIMITS.max)(value);
+	const isGroundspeed = (value: unknown): value is number =>
+		typeof value === 'number' &&
+		Number.isFinite(value) &&
+		speedLimits.isAtLeast(DESCENT_GROUNDSPEED_LIMITS.min)(value) &&
+		speedLimits.isAtMost(DESCENT_GROUNDSPEED_LIMITS.max)(value);
+
+	return (
+		z
+			.object({
+				solveFor: z.enum(solveForValues, {
+					errorMap: () => ({
+						message: 'Solve for must be top of descent or required vertical speed',
+					}),
+				}),
+				descentInput: z.enum(descentInputValues, {
+					errorMap: () => ({
+						message: 'Descent by must be vertical speed or descent angle',
+					}),
+				}),
+				currentAltitude: unitNumberFieldSchema(
+					'Current altitude',
+					'altitude',
+					units.altitude,
+					DESCENT_ALTITUDE_LIMITS
+				),
+				targetAltitude: unitNumberFieldSchema(
+					'Target altitude',
+					'altitude',
+					units.altitude,
+					DESCENT_ALTITUDE_LIMITS
+				),
+				groundspeed: unitNumberFieldSchema(
+					'Groundspeed',
+					'speed',
+					units.speed,
+					DESCENT_GROUNDSPEED_LIMITS
+				),
+				// Checked below, only when given: hidden fields may hold any form value.
+				verticalSpeed: z.unknown(),
+				descentAngle: z.unknown(),
+				distance: z.unknown(),
+			})
+			.superRefine((data, ctx) => {
+				const { solveFor, descentInput, currentAltitude, targetAltitude, groundspeed } =
+					data;
+
+				// Zod runs this even when fields failed their own checks; avoid duplicate issues.
+				if (
+					!solveForValues.includes(solveFor) ||
+					!descentInputValues.includes(descentInput)
+				) {
+					return;
+				}
+
+				const altitudesValid = isAltitude(currentAltitude) && isAltitude(targetAltitude);
+
+				// Both altitudes are in the same unit, so this check holds in any unit.
+				if (altitudesValid && targetAltitude >= currentAltitude) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['targetAltitude'],
+						message: 'Target altitude must be below the current altitude',
+					});
+				}
+
+				const givenField = getDescentGivenField(solveFor, descentInput);
+				const { name, schema, toBase } = givenFields[givenField];
+				const value = data[givenField];
+				const result = isEmptyValue(value) ? null : schema.safeParse(value);
+
+				if (!result?.success) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: [givenField],
+						message: result?.error.issues[0].message ?? `${name} is required`,
+					});
+
+					return;
+				}
+
+				if (
+					!altitudesValid ||
+					targetAltitude >= currentAltitude ||
+					!isGroundspeed(groundspeed)
+				) {
+					return;
+				}
+
+				const given = toBase(result.data);
+				const report = calculateDescentPlanning({
+					solveFor,
+					descentInput,
+					currentAltitude: altitudeLimits.toBase(currentAltitude),
+					targetAltitude: altitudeLimits.toBase(targetAltitude),
+					groundspeed: speedLimits.toBase(groundspeed),
+					verticalSpeed: givenField === 'verticalSpeed' ? given : null,
+					descentAngle: givenField === 'descentAngle' ? given : null,
+					distance: givenField === 'distance' ? given : null,
+				});
+
+				const exceeded = [
+					{
+						value: report.distance,
+						limit: DESCENT_LIMITS.distance,
+						message: `The resulting distance would exceed ${distanceLimits.formatShownMax(DESCENT_LIMITS.distance)}`,
+					},
+					{
+						value: report.verticalSpeed,
+						limit: DESCENT_LIMITS.verticalSpeed,
+						message: `The resulting vertical speed would exceed ${verticalSpeedLimits.formatShownMax(DESCENT_LIMITS.verticalSpeed)}`,
+					},
+					{
+						value: report.descentAngle,
+						limit: DESCENT_LIMITS.descentAngle,
+						message: 'The resulting descent angle would exceed 10°',
+					},
+				].find(({ value, limit }) => value > limit + UNIT_LIMIT_TOLERANCE * limit);
+
+				if (exceeded) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['solveFor'],
+						message: exceeded.message,
+					});
+				}
+			})
+			// Saved calculations store the fields not given in the chosen mode as null.
+			.transform(({ verticalSpeed, descentAngle, distance, ...values }) => {
+				const givenField = getDescentGivenField(values.solveFor, values.descentInput);
+				const toNumber = (field: DescentGivenField, value: unknown) =>
+					field === givenField ? Number(value) : null;
+
+				return {
+					...values,
+					verticalSpeed: toNumber('verticalSpeed', verticalSpeed),
+					descentAngle: toNumber('descentAngle', descentAngle),
+					distance: toNumber('distance', distance),
+				};
+			})
+	);
+};
+
+export const descentPlanningFormDataSchema = createDescentPlanningFormDataSchema(BASE_UNITS);
 
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);

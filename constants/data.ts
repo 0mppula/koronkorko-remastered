@@ -230,6 +230,16 @@ export const windTypes = [
 	{ value: 'tailwind', label: 'Tailwind' },
 ] as const;
 
+export const descentSolveForOptions = [
+	{ value: 'topOfDescent', label: 'Top of descent' },
+	{ value: 'verticalSpeed', label: 'Required vertical speed' },
+] as const;
+
+export const descentInputOptions = [
+	{ value: 'verticalSpeed', label: 'Vertical speed' },
+	{ value: 'angle', label: 'Descent angle' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',
