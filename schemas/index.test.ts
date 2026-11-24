@@ -19,6 +19,7 @@ import {
 	createTimeSpeedDistanceFormDataSchema,
 	createTrueAirspeedFormDataSchema,
 	createTurnPerformanceFormDataSchema,
+	createWeightAndBalanceFormDataSchema,
 	createWindTriangleFormDataSchema,
 	crosswindFormDataSchema,
 	densityAltitudeFormDataSchema,
@@ -41,6 +42,7 @@ import {
 	unitPreferencesSchema,
 	unitNumberFieldSchema,
 	userPreferencesSchema,
+	weightAndBalanceFormDataSchema,
 	windTriangleFormDataSchema,
 } from '@/schemas';
 
@@ -2745,6 +2747,325 @@ describe('descentPlanningFormDataSchema', () => {
 	});
 });
 
+describe('weightAndBalanceFormDataSchema', () => {
+	const schema = weightAndBalanceFormDataSchema;
+	const schemaIn = (units: Partial<typeof BASE_UNITS>) =>
+		createWeightAndBalanceFormDataSchema({ ...BASE_UNITS, ...units });
+
+	const issuePaths = (result: z.SafeParseReturnType<unknown, unknown>) =>
+		result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'));
+
+	const weightRow = { name: 'Pilot', type: 'weight', weight: 80, fuel: null, arm: 2150 };
+	const fuelRow = { name: 'Fuel', type: 'fuel', weight: null, fuel: 100, arm: 1900 };
+	const base = { stations: [weightRow, fuelRow], fuelType: 'avgas', maxTakeoffWeight: 1200 };
+	const withRow = (index: number, row: Record<string, unknown>) => ({
+		...base,
+		stations: base.stations.map((station, i) =>
+			i === index ? { ...station, ...row } : station
+		),
+	});
+
+	it('accepts valid input', () => {
+		expect(schema.parse(base)).toEqual(base);
+	});
+
+	itRejectsMissingFields(schema, { stations: base.stations, fuelType: 'avgas' });
+
+	it.each([undefined, '', null])('treats a maximum takeoff weight of %j as none', (value) => {
+		const result = schema.safeParse({ ...base, maxTakeoffWeight: value });
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.maxTakeoffWeight).toBeUndefined();
+	});
+
+	it('keeps row ids and stores the hidden field of each row as null', () => {
+		const result = schema.parse({
+			...base,
+			stations: [
+				{ ...weightRow, rowId: 'row-1', fuel: 'anything' },
+				{ ...fuelRow, rowId: 'row-2', weight: 999 },
+			],
+		});
+
+		expect(result.stations).toEqual([
+			{ ...weightRow, rowId: 'row-1', fuel: null },
+			{ ...fuelRow, rowId: 'row-2', weight: null },
+		]);
+	});
+
+	it('adds no row id when there is none', () => {
+		expect(schema.parse(base).stations[0]).not.toHaveProperty('rowId');
+	});
+
+	it.each([
+		[0, 'weight', 'Weight is required'],
+		[1, 'fuel', 'Fuel is required'],
+		[0, 'arm', 'Arm is required'],
+	])(
+		'rejects an empty shown field (row %d %s) instead of reading it as 0',
+		(index, field, message) => {
+			for (const value of ['', null, undefined]) {
+				const result = schema.safeParse(withRow(index, { [field]: value }));
+
+				expect(issuePaths(result)).toEqual([`stations.${index}.${field}`]);
+				expect(issueMessages(result)).toEqual([message]);
+			}
+		}
+	);
+
+	it('trims the station name and checks its length', () => {
+		expect(schema.parse(withRow(0, { name: '  Pilot  ' })).stations[0].name).toBe('Pilot');
+		expect(issueMessages(schema.safeParse(withRow(0, { name: '   ' })))).toEqual([
+			'Station name is required',
+		]);
+		expect(schema.safeParse(withRow(0, { name: 'a'.repeat(30) })).success).toBe(true);
+		expect(issueMessages(schema.safeParse(withRow(0, { name: 'a'.repeat(31) })))).toEqual([
+			'Station name cannot be longer than 30 characters',
+		]);
+	});
+
+	it('rejects an unknown station type', () => {
+		const result = schema.safeParse(withRow(0, { type: 'cargo' }));
+
+		expect(issuePaths(result)).toEqual(['stations.0.type']);
+		expect(issueMessages(result)).toEqual(['Station type must be weight or fuel']);
+	});
+
+	it('rejects an unknown fuel type', () => {
+		const result = schema.safeParse({ ...base, fuelType: 'diesel' });
+
+		expect(issueFields(result)).toEqual(['fuelType']);
+		expect(issueMessages(result)).toEqual(['Fuel type must be AVGAS or Jet A']);
+	});
+
+	it('accepts 1 to 20 stations', () => {
+		expect(schema.safeParse({ ...base, stations: [weightRow] }).success).toBe(true);
+		expect(schema.safeParse({ ...base, stations: Array(20).fill(weightRow) }).success).toBe(
+			true
+		);
+		expect(issueMessages(schema.safeParse({ ...base, stations: [] }))).toEqual([
+			'Add at least one station',
+		]);
+		expect(
+			issueMessages(schema.safeParse({ ...base, stations: Array(21).fill(weightRow) }))
+		).toEqual(['You can add at most 20 stations']);
+	});
+
+	it.each([
+		['weight', 0, 10000, -0.01, 'Weight cannot be lower than 0.00 kg'],
+		['weight', 0, 10000, 10000.01, 'Weight cannot be greater than 10,000.00 kg'],
+		['arm', -20000, 20000, -20001, 'Arm cannot be lower than -20,000 mm'],
+		['arm', -20000, 20000, 20001, 'Arm cannot be greater than 20,000 mm'],
+	])('accepts %s of %d to %d and rejects %d', (field, min, max, beyond, message) => {
+		expect(schema.safeParse(withRow(0, { [field]: min, weight: 80 })).success).toBe(true);
+		expect(schema.safeParse(withRow(0, { [field]: max })).success).toBe(true);
+
+		const result = schema.safeParse(withRow(0, { [field]: beyond }));
+
+		expect(issuePaths(result)).toEqual([`stations.0.${field}`]);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('rejects negative fuel', () => {
+		const result = schema.safeParse(withRow(1, { fuel: -1 }));
+
+		expect(issuePaths(result)).toEqual(['stations.1.fuel']);
+		expect(issueMessages(result)).toEqual(['Fuel cannot be negative']);
+	});
+
+	// 10,000 kg ÷ 0.718958647 kg/L (AVGAS) = 13,909.006 L
+	it('rejects fuel weighing more than 10,000 kg', () => {
+		expect(schema.safeParse(withRow(1, { fuel: 13909 })).success).toBe(true);
+
+		const result = schema.safeParse(withRow(1, { fuel: 13909.01 }));
+
+		expect(issuePaths(result)).toEqual(['stations.1.fuel']);
+		expect(issueMessages(result)).toEqual(['Fuel weight cannot be greater than 10,000.00 kg']);
+	});
+
+	// 10,000 kg = 22,046.226 lb: AVGAS 22,046.226 / 6 = 3,674.371 US gal; Jet A / 6.68 = 3,300.33.
+	it('checks the fuel weight with the fuel type and shows it in the weight unit', () => {
+		const lbSchema = schemaIn({ weight: 'lb', fuel: 'usgal' });
+		const jetA = { fuelType: 'jetA' };
+
+		expect(lbSchema.safeParse(withRow(1, { fuel: 3674.37 })).success).toBe(true);
+		expect(issueMessages(lbSchema.safeParse(withRow(1, { fuel: 3674.38 })))).toEqual([
+			'Fuel weight cannot be greater than 22,046.22 lb',
+		]);
+		expect(lbSchema.safeParse({ ...withRow(1, { fuel: 3300.33 }), ...jetA }).success).toBe(
+			true
+		);
+		expect(lbSchema.safeParse({ ...withRow(1, { fuel: 3300.34 }), ...jetA }).success).toBe(
+			false
+		);
+	});
+
+	it('accepts fuel entered in lb up to 22,046.22 lb', () => {
+		const lbSchema = schemaIn({ weight: 'lb', fuel: 'lb' });
+
+		expect(lbSchema.safeParse(withRow(1, { fuel: 22046.22 })).success).toBe(true);
+		expect(issueMessages(lbSchema.safeParse(withRow(1, { fuel: 22046.23 })))).toEqual([
+			'Fuel weight cannot be greater than 22,046.22 lb',
+		]);
+	});
+
+	it.each([
+		[0, 'Maximum takeoff weight must be greater than 0.00 kg'],
+		[10000.01, 'Maximum takeoff weight cannot be greater than 10,000.00 kg'],
+	])('rejects a maximum takeoff weight of %d', (value, message) => {
+		const result = schema.safeParse({ ...base, maxTakeoffWeight: value });
+
+		expect(issueFields(result)).toEqual(['maxTakeoffWeight']);
+		expect(issueMessages(result)).toEqual([message]);
+	});
+
+	it('accepts a maximum takeoff weight of 10,000 kg below the total weight', () => {
+		expect(schema.safeParse({ ...base, maxTakeoffWeight: 10000 }).success).toBe(true);
+		expect(schema.safeParse({ ...base, maxTakeoffWeight: 1 }).success).toBe(true);
+	});
+
+	it('rejects a total weight of 0 once', () => {
+		const result = schema.safeParse({
+			...base,
+			stations: [
+				{ ...weightRow, weight: 0 },
+				{ ...fuelRow, fuel: 0 },
+			],
+		});
+
+		expect(issuePaths(result)).toEqual(['stations']);
+		expect(issueMessages(result)).toEqual(['Total weight must be greater than 0']);
+	});
+
+	it('checks the total weight only when every row is valid', () => {
+		const result = schema.safeParse({
+			...base,
+			stations: [
+				{ ...weightRow, weight: 0, arm: 20001 },
+				{ ...fuelRow, fuel: 0 },
+			],
+		});
+
+		expect(issuePaths(result)).toEqual(['stations.0.arm']);
+	});
+
+	it('reports issues in several rows', () => {
+		const result = schema.safeParse({
+			...base,
+			stations: [
+				{ ...weightRow, weight: -1 },
+				{ ...fuelRow, fuel: '' },
+			],
+		});
+
+		expect(issuePaths(result)).toEqual(['stations.0.weight', 'stations.1.fuel']);
+	});
+
+	// Zod 3.22 z.preprocess skips its inner schema once any earlier field has an issue.
+	it.fails('BUG: reports an invalid maximum takeoff weight together with a station issue', () => {
+		const result = schema.safeParse({
+			...withRow(0, { weight: -1 }),
+			maxTakeoffWeight: 0,
+		});
+
+		expect(issuePaths(result)).toEqual(['stations.0.weight', 'maxTakeoffWeight']);
+	});
+
+	it('coerces numeric strings', () => {
+		expect(
+			schema.parse({
+				stations: [
+					{ ...weightRow, weight: '80.5', arm: '-310' },
+					{ ...fuelRow, fuel: '100', arm: '1900' },
+				],
+				fuelType: 'avgas',
+				maxTakeoffWeight: '1200',
+			})
+		).toEqual({
+			stations: [
+				{ ...weightRow, weight: 80.5, arm: -310 },
+				{ ...fuelRow, fuel: 100, arm: 1900 },
+			],
+			fuelType: 'avgas',
+			maxTakeoffWeight: 1200,
+		});
+	});
+
+	// 10,000 kg = 22,046.226 lb; 20,000 mm = 787.4016 in = 20.000 m = 2,000.0 cm.
+	it.each([
+		[
+			{ weight: 'lb' },
+			'weight',
+			22046.22,
+			22046.23,
+			'Weight cannot be greater than 22,046.22 lb',
+		],
+		[{ arm: 'in' }, 'arm', 787.4, 787.41, 'Arm cannot be greater than 787.40 in'],
+		[{ arm: 'in' }, 'arm', -787.4, -787.41, 'Arm cannot be lower than -787.40 in'],
+		[{ arm: 'm' }, 'arm', 20, 20.001, 'Arm cannot be greater than 20.000 m'],
+		[{ arm: 'cm' }, 'arm', 2000, 2000.1, 'Arm cannot be greater than 2,000.0 cm'],
+	] as const)(
+		'shows the limit in %j: accepts %s of %d and rejects %d',
+		(units, field, limit, beyond, message) => {
+			const unitSchema = schemaIn(units);
+			const withValue = (value: number) => ({
+				...base,
+				stations: [{ ...weightRow, [field]: value }],
+			});
+
+			expect(unitSchema.safeParse(withValue(limit)).success).toBe(true);
+
+			const result = unitSchema.safeParse(withValue(beyond));
+
+			expect(issuePaths(result)).toEqual([`stations.0.${field}`]);
+			expect(issueMessages(result)).toEqual([message]);
+		}
+	);
+
+	it('shows the maximum takeoff weight limit in lb', () => {
+		const result = schemaIn({ weight: 'lb' }).safeParse({
+			...base,
+			maxTakeoffWeight: 22046.23,
+		});
+
+		expect(issueMessages(result)).toEqual([
+			'Maximum takeoff weight cannot be greater than 22,046.22 lb',
+		]);
+	});
+
+	it('accepts the form values of the limits set from base units', () => {
+		const stored = {
+			stations: [
+				{ ...weightRow, weight: 10000, arm: 20000 },
+				{ ...weightRow, weight: 0, arm: -20000 },
+				{ ...fuelRow, fuel: 10000 / ((6 * 0.45359237) / 3.785411784) },
+			],
+			fuelType: 'avgas' as const,
+			maxTakeoffWeight: 10000,
+		};
+
+		for (const units of [
+			{ ...BASE_UNITS, weight: 'lb', arm: 'in', fuel: 'usgal' },
+			{ ...BASE_UNITS, weight: 'lb', arm: 'm', fuel: 'lb' },
+			{ ...BASE_UNITS, arm: 'cm', fuel: 'kg' },
+		] as const) {
+			const formData = formDataFromBaseUnits(
+				stored,
+				{
+					stations: { weight: 'weight', fuel: 'fuel', arm: 'arm' },
+					maxTakeoffWeight: 'weight',
+				},
+				units,
+				getFuelUnitContext
+			);
+
+			expect(createWeightAndBalanceFormDataSchema(units).safeParse(formData).success).toBe(
+				true
+			);
+		}
+	});
+});
+
 describe('unitPreferencesSchema', () => {
 	const base = {
 		speed: 'kmh',
@@ -2754,10 +3075,38 @@ describe('unitPreferencesSchema', () => {
 		fuel: 'lb',
 		distance: 'sm',
 		verticalSpeed: 'ms',
+		weight: 'lb',
+		arm: 'in',
 	};
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every weight unit', () => {
+		for (const weight of ['kg', 'lb']) {
+			expect(unitPreferencesSchema.parse({ ...base, weight }).weight).toBe(weight);
+		}
+	});
+
+	it('rejects an unknown weight unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, weight: 'st' });
+
+		expect(issueFields(result)).toEqual(['weight']);
+		expect(issueMessages(result)).toEqual(['Invalid weight unit']);
+	});
+
+	it('accepts every arm unit', () => {
+		for (const arm of ['mm', 'cm', 'm', 'in']) {
+			expect(unitPreferencesSchema.parse({ ...base, arm }).arm).toBe(arm);
+		}
+	});
+
+	it('rejects an unknown arm unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, arm: 'ft' });
+
+		expect(issueFields(result)).toEqual(['arm']);
+		expect(issueMessages(result)).toEqual(['Invalid arm unit']);
 	});
 
 	it('accepts every vertical speed unit', () => {
@@ -2823,6 +3172,8 @@ describe('userPreferencesSchema', () => {
 			fuel: 'l',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		},
 	};
 

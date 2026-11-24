@@ -34,6 +34,8 @@ type unitPreferences {
   fuel          String?
   distance      String?
   verticalSpeed String?
+  weight        String?
+  arm           String?
 }
 
 type preferences {
@@ -78,6 +80,7 @@ model User {
   GlideDistanceCalculations        GlideDistanceCalculation[]
   TurnPerformanceCalculations      TurnPerformanceCalculation[]
   DescentPlanningCalculations      DescentPlanningCalculation[]
+  WeightAndBalanceCalculations     WeightAndBalanceCalculation[]
 }
 
 enum Plan {
@@ -550,6 +553,37 @@ model DescentPlanningCalculation {
   formData  DescentPlanningCalculationFormData
   createdAt DateTime                           @default(now())
   updatedAt DateTime                           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum WeightAndBalanceStationType {
+  weight
+  fuel
+}
+
+// Weight rows have no fuel and fuel rows no weight.
+type WeightAndBalanceStation {
+  name   String
+  type   WeightAndBalanceStationType
+  weight Float?
+  fuel   Float?
+  arm    Float
+}
+
+type WeightAndBalanceCalculationFormData {
+  stations         WeightAndBalanceStation[]
+  fuelType         FuelType
+  maxTakeoffWeight Float?
+}
+
+model WeightAndBalanceCalculation {
+  id        String                              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String                              @db.ObjectId
+  name      String
+  formData  WeightAndBalanceCalculationFormData
+  createdAt DateTime                            @default(now())
+  updatedAt DateTime                            @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

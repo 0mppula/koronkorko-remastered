@@ -24,6 +24,7 @@ import {
 	trueAirspeedFormDataSchema,
 	turnPerformanceFormDataSchema,
 	windTriangleFormDataSchema,
+	weightAndBalanceFormDataSchema,
 } from '@/schemas';
 import {
 	AnnualizedReturnCalculation,
@@ -48,6 +49,7 @@ import {
 	TimeSpeedDistanceCalculation,
 	TrueAirspeedCalculation,
 	TurnPerformanceCalculation,
+	WeightAndBalanceCalculation,
 	WindTriangleCalculation,
 } from '@prisma/client';
 import { z } from 'zod';
@@ -302,6 +304,33 @@ export interface DescentPlanningReportProps extends Omit<
 	gradientFeetPerNm: number;
 }
 
+// Weight and Balance Calculation
+export type IWeightAndBalanceFormData = z.infer<typeof weightAndBalanceFormDataSchema>;
+
+export interface WeightAndBalanceStationResult {
+	name: string;
+	type: IWeightAndBalanceFormData['stations'][number]['type'];
+	// L; null for weight rows.
+	fuel: number | null;
+	// kg, fuel rows included.
+	weight: number;
+	arm: number;
+	// kg·mm
+	moment: number;
+}
+
+export interface WeightAndBalanceReportProps extends IWeightAndBalanceFormData {
+	fuelDensity: number;
+	stationResults: WeightAndBalanceStationResult[];
+	totalWeight: number;
+	totalMoment: number;
+	// Null when the total weight is 0.
+	centerOfGravity: number | null;
+	// Null without a maximum takeoff weight.
+	maxTakeoffWeightMargin: number | null;
+	exceedsMaxTakeoffWeight: boolean | null;
+}
+
 export type CalculationType =
 	| BreakEvenPointCalculation
 	| MarkupCalculation
@@ -325,4 +354,5 @@ export type CalculationType =
 	| CloudBaseCalculation
 	| GlideDistanceCalculation
 	| TurnPerformanceCalculation
-	| DescentPlanningCalculation;
+	| DescentPlanningCalculation
+	| WeightAndBalanceCalculation;

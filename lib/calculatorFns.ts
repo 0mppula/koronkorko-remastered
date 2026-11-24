@@ -36,6 +36,7 @@ import {
 	ITimeSpeedDistanceFormData,
 	ITurnPerformanceFormData,
 	IWindTriangleFormData,
+	IWeightAndBalanceFormData,
 	InvestmentTimeReportProps,
 	LiquidationPriceReportProps,
 	MarkupReportProps,
@@ -44,6 +45,7 @@ import {
 	TimeSpeedDistanceReportProps,
 	TrueAirspeedReportProps,
 	TurnPerformanceReportProps,
+	WeightAndBalanceReportProps,
 	WindTriangleReportProps,
 } from '@/types/calculations';
 import {
@@ -54,6 +56,7 @@ import {
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
+	UNIT_LIMIT_TOLERANCE,
 } from '@/lib/units';
 import { getFuelDensity } from '@/lib/utils';
 
@@ -664,5 +667,45 @@ export const calculateDescentPlanning = (
 		descentTime: height / verticalSpeed,
 		gradientPercent: (gradientFeetPerNm / NAUTICAL_MILE_IN_FEET) * 100,
 		gradientFeetPerNm,
+	};
+};
+
+export const calculateWeightAndBalance = (
+	formData: IWeightAndBalanceFormData
+): WeightAndBalanceReportProps => {
+	const { stations, fuelType, maxTakeoffWeight } = formData;
+
+	// Moment = weight × arm; CG = total moment / total weight (FAA PHAK, FAA-H-8083-25C, p. 10-5 to 10-7).
+	const fuelDensity = getFuelDensity(fuelType) ?? NaN;
+	const stationResults = stations.map(({ name, type, weight, fuel, arm }) => {
+		const stationFuel = type === 'fuel' ? (fuel ?? NaN) : null;
+		const stationWeight = stationFuel === null ? (weight ?? NaN) : stationFuel * fuelDensity;
+
+		return {
+			name,
+			type,
+			fuel: stationFuel,
+			weight: stationWeight,
+			arm,
+			moment: stationWeight * arm,
+		};
+	});
+	const totalWeight = stationResults.reduce((sum, { weight }) => sum + weight, 0);
+	const totalMoment = stationResults.reduce((sum, { moment }) => sum + moment, 0);
+
+	return {
+		...formData,
+		fuelDensity,
+		stationResults,
+		totalWeight,
+		totalMoment,
+		centerOfGravity: totalWeight > 0 ? totalMoment / totalWeight : null,
+		maxTakeoffWeightMargin: maxTakeoffWeight == null ? null : maxTakeoffWeight - totalWeight,
+		// Same tolerance as the schema's limits, so a total equal to the maximum is within it.
+		exceedsMaxTakeoffWeight:
+			maxTakeoffWeight == null
+				? null
+				: totalWeight >
+					maxTakeoffWeight + UNIT_LIMIT_TOLERANCE * Math.max(1, maxTakeoffWeight),
 	};
 };

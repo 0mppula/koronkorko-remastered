@@ -240,6 +240,11 @@ export const descentInputOptions = [
 	{ value: 'angle', label: 'Descent angle' },
 ] as const;
 
+export const stationTypes = [
+	{ value: 'weight', label: 'Weight' },
+	{ value: 'fuel', label: 'Fuel' },
+] as const;
+
 export const plans = [
 	{
 		title: 'Weekly Plan',

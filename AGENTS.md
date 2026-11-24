@@ -9,7 +9,7 @@ liquidation price, dividend yield. Aviation calculators are listed in `constants
 (`category: 'aviation'`). Anyone can use them; signed-in users can save, rename, update, import and delete
 calculations. Free-plan users are limited to `FREE_PLAN_CALCULATION_LIMIT` saves per calculator;
 premium is bought via Stripe. Currency and unit preferences (speed, altitude, temperature,
-pressure, fuel, distance, vertical speed; `unitQuantities` in `lib/units.ts`) are kept
+pressure, fuel, distance, vertical speed, weight, arm; `unitQuantities` in `lib/units.ts`) are kept
 in persisted Zustand stores (localStorage) and synced to `User.preferences` for signed-in users.
 
 ## Stack
@@ -103,7 +103,14 @@ Follow "Adding a calculator" with these differences:
    be a stable reference), base-unit `defaultValues`, schema via
    `useMemo(() => create<X>FormDataSchema(units), [units])`, pass `unitFields` to `useCalculator`,
    and use `NumberInputWithIcon iconType="unit"` with `getUnitSymbol(...)` (`unitSymbol="°"` for
-   directions; `min0={false}` for inputs that may be negative).
+   directions; `min0={false}` for inputs that may be negative). Units with more than 2 display
+   digits (arm in m) pass `fractionDigits={getUnitFractionDigits(...)}`; inputs show at least 2.
+   A variable list of rows (`useFieldArray`) uses a nested map for the array field
+   (`{ stations: { weight: 'weight', arm: 'arm' } }`). Each row carries a `rowId`: keep it in the
+   row schema (`z.string().optional()`), append rows with `rowId: createRowId()`, pass
+   `withRowIds(defaultValues, unitFields)` to `useForm`, and use `field.id` as the React key.
+   `useCalculator` adds ids on load (`withRowIds`) and strips them from saved data (`withoutRowIds`);
+   API routes map rows explicitly so a `rowId` is never stored.
 6. `Report.tsx`: format unit values with `formatBaseValue` in the user's units, never
    `formatUnitValue` directly on base values; end with `<CalculatorDisclaimer category="aviation" />`.
 7. `Info.tsx`: explain the formula and sources, then `<p>{calculatorDisclaimers.aviation}</p>`,
@@ -145,9 +152,13 @@ Follow "Adding a calculator" with these differences:
 - "Solve for" fields are `z.unknown()`, validated in `superRefine` only when shown; `.transform` stores hidden fields as `null`.
 - Check computed results by running `calculate<X>` in `superRefine`; report only the first exceeded limit, on a field always involved (`solveFor`, `elevation`).
 - Cross-field comparisons (dew point vs temperature, headwind vs TAS) use the same relative tolerance as the unit limits.
-- Reuse shared constants and helpers (`NAUTICAL_MILE_IN_METRES`, `FOOT_IN_METRES`, `STANDARD_GRAVITY`, ISA and angle helpers); export them instead of redefining.
+- Reuse shared constants and helpers (`NAUTICAL_MILE_IN_METRES`, `FOOT_IN_METRES`, `STANDARD_GRAVITY`, `UNIT_LIMIT_TOLERANCE`, ISA and angle helpers); export them instead of redefining.
 - zod 3.22 `z.preprocess` skips its inner schema once an earlier field has an issue; document it as a `BUG:` test, don't work around it.
 - Calculators extending `lib/units.ts`, Prisma `unitPreferences` and the units modal: merge one before starting the next (or build them in sequence on one branch).
+- Match rows by `rowId`, never by index: exact base values of rows follow their id through deletes, additions, reorders and unit changes.
+- Row ids are internal only: `rowId` matches rows and `field.id` is the React key. Never render either into DOM attributes (`id`, `htmlFor`, `aria-*`); server and browser counters differ and cause hydration mismatches. Derive DOM ids from the field path (`stations.2.arm`).
+- `z.coerce.number` reads `''` as 0. Where a silent 0 gives a plausible but wrong result (W&B weights, fuel, arms), use `z.unknown()`, report empty values as required in `superRefine`, and don't set empty inputs to 0 on blur.
+- `unitNumberFieldSchema` has no unit context; fuel masses need the density, so check fuel limits in `superRefine` with `createUnitLimits(..., { context })` or a base-unit comparison.
 
 ## Conventions
 

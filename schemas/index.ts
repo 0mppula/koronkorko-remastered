@@ -3,6 +3,7 @@ import {
 	descentInputOptions,
 	descentSolveForOptions,
 	fuelTypes,
+	stationTypes,
 	themes,
 	timeSpeedDistanceSolveForOptions,
 	variationDirections,
@@ -13,6 +14,7 @@ import {
 	calculateDescentPlanning,
 	calculateMach,
 	calculateTimeSpeedDistance,
+	calculateWeightAndBalance,
 } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
@@ -23,6 +25,7 @@ import {
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
+	UNIT_LIMIT_TOLERANCE,
 	UnitContext,
 	UnitPreferences,
 	UnitQuantity,
@@ -96,8 +99,6 @@ const positiveNumberFieldSchemaWithMax = (fieldName = 'Number', max: number) => 
 		message: `${fieldName} cannot be greater than ${max}`,
 	});
 };
-
-const UNIT_LIMIT_TOLERANCE = 1e-9;
 
 // Limits are in base units and checked in base units, so the form and the API agree.
 const createUnitLimits = (
@@ -1105,6 +1106,187 @@ export const createDescentPlanningFormDataSchema = (units: UnitPreferences) => {
 
 export const descentPlanningFormDataSchema = createDescentPlanningFormDataSchema(BASE_UNITS);
 
+type StationType = (typeof stationTypes)[number]['value'];
+type StationNumberField = 'weight' | 'fuel' | 'arm';
+
+// Base units: kg and mm.
+const WEIGHT_AND_BALANCE_LIMITS = { weight: 10000, arm: 20000, stations: 20 } as const;
+
+const stationNameSchema = z
+	.string({
+		required_error: 'Station name is required',
+		invalid_type_error: 'Station name has to be a string',
+	})
+	.trim()
+	.min(1, { message: 'Station name is required' })
+	.max(30, { message: 'Station name cannot be longer than 30 characters' });
+
+export const createWeightAndBalanceFormDataSchema = (units: UnitPreferences) => {
+	const weightLimits = createUnitLimits('weight', units.weight);
+	const armLimits = createUnitLimits('arm', units.arm);
+	const maxWeight = WEIGHT_AND_BALANCE_LIMITS.weight;
+
+	const stationFields = {
+		weight: {
+			name: 'Weight',
+			schema: unitNumberFieldSchema('Weight', 'weight', units.weight, {
+				min: 0,
+				max: maxWeight,
+			}),
+		},
+		// Fuel masses convert with the fuel type's density, so the maximum is checked below.
+		fuel: { name: 'Fuel', schema: positiveNumberFieldSchema('Fuel') },
+		arm: {
+			name: 'Arm',
+			schema: unitNumberFieldSchema('Arm', 'arm', units.arm, {
+				min: -WEIGHT_AND_BALANCE_LIMITS.arm,
+				max: WEIGHT_AND_BALANCE_LIMITS.arm,
+			}),
+		},
+	} as const;
+
+	return (
+		z
+			.object({
+				stations: z
+					.array(
+						z.object({
+							// Form-only id that matches rows through unit changes; never stored.
+							rowId: z.string().optional(),
+							name: stationNameSchema,
+							type: z.enum(
+								stationTypes.map((t) => t.value) as [StationType, ...StationType[]],
+								{
+									errorMap: () => ({
+										message: 'Station type must be weight or fuel',
+									}),
+								}
+							),
+							// Checked below: empty values must not count as 0, and the hidden
+							// field of the row may hold any form value.
+							weight: z.unknown(),
+							fuel: z.unknown(),
+							arm: z.unknown(),
+						})
+					)
+					.min(1, { message: 'Add at least one station' })
+					.max(WEIGHT_AND_BALANCE_LIMITS.stations, {
+						message: `You can add at most ${WEIGHT_AND_BALANCE_LIMITS.stations} stations`,
+					}),
+				fuelType: z.enum(fuelTypes.map((t) => t.value) as [FuelType, ...FuelType[]], {
+					errorMap: () => ({ message: 'Fuel type must be AVGAS or Jet A' }),
+				}),
+				// Nullish to match Prisma's optional field; empty input means no maximum.
+				maxTakeoffWeight: z.preprocess(
+					emptyToUndefined,
+					unitNumberFieldSchema('Maximum takeoff weight', 'weight', units.weight, {
+						min: 0,
+						minExclusive: true,
+						max: maxWeight,
+					}).nullish()
+				),
+			})
+			.superRefine((data, ctx) => {
+				const { stations, fuelType } = data;
+				const density = getFuelDensity(fuelType);
+				const context = { fuelDensityKgPerL: density };
+
+				// Zod runs this even when the station count or a name failed its own check.
+				let isValid =
+					stations.length >= 1 &&
+					stations.length <= WEIGHT_AND_BALANCE_LIMITS.stations &&
+					density !== undefined;
+
+				const baseStations = stations.map((station, index) => {
+					const parseField = (field: StationNumberField) => {
+						const { name, schema } = stationFields[field];
+						const value = station[field];
+						const result = isEmptyValue(value) ? null : schema.safeParse(value);
+
+						if (!result?.success) {
+							ctx.addIssue({
+								code: z.ZodIssueCode.custom,
+								path: ['stations', index, field],
+								message: result?.error.issues[0].message ?? `${name} is required`,
+							});
+
+							return null;
+						}
+
+						return result.data;
+					};
+
+					const shownValue = parseField(station.type);
+					const arm = parseField('arm');
+
+					if (!stationNameSchema.safeParse(station.name).success) isValid = false;
+
+					if (shownValue === null || arm === null) {
+						isValid = false;
+
+						return null;
+					}
+
+					if (station.type === 'weight') {
+						return {
+							...station,
+							weight: weightLimits.toBase(shownValue),
+							fuel: null,
+							arm: armLimits.toBase(arm),
+						};
+					}
+
+					if (density === undefined) return null;
+
+					const fuel = toBaseUnit(shownValue, 'fuel', units.fuel, context);
+
+					if (fuel * density > maxWeight + weightLimits.tolerance(maxWeight)) {
+						isValid = false;
+						ctx.addIssue({
+							code: z.ZodIssueCode.custom,
+							path: ['stations', index, 'fuel'],
+							message: `Fuel weight cannot be greater than ${weightLimits.formatShownMax(maxWeight)}`,
+						});
+
+						return null;
+					}
+
+					return { ...station, weight: null, fuel, arm: armLimits.toBase(arm) };
+				});
+
+				if (!isValid) return;
+
+				const { totalWeight } = calculateWeightAndBalance({
+					stations: baseStations.filter(
+						(station): station is NonNullable<typeof station> => station !== null
+					),
+					fuelType,
+					maxTakeoffWeight: null,
+				});
+
+				if (!(totalWeight > 0)) {
+					ctx.addIssue({
+						code: z.ZodIssueCode.custom,
+						path: ['stations'],
+						message: 'Total weight must be greater than 0',
+					});
+				}
+			})
+			// Saved calculations store the hidden field of each row as null.
+			.transform(({ stations, ...values }) => ({
+				...values,
+				stations: stations.map(({ weight, fuel, arm, ...station }) => ({
+					...station,
+					weight: station.type === 'weight' ? Number(weight) : null,
+					fuel: station.type === 'fuel' ? Number(fuel) : null,
+					arm: Number(arm),
+				})),
+			}))
+	);
+};
+
+export const weightAndBalanceFormDataSchema = createWeightAndBalanceFormDataSchema(BASE_UNITS);
+
 const unitValueSchema = <Q extends UnitQuantity>(quantity: Q) => {
 	const values = getUnitOptions(quantity).map((o) => o.value);
 
@@ -1122,6 +1304,8 @@ export const unitPreferencesSchema = z.object(
 		fuel: unitValueSchema('fuel'),
 		distance: unitValueSchema('distance'),
 		verticalSpeed: unitValueSchema('verticalSpeed'),
+		weight: unitValueSchema('weight'),
+		arm: unitValueSchema('arm'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

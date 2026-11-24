@@ -24,18 +24,24 @@ import {
 	calculateTimeSpeedDistance,
 	calculateTrueAirspeed,
 	calculateTurnPerformance,
+	calculateWeightAndBalance,
 	calculateWindTriangle,
 } from '@/lib/calculatorFns';
 import {
 	BASE_UNITS,
 	formDataToBaseUnits,
+	formDataToExactBaseUnits,
 	formatBaseValue,
 	formatUnsignedTemperatureDifference,
 	fromBaseUnit,
+	INCH_IN_MILLIMETRES,
 	normalizeDegrees,
+	POUND_IN_KILOGRAMS,
 	signedAngleDifference,
 	UnitFields,
+	unitFormValuesFromBase,
 	UnitPreferences,
+	US_GALLON_IN_LITRES,
 } from '@/lib/units';
 import {
 	ICompoundInterestFormData,
@@ -44,6 +50,7 @@ import {
 	IEventProbabilityFormData,
 	IFuelPlanningFormData,
 	ITimeSpeedDistanceFormData,
+	IWeightAndBalanceFormData,
 } from '@/types/calculations';
 
 // Expected values come from standard formulas / published worked examples, not from running the code.
@@ -2349,5 +2356,332 @@ describe('calculateDescentPlanning', () => {
 
 		expect(distance).toBeCloseTo(20, 9);
 		expect(fromBaseUnit(distance, 'distance', 'km')).toBeCloseTo(37.04, 9);
+	});
+});
+
+describe('calculateWeightAndBalance', () => {
+	// FAA PHAK (FAA-H-8083-25C) ch. 10 examples in lb, in and US gal. Expected sums and quotients
+	// from a standalone Python decimal script; moments compared in lb-in.
+	type Station = IWeightAndBalanceFormData['stations'][number];
+
+	const LB_IN = POUND_IN_KILOGRAMS * INCH_IN_MILLIMETRES;
+	const AVGAS = (6.0 * POUND_IN_KILOGRAMS) / US_GALLON_IN_LITRES;
+	const JET_A = (6.68 * POUND_IN_KILOGRAMS) / US_GALLON_IN_LITRES;
+
+	const station = (lb: number, inches: number, name = 'Station'): Station => ({
+		name,
+		type: 'weight',
+		weight: lb * POUND_IN_KILOGRAMS,
+		fuel: null,
+		arm: inches * INCH_IN_MILLIMETRES,
+	});
+	const fuelStation = (usGal: number, inches: number): Station => ({
+		name: 'Fuel',
+		type: 'fuel',
+		weight: null,
+		fuel: usGal * US_GALLON_IN_LITRES,
+		arm: inches * INCH_IN_MILLIMETRES,
+	});
+	const calculate = (
+		stations: Station[],
+		{
+			fuelType = 'avgas',
+			maxTakeoffWeight = null,
+		}: Partial<Omit<IWeightAndBalanceFormData, 'stations'>> = {}
+	) => calculateWeightAndBalance({ stations, fuelType, maxTakeoffWeight });
+
+	const toLb = (kg: number) => kg / POUND_IN_KILOGRAMS;
+	const toIn = (mm: number) => mm / INCH_IN_MILLIMETRES;
+	const toLbIn = (kgMm: number) => kgMm / LB_IN;
+
+	// Fig. 10-5 (p. 10-7), front seat occupants as one row; 75 US gal × 6 lb/US gal = 450 lb.
+	const fig10_5 = [
+		station(2100, 78.3),
+		station(340, 85.0),
+		station(350, 121.0),
+		fuelStation(75, 75.0),
+		station(80, 150.0),
+	];
+	// Fig. 10-11 (p. 10-11), without fuel.
+	const zeroFuel = [
+		station(3230, 90.5),
+		station(335, 89.0),
+		station(350, 126.0),
+		station(200, 157.0),
+		station(100, 10.0),
+		station(25, 183.0),
+	];
+
+	it.each([
+		['the computational method (Fig. 10-5)', fig10_5, 3320, 281430, 84.76807228915663],
+		[
+			// The figure lists the empty weight moment as 69,393.0, not 1,011.9 × 68.6 = 69,416.34,
+			// so its total 122,086.0 and CG 74.0 differ; the calculator multiplies weight × arm.
+			'a negative arm (Fig. 10-10)',
+			[
+				station(1011.9, 68.6),
+				station(11.0, -31.0),
+				station(108.0, 84.0),
+				station(108.0, 84.0),
+				station(170.0, 81.0),
+				station(170.0, 81.0),
+				station(70.0, 105.0),
+			],
+			1648.9,
+			122109.34,
+			74.05503062647826,
+		],
+		['the zero fuel weight (Fig. 10-11)', zeroFuel, 4240, 403205, 95.09551886792453],
+		[
+			'the ramp weight (Fig. 10-11)',
+			[...zeroFuel, station(822, 113.0)],
+			5062,
+			496091,
+			98.00296325563019,
+		],
+		[
+			'a weight addition (p. 10-11)',
+			[station(6860, 80.0), station(140, 150.0)],
+			7000,
+			569800,
+			81.4,
+		],
+		[
+			'the balance board (Fig. 10-4, p. 10-7)',
+			[station(100, 25), station(50, 50)],
+			150,
+			5000,
+			100 / 3,
+		],
+	])('%s', (_, stations, totalLb, momentLbIn, cgIn) => {
+		const result = calculate(stations);
+
+		expect(toLb(result.totalWeight)).toBeCloseTo(totalLb, 6);
+		expect(toLbIn(result.totalMoment)).toBeCloseTo(momentLbIn, 6);
+		expect(toIn(result.centerOfGravity ?? NaN)).toBeCloseTo(cgIn, 6);
+		expect(result.centerOfGravity).toBeCloseTo(cgIn * INCH_IN_MILLIMETRES, 6);
+	});
+
+	it('rounds to the CGs printed in the PHAK (84.8, 95.1, 98.0) within 0.05 in', () => {
+		// The PHAK rounds its CGs to one decimal.
+		const cg = (stations: Station[]) => toIn(calculate(stations).centerOfGravity ?? NaN);
+
+		expect(Math.abs(cg(fig10_5) - 84.8)).toBeLessThan(0.05);
+		expect(Math.abs(cg(zeroFuel) - 95.1)).toBeLessThan(0.05);
+		expect(Math.abs(cg([...zeroFuel, station(822, 113.0)]) - 98.0)).toBeLessThan(0.05);
+	});
+
+	it('gives each station its weight and moment, with fuel converted by the density', () => {
+		const { stationResults, fuelDensity } = calculate(fig10_5);
+		const fuel = stationResults[3];
+
+		expect(fuelDensity).toBe(AVGAS);
+		expect(fuel.fuel).toBeCloseTo(75 * US_GALLON_IN_LITRES, 9);
+		expect(toLb(fuel.weight)).toBeCloseTo(450, 9);
+		expect(toLbIn(fuel.moment)).toBeCloseTo(33750, 6);
+		expect(toLbIn(stationResults[0].moment)).toBeCloseTo(164430, 6);
+		expect(stationResults[0].fuel).toBeNull();
+	});
+
+	it('uses the Jet A density for fuel rows (75 US gal × 6.68 lb/US gal = 501 lb)', () => {
+		const result = calculate([fuelStation(75, 100)], { fuelType: 'jetA' });
+
+		expect(result.fuelDensity).toBe(JET_A);
+		expect(toLb(result.totalWeight)).toBeCloseTo(501, 9);
+	});
+
+	it('subtracts the moment of a station forward of the datum', () => {
+		expect(toLbIn(calculate([station(11, -31)]).totalMoment)).toBeCloseTo(-341, 9);
+	});
+
+	describe('maximum takeoff weight', () => {
+		const ramp = [...zeroFuel, station(822, 113.0)];
+
+		it('is within 5,224 lb with 162 lb remaining (Fig. 10-11 ramp weight)', () => {
+			const result = calculate(ramp, { maxTakeoffWeight: 5224 * POUND_IN_KILOGRAMS });
+
+			expect(toLb(result.maxTakeoffWeightMargin ?? NaN)).toBeCloseTo(162, 6);
+			expect(result.exceedsMaxTakeoffWeight).toBe(false);
+		});
+
+		it('exceeds 5,000 lb by 62 lb', () => {
+			const result = calculate(ramp, { maxTakeoffWeight: 5000 * POUND_IN_KILOGRAMS });
+
+			expect(toLb(result.maxTakeoffWeightMargin ?? NaN)).toBeCloseTo(-62, 6);
+			expect(result.exceedsMaxTakeoffWeight).toBe(true);
+		});
+
+		it('is within when the total equals the maximum after unit conversion', () => {
+			// 3,320 lb summed from rows in lb may differ from 3,320 lb converted at once.
+			const result = calculate(fig10_5, { maxTakeoffWeight: 3320 * POUND_IN_KILOGRAMS });
+
+			expect(result.exceedsMaxTakeoffWeight).toBe(false);
+			expect(toLb(result.maxTakeoffWeightMargin ?? NaN)).toBeCloseTo(0, 9);
+		});
+
+		it('is null without a maximum', () => {
+			const result = calculate(fig10_5);
+
+			expect(result.maxTakeoffWeightMargin).toBeNull();
+			expect(result.exceedsMaxTakeoffWeight).toBeNull();
+		});
+	});
+
+	describe('independent checks', () => {
+		it('moves the CG by exactly the distance the datum moves', () => {
+			const d = 500;
+			const moved = fig10_5.map((s) => ({ ...s, arm: s.arm + d }));
+
+			expect(calculate(moved).centerOfGravity).toBeCloseTo(
+				(calculate(fig10_5).centerOfGravity ?? NaN) + d,
+				9
+			);
+		});
+
+		it('keeps the CG when a station is added at the CG', () => {
+			const cg = calculate(fig10_5).centerOfGravity ?? NaN;
+			const added = [...fig10_5, { ...station(0, 0), weight: 77, arm: cg }];
+
+			expect(calculate(added).centerOfGravity).toBeCloseTo(cg, 9);
+		});
+
+		it('ignores zero-weight rows', () => {
+			const result = calculate([...fig10_5, station(0, 5000), fuelStation(0, -3000)]);
+
+			expect(result.totalWeight).toBe(calculate(fig10_5).totalWeight);
+			expect(result.centerOfGravity).toBe(calculate(fig10_5).centerOfGravity);
+		});
+
+		it("gives a single row's arm as the CG", () => {
+			expect(calculate([station(170, 85)]).centerOfGravity).toBeCloseTo(85 * 25.4, 9);
+		});
+
+		it('returns a null CG when the total weight is 0', () => {
+			expect(calculate([station(0, 85)]).centerOfGravity).toBeNull();
+		});
+
+		it('ignores hidden values and row ids', () => {
+			const withHidden = fig10_5.map((s, index) => ({
+				...s,
+				rowId: `row-${index}`,
+				...(s.type === 'weight' ? { fuel: 999 } : { weight: 999 }),
+			}));
+
+			const result = calculate(withHidden);
+
+			expect(result.totalWeight).toBe(calculate(fig10_5).totalWeight);
+			expect(result.totalMoment).toBe(calculate(fig10_5).totalMoment);
+		});
+
+		it('returns the inputs unchanged', () => {
+			const formData = {
+				stations: fig10_5,
+				fuelType: 'avgas' as const,
+				maxTakeoffWeight: 1500,
+			};
+
+			expect(calculateWeightAndBalance(formData)).toMatchObject(formData);
+		});
+	});
+
+	describe('with values entered in other units', () => {
+		const unitFields: UnitFields<IWeightAndBalanceFormData> = {
+			stations: { weight: 'weight', fuel: 'fuel', arm: 'arm' },
+			maxTakeoffWeight: 'weight',
+		};
+		const getContext = ({ fuelType }: IWeightAndBalanceFormData) => ({
+			fuelDensityKgPerL: fuelType === 'jetA' ? JET_A : AVGAS,
+		});
+		const imperial: UnitPreferences = {
+			...BASE_UNITS,
+			weight: 'lb',
+			arm: 'in',
+			fuel: 'usgal',
+		};
+		const row = (type: Station['type'], value: number, arm: number): Station => ({
+			name: 'Station',
+			type,
+			weight: type === 'weight' ? value : null,
+			fuel: type === 'fuel' ? value : null,
+			arm,
+		});
+		const fig10_5Imperial: IWeightAndBalanceFormData = {
+			stations: [
+				row('weight', 2100, 78.3),
+				row('weight', 340, 85.0),
+				row('weight', 350, 121.0),
+				row('fuel', 75, 75.0),
+				row('weight', 80, 150.0),
+			],
+			fuelType: 'avgas',
+			maxTakeoffWeight: 3400,
+		};
+
+		it('converts Fig. 10-5 in lb, in and US gal to kg, mm and L', () => {
+			const base = formDataToBaseUnits(fig10_5Imperial, unitFields, imperial, getContext);
+			const result = calculateWeightAndBalance(base);
+
+			expect(base.stations[0].weight).toBeCloseTo(2100 * POUND_IN_KILOGRAMS, 9);
+			expect(base.stations[0].arm).toBeCloseTo(78.3 * 25.4, 9);
+			expect(base.stations[3].fuel).toBeCloseTo(75 * US_GALLON_IN_LITRES, 9);
+			expect(base.stations[3].weight).toBeNull();
+			expect(base.maxTakeoffWeight).toBeCloseTo(3400 * POUND_IN_KILOGRAMS, 9);
+			// Python decimal: 1,505.92666840 kg, 3,242,424.31750314 kg·mm, 2,153.10903614 mm
+			expect(result.totalWeight).toBeCloseTo(1505.9266684, 6);
+			expect(result.totalMoment).toBeCloseTo(3242424.31750314, 4);
+			expect(result.centerOfGravity).toBeCloseTo(2153.1090361445783, 6);
+			expect(toLb(result.maxTakeoffWeightMargin ?? NaN)).toBeCloseTo(80, 6);
+		});
+
+		it('gives the same base results for the same loading in kg/mm and lb/in', () => {
+			const inImperial = calculateWeightAndBalance(
+				formDataToBaseUnits(fig10_5Imperial, unitFields, imperial, getContext)
+			);
+			const inBase = calculate(fig10_5, { maxTakeoffWeight: 3400 * POUND_IN_KILOGRAMS });
+
+			expect(inImperial.totalWeight).toBeCloseTo(inBase.totalWeight, 9);
+			expect(inImperial.totalMoment).toBeCloseTo(inBase.totalMoment, 6);
+			expect(inImperial.centerOfGravity).toBeCloseTo(inBase.centerOfGravity ?? NaN, 9);
+		});
+
+		it('converts fuel in lb with the Jet A density', () => {
+			const formData: IWeightAndBalanceFormData = {
+				stations: [row('fuel', 501, 100)],
+				fuelType: 'jetA',
+				maxTakeoffWeight: null,
+			};
+			const base = formDataToBaseUnits(
+				formData,
+				unitFields,
+				{ ...imperial, fuel: 'lb' },
+				getContext
+			);
+
+			// 501 lb / 6.68 lb/US gal = 75 US gal
+			expect(base.stations[0].fuel).toBeCloseTo(75 * US_GALLON_IN_LITRES, 9);
+			expect(toLb(calculateWeightAndBalance(base).totalWeight)).toBeCloseTo(501, 9);
+		});
+
+		it('converts fuel rows from their input after a fuel type change; other rows stay exact', () => {
+			const units = { ...imperial, fuel: 'lb' as const };
+			const baseFormData: IWeightAndBalanceFormData = {
+				stations: [
+					{ ...station(170.3, 85.1), rowId: 'a' },
+					{ ...fuelStation(75, 75), rowId: 'b' },
+				],
+				fuelType: 'avgas',
+				maxTakeoffWeight: null,
+			};
+			const values = unitFormValuesFromBase(baseFormData, unitFields, units, getContext);
+			const changed = { ...values.formData, fuelType: 'jetA' as const };
+
+			const base = formDataToExactBaseUnits(changed, unitFields, units, values, getContext);
+
+			expect(base.stations[0].weight).toBe(baseFormData.stations[0].weight);
+			expect(base.stations[0].arm).toBe(baseFormData.stations[0].arm);
+			expect(base.stations[1].arm).toBe(baseFormData.stations[1].arm);
+			// The 450 lb entered now reads as Jet A: 450 / 6.68 US gal.
+			expect(base.stations[1].fuel).toBeCloseTo((450 / 6.68) * US_GALLON_IN_LITRES, 9);
+		});
 	});
 });

@@ -9,6 +9,8 @@ import { InputProps } from '../ui/input';
 interface NumberInputWithIconProps extends InputProps {
 	iconType?: 'currency' | 'percentage' | 'unit';
 	unitSymbol?: string;
+	// The unit's display digits (getUnitFractionDigits); inputs show at least 2.
+	fractionDigits?: number;
 	min0?: boolean;
 }
 
@@ -20,6 +22,7 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 			min0 = true,
 			iconType = 'currency',
 			unitSymbol,
+			fractionDigits,
 			onChange,
 			value,
 			...props
@@ -80,7 +83,9 @@ const NumberInputWithIcon = React.forwardRef<HTMLInputElement, NumberInputWithIc
 
 						onChange?.(e);
 					}}
-					value={iconType === 'unit' ? formatUnitInputValue(value) : value}
+					value={
+						iconType === 'unit' ? formatUnitInputValue(value, fractionDigits) : value
+					}
 					{...props}
 				/>
 

@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	BASE_UNITS,
 	changeFormDataUnits,
+	createRowId,
 	DEFAULT_UNIT_PREFERENCES,
 	formatBaseValue,
 	formatDegrees,
+	formatMoment,
 	formatSignedDegrees,
 	formatTemperatureDifference,
 	formatUnitInputValue,
@@ -20,7 +22,10 @@ import {
 	getPairedFuelUnit,
 	getUnitFractionDigits,
 	getUnitSymbol,
+	INCH_IN_MILLIMETRES,
 	normalizeDegrees,
+	POUND_IN_KILOGRAMS,
+	ROW_ID_FIELD,
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
@@ -28,6 +33,8 @@ import {
 	unitOptions,
 	unitQuantities,
 	withDefaultUnitPreferences,
+	withoutRowIds,
+	withRowIds,
 	type UnitFields,
 	type UnitFormValues,
 	type UnitPreferences,
@@ -107,6 +114,81 @@ describe('getUnitFractionDigits', () => {
 		expect(getUnitFractionDigits('altitude', 'm')).toBe(0);
 		expect(getUnitFractionDigits('speed', 'ms')).toBe(2);
 		expect(getUnitFractionDigits('pressure', 'inhg')).toBe(2);
+	});
+
+	it('uses 2 decimals for weights and per-unit digits for arms', () => {
+		expect(getUnitFractionDigits('weight', 'kg')).toBe(2);
+		expect(getUnitFractionDigits('weight', 'lb')).toBe(2);
+		expect(getUnitFractionDigits('arm', 'mm')).toBe(0);
+		expect(getUnitFractionDigits('arm', 'cm')).toBe(1);
+		expect(getUnitFractionDigits('arm', 'm')).toBe(3);
+		expect(getUnitFractionDigits('arm', 'in')).toBe(2);
+	});
+});
+
+describe('weight conversions', () => {
+	it('converts kilograms to and from pounds (1 lb = 0.45359237 kg)', () => {
+		expect(POUND_IN_KILOGRAMS).toBe(0.45359237);
+		expect(toBaseUnit(1, 'weight', 'lb')).toBe(0.45359237);
+		expect(fromBaseUnit(0.45359237, 'weight', 'lb')).toBe(1);
+		expect(toBaseUnit(1, 'weight', 'kg')).toBe(1);
+	});
+
+	it('formats weights with 2 decimals and grouping', () => {
+		expect(normalize(formatUnitValue(10000, 'weight', 'kg'))).toBe('10,000.00 kg');
+		// 2,100 lb × 0.45359237 = 952.543977 kg
+		expect(normalize(formatBaseValue(952.543977, 'weight', 'lb'))).toBe('2,100.00 lb');
+		// 10,000 kg / 0.45359237 = 22,046.226 lb
+		expect(normalize(formatBaseValue(10000, 'weight', 'lb'))).toBe('22,046.23 lb');
+	});
+});
+
+describe('arm conversions', () => {
+	it('converts millimetres to and from cm, m and in (1 in = 25.4 mm)', () => {
+		expect(INCH_IN_MILLIMETRES).toBe(25.4);
+		expect(toBaseUnit(1, 'arm', 'in')).toBe(25.4);
+		expect(toBaseUnit(1, 'arm', 'cm')).toBe(10);
+		expect(toBaseUnit(1, 'arm', 'm')).toBe(1000);
+		expect(fromBaseUnit(25.4, 'arm', 'in')).toBe(1);
+		expect(fromBaseUnit(1988.82, 'arm', 'in')).toBeCloseTo(78.3, 12);
+	});
+
+	it('formats arms with the digits of each unit', () => {
+		expect(normalize(formatBaseValue(25.4, 'arm', 'in'))).toBe('1.00 in');
+		expect(normalize(formatBaseValue(1000, 'arm', 'm'))).toBe('1.000 m');
+		expect(normalize(formatBaseValue(1234, 'arm', 'cm'))).toBe('123.4 cm');
+		expect(normalize(formatBaseValue(1988.82, 'arm', 'mm'))).toBe('1,989 mm');
+		expect(normalize(formatBaseValue(-787.4, 'arm', 'in'))).toBe('-31.00 in');
+	});
+});
+
+describe('formatMoment', () => {
+	// 450 lb at 75 in = 33,750 lb-in (PHAK p. 10-7, fuel in Figure 10-5).
+	const moment = 450 * POUND_IN_KILOGRAMS * 75 * INCH_IN_MILLIMETRES;
+	const lbIn = { weight: 'lb', arm: 'in' } as const;
+
+	it('formats moments as whole numbers in the weight and arm units', () => {
+		expect(normalize(formatMoment(moment, lbIn))).toBe('33,750 lb-in');
+		// 204.1165665 kg × 1905 mm = 388,842.0591825 kg-mm
+		expect(normalize(formatMoment(moment, BASE_UNITS))).toBe('388,842 kg-mm');
+		expect(normalize(formatMoment(moment, { weight: 'kg', arm: 'm' }))).toBe('389 kg-m');
+		// 450 lb × 190.5 cm
+		expect(normalize(formatMoment(moment, { weight: 'lb', arm: 'cm' }))).toBe('85,725 lb-cm');
+	});
+
+	it('formats the moment index divided by 1,000 with 2 decimals', () => {
+		expect(normalize(formatMoment(moment, lbIn, { index: true }))).toBe('33.75 lb-in/1000');
+		expect(normalize(formatMoment(moment, BASE_UNITS, { index: true }))).toBe(
+			'388.84 kg-mm/1000'
+		);
+	});
+
+	it('formats negative moments and NaN', () => {
+		// 11 lb at −31 in = −341 lb-in (PHAK Figure 10-10, oil)
+		const oil = 11 * POUND_IN_KILOGRAMS * -31 * INCH_IN_MILLIMETRES;
+
+		expect(normalize(formatMoment(oil, lbIn))).toBe('-341 lb-in');
+		expect(normalize(formatMoment(NaN, lbIn))).toBe('0 lb-in');
 	});
 });
 
@@ -548,6 +630,43 @@ describe('formatUnitInputValue', () => {
 		expect(formatUnitInputValue(undefined)).toBe(undefined);
 	});
 
+	it('shows existing units exactly as before with their fraction digits', () => {
+		const digits = getUnitFractionDigits;
+
+		expect(formatUnitInputValue(115.077944802, digits('speed', 'kmh'))).toBe('115.08');
+		expect(formatUnitInputValue(29.9212849081, digits('pressure', 'inhg'))).toBe('29.92');
+		expect(formatUnitInputValue(636.874, digits('verticalSpeed', 'fpm'))).toBe('636.87');
+		expect(formatUnitInputValue(3.23596, digits('verticalSpeed', 'ms'))).toBe('3.24');
+		expect(formatUnitInputValue(304.8, digits('altitude', 'm'))).toBe('304.8');
+
+		const values = [29.9212849081, 304.8, -457.2, 20000, 115.077944802, 0.004, -0.001, 1.23456];
+		const earlierQuantities = unitQuantities.filter(
+			({ value }) => value !== 'weight' && value !== 'arm'
+		);
+
+		for (const { value: quantity } of earlierQuantities) {
+			for (const option of unitOptions[quantity]) {
+				for (const value of values) {
+					expect(formatUnitInputValue(value, digits(quantity, option.value))).toBe(
+						formatUnitInputValue(value)
+					);
+				}
+			}
+		}
+	});
+
+	it('shows at least 2 decimals, and 3 for an arm in metres', () => {
+		expect(formatUnitInputValue(2.15900000001, getUnitFractionDigits('arm', 'm'))).toBe(
+			'2.159'
+		);
+		expect(formatUnitInputValue(1.98882, getUnitFractionDigits('arm', 'm'))).toBe('1.989');
+		expect(formatUnitInputValue(198.882, getUnitFractionDigits('arm', 'cm'))).toBe('198.88');
+		expect(formatUnitInputValue(1988.82, getUnitFractionDigits('arm', 'mm'))).toBe('1988.82');
+		expect(formatUnitInputValue(78.3000000001, getUnitFractionDigits('arm', 'in'))).toBe(
+			'78.3'
+		);
+	});
+
 	describe('in a form with a 100 kt wind shown in mph', () => {
 		type FormData = { windSpeed: number | string };
 
@@ -696,6 +815,8 @@ describe('withDefaultUnitPreferences', () => {
 			fuel: 'l',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		});
 	});
 
@@ -717,6 +838,8 @@ describe('withDefaultUnitPreferences', () => {
 			fuel: 'l',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		});
 	});
 
@@ -736,6 +859,8 @@ describe('withDefaultUnitPreferences', () => {
 			fuel: 'l',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		});
 	});
 
@@ -756,6 +881,8 @@ describe('withDefaultUnitPreferences', () => {
 			fuel: 'lb',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		});
 	});
 
@@ -769,7 +896,29 @@ describe('withDefaultUnitPreferences', () => {
 			distance: 'km',
 		} as const;
 
-		expect(withDefaultUnitPreferences(saved)).toEqual({ ...saved, verticalSpeed: 'fpm' });
+		expect(withDefaultUnitPreferences(saved)).toEqual({
+			...saved,
+			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
+		});
+	});
+
+	it('keeps the other choices when only weight and arm are missing', () => {
+		const saved = {
+			speed: 'mph',
+			altitude: 'm',
+			temperature: 'f',
+			pressure: 'inhg',
+			fuel: 'lb',
+			distance: 'km',
+			verticalSpeed: 'ms',
+		} as const;
+
+		expect(withDefaultUnitPreferences(saved)).toEqual({ ...saved, weight: 'kg', arm: 'mm' });
+		expect(withDefaultUnitPreferences({})).toEqual(
+			expect.objectContaining({ weight: 'kg', arm: 'mm' })
+		);
 	});
 
 	it('falls back to the default for invalid values', () => {
@@ -1031,5 +1180,318 @@ describe('formDataToExactBaseUnits', () => {
 				null
 			).windSpeed
 		).toBe(37.04 / 1.852);
+	});
+});
+
+describe('row unit fields', () => {
+	interface Row {
+		rowId?: string;
+		a: number | string | null;
+		b: number | string | null;
+		label: string;
+	}
+
+	interface FormData {
+		rows: Row[];
+		c: number | string;
+	}
+
+	const unitFields: UnitFields<FormData> = { rows: { a: 'weight', b: 'arm' }, c: 'weight' };
+	const lbIn: UnitPreferences = { ...BASE_UNITS, weight: 'lb', arm: 'in' };
+
+	// Values that don't survive a naive trip through 12-digit lb and in values (checked below).
+	const base: FormData = {
+		rows: [
+			{ a: 0.1, b: 1, label: 'first' },
+			{ a: 0.3, b: 3, label: 'second' },
+			{ a: 77.7, b: 100, label: 'third' },
+		],
+		c: 0.1,
+	};
+
+	const getRows = (formData: FormData) => withoutRowIds(formData, unitFields).rows;
+
+	const toLbIn = () => {
+		const values = unitFormValuesFromBase(base, unitFields, BASE_UNITS);
+
+		return changeFormDataUnits(values.formData, unitFields, BASE_UNITS, lbIn, values);
+	};
+
+	const backToBase = (formData: FormData, values: UnitFormValues<FormData>) =>
+		changeFormDataUnits(formData, unitFields, lbIn, BASE_UNITS, values);
+
+	it('drifts when converted naively, so the exact tests below are meaningful', () => {
+		const shown = formDataFromBaseUnits(base, unitFields, lbIn);
+		const naive = formDataToBaseUnits(shown, unitFields, lbIn);
+
+		expect(naive.rows.map(({ a, b }) => [a, b])).not.toEqual(
+			base.rows.map(({ a, b }) => [a, b])
+		);
+		expect(naive.rows.every(({ a }, i) => a !== base.rows[i].a)).toBe(true);
+		expect(naive.rows.every(({ b }, i) => b !== base.rows[i].b)).toBe(true);
+	});
+
+	it('converts each row field and keeps other fields and the row id', () => {
+		const formData: FormData = {
+			rows: [
+				{ rowId: 'r1', a: 1, b: 1, label: 'x' },
+				{ a: null, b: '', label: 'y' },
+			],
+			c: 2,
+		};
+
+		expect(formDataToBaseUnits(formData, unitFields, lbIn)).toEqual({
+			rows: [
+				{ rowId: 'r1', a: POUND_IN_KILOGRAMS, b: INCH_IN_MILLIMETRES, label: 'x' },
+				{ a: null, b: '', label: 'y' },
+			],
+			c: 2 * POUND_IN_KILOGRAMS,
+		});
+		expect(
+			formDataFromBaseUnits(
+				{ rows: [{ rowId: 'r1', a: POUND_IN_KILOGRAMS, b: 254, label: 'x' }], c: 0 },
+				unitFields,
+				lbIn
+			)
+		).toEqual({ rows: [{ rowId: 'r1', a: 1, b: 10, label: 'x' }], c: 0 });
+	});
+
+	it('leaves a missing row list and non-numeric row values for zod', () => {
+		const formData = { rows: undefined, c: 1 } as unknown as FormData;
+
+		expect(formDataToBaseUnits(formData, unitFields, lbIn).rows).toBeUndefined();
+		expect(
+			formDataToBaseUnits({ rows: [{ a: 'abc', b: 1, label: '' }], c: 1 }, unitFields, lbIn)
+				.rows[0].a
+		).toBe('abc');
+	});
+
+	it('adds row ids only where missing, all distinct', () => {
+		const withIds = withRowIds(
+			{
+				rows: [
+					{ a: 1, b: 1, label: '' },
+					{ rowId: 'kept', a: 2, b: 2, label: '' },
+					{ a: 3, b: 3, label: '' },
+				],
+				c: 1,
+			},
+			unitFields
+		);
+		const ids = withIds.rows.map((row) => row.rowId);
+
+		expect(ids[1]).toBe('kept');
+		expect(ids.every((id) => typeof id === 'string')).toBe(true);
+		expect(new Set(ids).size).toBe(3);
+	});
+
+	it('creates distinct row ids', () => {
+		expect(createRowId()).not.toBe(createRowId());
+	});
+
+	it('removes row ids without changing the input', () => {
+		const formData: FormData = { rows: [{ rowId: 'r1', a: 1, b: 2, label: 'x' }], c: 1 };
+
+		expect(withoutRowIds(formData, unitFields)).toEqual({
+			rows: [{ a: 1, b: 2, label: 'x' }],
+			c: 1,
+		});
+		expect(withoutRowIds(formData, unitFields).rows[0]).not.toHaveProperty(ROW_ID_FIELD);
+		expect(formData.rows[0].rowId).toBe('r1');
+	});
+
+	it('returns flat form data unchanged', () => {
+		const flat = { windSpeed: 10 };
+		const flatUnitFields: UnitFields<typeof flat> = { windSpeed: 'speed' };
+
+		expect(withRowIds(flat, flatUnitFields)).toBe(flat);
+		expect(withoutRowIds(flat, flatUnitFields)).toBe(flat);
+	});
+
+	it('gives the form values and the exact base values the same row ids', () => {
+		const values = unitFormValuesFromBase(base, unitFields, lbIn);
+		const ids = values.formData.rows.map((row) => row.rowId);
+
+		expect(ids.every((id) => typeof id === 'string')).toBe(true);
+		expect(values.baseFormData.rows.map((row) => row.rowId)).toEqual(ids);
+		expect(base.rows[0]).not.toHaveProperty(ROW_ID_FIELD);
+	});
+
+	it('keeps the row ids when changing units', () => {
+		const inLbIn = toLbIn();
+		const back = backToBase(inLbIn.formData, inLbIn);
+
+		expect(back.formData.rows.map((row) => row.rowId)).toEqual(
+			inLbIn.formData.rows.map((row) => row.rowId)
+		);
+	});
+
+	it('keeps exact values for untouched rows and fields', () => {
+		const inLbIn = toLbIn();
+
+		expect(withoutRowIds(inLbIn.baseFormData, unitFields)).toEqual(base);
+		expect(withoutRowIds(backToBase(inLbIn.formData, inLbIn).baseFormData, unitFields)).toEqual(
+			base
+		);
+	});
+
+	it('keeps the exact values of the other rows when a middle row is deleted', () => {
+		const inLbIn = toLbIn();
+		const [first, , third] = inLbIn.formData.rows;
+		const back = backToBase({ ...inLbIn.formData, rows: [first, third] }, inLbIn);
+
+		expect(getRows(back.baseFormData)).toEqual([base.rows[0], base.rows[2]]);
+		expect(back.baseFormData.rows[0].a).toBe(0.1);
+		expect(back.baseFormData.rows[1].b).toBe(100);
+		expect(back.baseFormData.c).toBe(0.1);
+	});
+
+	it('keeps existing rows exact and converts an added row from its input', () => {
+		const inLbIn = toLbIn();
+		const added: Row = { rowId: createRowId(), a: 2, b: 3, label: 'new' };
+		const back = backToBase(
+			{ ...inLbIn.formData, rows: [...inLbIn.formData.rows, added] },
+			inLbIn
+		);
+
+		expect(getRows(back.baseFormData)).toEqual([
+			...base.rows,
+			{ a: 2 * POUND_IN_KILOGRAMS, b: 3 * INCH_IN_MILLIMETRES, label: 'new' },
+		]);
+	});
+
+	it('converts only an edited field from its input', () => {
+		const inLbIn = toLbIn();
+		const rows = inLbIn.formData.rows.map((row, i) => (i === 1 ? { ...row, a: '0.5' } : row));
+		const back = backToBase({ ...inLbIn.formData, rows }, inLbIn);
+
+		expect(getRows(back.baseFormData)).toEqual([
+			base.rows[0],
+			{ ...base.rows[1], a: 0.5 * POUND_IN_KILOGRAMS },
+			base.rows[2],
+		]);
+	});
+
+	it('keeps exact values for a row whose other fields changed', () => {
+		const inLbIn = toLbIn();
+		const rows = inLbIn.formData.rows.map((row, i) =>
+			i === 0 ? { ...row, label: 'renamed' } : row
+		);
+		const back = backToBase({ ...inLbIn.formData, rows }, inLbIn);
+
+		expect(getRows(back.baseFormData)[0]).toEqual({ ...base.rows[0], label: 'renamed' });
+	});
+
+	it('keeps each row exact when rows are reordered', () => {
+		const inLbIn = toLbIn();
+		const [first, second, third] = inLbIn.formData.rows;
+		const back = backToBase({ ...inLbIn.formData, rows: [third, second, first] }, inLbIn);
+
+		expect(getRows(back.baseFormData)).toEqual([base.rows[2], base.rows[1], base.rows[0]]);
+	});
+
+	it('never gives a row the exact values of the row that was at its index', () => {
+		// 0.1 kg and this value both show as 0.220462262185 lb.
+		const drifted = 0.10000000000005553;
+		const twins: FormData = {
+			rows: [
+				{ a: 0.1, b: 1, label: 'first' },
+				{ a: drifted, b: 1, label: 'second' },
+			],
+			c: 0,
+		};
+		const values = unitFormValuesFromBase(twins, unitFields, BASE_UNITS);
+		const inLbIn = changeFormDataUnits(values.formData, unitFields, BASE_UNITS, lbIn, values);
+
+		expect(inLbIn.formData.rows[0].a).toBe(inLbIn.formData.rows[1].a);
+
+		const back = backToBase({ ...inLbIn.formData, rows: [inLbIn.formData.rows[1]] }, inLbIn);
+
+		expect(back.baseFormData.rows[0].a).toBe(drifted);
+	});
+
+	it('converts a row without an id from its input', () => {
+		const inLbIn = toLbIn();
+		const { rowId: _rowId, ...withoutId } = inLbIn.formData.rows[0];
+		const back = backToBase({ ...inLbIn.formData, rows: [withoutId] }, inLbIn);
+
+		expect(back.baseFormData.rows[0].a).toBe(toBaseUnit(Number(withoutId.a), 'weight', 'lb'));
+		expect(back.baseFormData.rows[0].a).not.toBe(0.1);
+		expect(back.baseFormData.rows[0].rowId).toEqual(expect.any(String));
+	});
+
+	it('stays exact over repeated kg \u2192 lb and mm \u2192 in round trips', () => {
+		const units: UnitPreferences[] = [
+			BASE_UNITS,
+			{ ...BASE_UNITS, weight: 'lb' },
+			lbIn,
+			{ ...BASE_UNITS, arm: 'cm' },
+			{ ...BASE_UNITS, weight: 'lb', arm: 'm' },
+			BASE_UNITS,
+		];
+		let values = unitFormValuesFromBase(base, unitFields, BASE_UNITS);
+		const ids = values.formData.rows.map((row) => row.rowId);
+
+		for (let round = 0; round < 50; round++) {
+			for (let i = 1; i < units.length; i++) {
+				values = changeFormDataUnits(
+					values.formData,
+					unitFields,
+					units[i - 1],
+					units[i],
+					values
+				);
+			}
+		}
+
+		expect(withoutRowIds(values.formData, unitFields)).toEqual(base);
+		expect(withoutRowIds(values.baseFormData, unitFields)).toEqual(base);
+		expect(values.formData.rows.map((row) => row.rowId)).toEqual(ids);
+	});
+
+	describe('with a context', () => {
+		interface FuelFormData {
+			rows: { rowId?: string; fuel: number | string }[];
+			fuelType: string;
+		}
+
+		const fuelUnitFields: UnitFields<FuelFormData> = { rows: { fuel: 'fuel' } };
+		const avgas = (6.0 * POUND_IN_KILOGRAMS) / 3.785411784;
+		const jetA = (6.68 * POUND_IN_KILOGRAMS) / 3.785411784;
+		const getContext = ({ fuelType }: FuelFormData) => ({
+			fuelDensityKgPerL: fuelType === 'jetA' ? jetA : avgas,
+		});
+		const units: UnitPreferences = { ...BASE_UNITS, fuel: 'lb' };
+		const saved: FuelFormData = { rows: [{ fuel: 30 }, { fuel: 50 }], fuelType: 'avgas' };
+
+		it('treats a changed context as an edit of every row', () => {
+			const values = unitFormValuesFromBase(saved, fuelUnitFields, units, getContext);
+			const changed = { ...values.formData, fuelType: 'jetA' };
+			const result = formDataToExactBaseUnits(
+				changed,
+				fuelUnitFields,
+				units,
+				values,
+				getContext
+			);
+
+			expect(result.rows.map(({ fuel }) => fuel)).toEqual(
+				changed.rows.map(({ fuel }) =>
+					toBaseUnit(Number(fuel), 'fuel', 'lb', { fuelDensityKgPerL: jetA })
+				)
+			);
+			expect(
+				withoutRowIds(
+					formDataToExactBaseUnits(
+						values.formData,
+						fuelUnitFields,
+						units,
+						values,
+						getContext
+					),
+					fuelUnitFields
+				)
+			).toEqual(saved);
+		});
 	});
 });

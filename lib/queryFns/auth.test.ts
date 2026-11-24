@@ -13,6 +13,8 @@ const units = {
 	fuel: 'usgal',
 	distance: 'km',
 	verticalSpeed: 'ms',
+	weight: 'lb',
+	arm: 'in',
 } as const;
 
 describe('updateUserPreferences', () => {
