@@ -16,6 +16,8 @@ import {
 	unitFormValuesFromBase,
 	UnitPreferences,
 	unitQuantities,
+	withoutRowIds,
+	withRowIds,
 } from '@/lib/units';
 import { ICalculationNameFormData, IHasFormDataAndName } from '@/types/calculations';
 import { useSession } from 'next-auth/react';
@@ -87,8 +89,17 @@ const useCalculator = <
 	);
 
 	const formDefaultValues = useMemo(
-		() => fromBaseUnits(defaultValues),
-		[fromBaseUnits, defaultValues]
+		() =>
+			unitFields
+				? withRowIds(fromBaseUnits(defaultValues), unitFields)
+				: fromBaseUnits(defaultValues),
+		[fromBaseUnits, defaultValues, unitFields]
+	);
+
+	// Row ids are form-only and never stored.
+	const stripRowIds = useCallback(
+		(formData: TFormData) => (unitFields ? withoutRowIds(formData, unitFields) : formData),
+		[unitFields]
 	);
 
 	// Starts at base units so the base-unit defaults are converted on mount.
@@ -174,14 +185,14 @@ const useCalculator = <
 			if (activeCalculation) {
 				// Only update if the form data has changed (compared in the user's units)
 				if (
-					JSON.stringify(fromBaseUnits(activeCalculation.formData)) !==
-					JSON.stringify(form.getValues())
+					JSON.stringify(stripRowIds(fromBaseUnits(activeCalculation.formData))) !==
+					JSON.stringify(stripRowIds(form.getValues()))
 				) {
 					updateMutate({
 						apiUrl,
 						updatedCalculation: {
 							...activeCalculation,
-							formData: toBaseUnits(form.getValues()),
+							formData: stripRowIds(toBaseUnits(form.getValues())),
 						},
 					});
 				} else {
@@ -207,6 +218,7 @@ const useCalculator = <
 		isAuthenticated,
 		fromBaseUnits,
 		toBaseUnits,
+		stripRowIds,
 	]);
 
 	const closeSaveModal = useCallback(() => {
@@ -226,10 +238,10 @@ const useCalculator = <
 			saveMutate({
 				apiUrl,
 				name: data.name,
-				formData: toBaseUnits(form.getValues()),
+				formData: stripRowIds(toBaseUnits(form.getValues())),
 			});
 		},
-		[saveMutate, apiUrl, form, toBaseUnits]
+		[saveMutate, apiUrl, form, toBaseUnits, stripRowIds]
 	);
 
 	const handleRename = useCallback(

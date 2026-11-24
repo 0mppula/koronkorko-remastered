@@ -1122,6 +1122,8 @@ export const unitPreferencesSchema = z.object(
 		fuel: unitValueSchema('fuel'),
 		distance: unitValueSchema('distance'),
 		verticalSpeed: unitValueSchema('verticalSpeed'),
+		weight: unitValueSchema('weight'),
+		arm: unitValueSchema('arm'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

@@ -2754,10 +2754,38 @@ describe('unitPreferencesSchema', () => {
 		fuel: 'lb',
 		distance: 'sm',
 		verticalSpeed: 'ms',
+		weight: 'lb',
+		arm: 'in',
 	};
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every weight unit', () => {
+		for (const weight of ['kg', 'lb']) {
+			expect(unitPreferencesSchema.parse({ ...base, weight }).weight).toBe(weight);
+		}
+	});
+
+	it('rejects an unknown weight unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, weight: 'st' });
+
+		expect(issueFields(result)).toEqual(['weight']);
+		expect(issueMessages(result)).toEqual(['Invalid weight unit']);
+	});
+
+	it('accepts every arm unit', () => {
+		for (const arm of ['mm', 'cm', 'm', 'in']) {
+			expect(unitPreferencesSchema.parse({ ...base, arm }).arm).toBe(arm);
+		}
+	});
+
+	it('rejects an unknown arm unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, arm: 'ft' });
+
+		expect(issueFields(result)).toEqual(['arm']);
+		expect(issueMessages(result)).toEqual(['Invalid arm unit']);
 	});
 
 	it('accepts every vertical speed unit', () => {
@@ -2823,6 +2851,8 @@ describe('userPreferencesSchema', () => {
 			fuel: 'l',
 			distance: 'nm',
 			verticalSpeed: 'fpm',
+			weight: 'kg',
+			arm: 'mm',
 		},
 	};
 

@@ -34,6 +34,8 @@ type unitPreferences {
   fuel          String?
   distance      String?
   verticalSpeed String?
+  weight        String?
+  arm           String?
 }
 
 type preferences {

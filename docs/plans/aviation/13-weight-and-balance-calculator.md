@@ -47,7 +47,7 @@ per-row unit conversion tracked by stable row ids, and a list of composite types
   values between rows. react-hook-form's `useFieldArray` `field.id` can't be used for this: it
   lives only in `fields` (not in the form values that `useCalculator` reads with `getValues()` and
   receives on submit) and is regenerated on every `form.reset`. Instead each row value carries its
-  own `rowId` (string, `crypto.randomUUID()`), assigned when rows are loaded from base units
+  own `rowId` (string, `createRowId()`), assigned when rows are loaded from base units
   (defaults, import, clear) or appended, and kept through unit changes and resets. `field.id`
   stays the React key.
 - **Weight unit:** new quantity `weight`: kg (base, default), lb. 2 decimals.
@@ -91,6 +91,23 @@ per-row unit conversion tracked by stable row ids, and a list of composite types
 
 ## Part A – Foundation
 
+**Status: done** (commit "Add weight and arm units and per-row unit fields"). Differences from the
+original plan, now reflected below:
+
+- `createRowId()` is a module-level counter (`row-1`, `row-2`, ...), not `crypto.randomUUID()`,
+  which is undefined over plain HTTP on hosts other than localhost (e.g. testing on a phone via a
+  LAN IP). Ids only need to be unique within the page and are never stored or rendered.
+- `useForm` gets the `defaultValues` from `Calculator.tsx`, not `useCalculator`'s
+  `formDefaultValues` (only used by the delete reset in `useCalculationMutations`). With all-base
+  units the unit effect returns early on mount, so default rows would have no `rowId` until the
+  first unit change or reset. Part B passes `withRowIds(defaultValues, unitFields)` to `useForm`.
+- Unit inputs showed at most 2 decimals, so a 3-decimal arm in metres was cut. Added:
+  `formatUnitInputValue(value, fractionDigits = 2)` shows `max(2, fractionDigits)` decimals and
+  `NumberInputWithIcon` takes an optional `fractionDigits` prop. Existing inputs are unchanged.
+- NIST SP 811 App. B.9 (opened) lists the inch as 2.54 cm and the pound as 4.535 924 E−01,
+  with footnote 22: "The exact conversion factor is 4.535 923 7 E-01".
+- `formatMoment` takes `Pick<UnitPreferences, 'weight' | 'arm'>` as `units`.
+
 Implement in its own chat. Commit "Add weight and arm units and per-row unit fields". Depends on
 nothing in Part B; after Part A, lint, typecheck, format check and tests pass and every existing
 calculator behaves as before. The units modal shows Weight and Arm from Part A on (automatic).
@@ -122,7 +139,7 @@ calculator behaves as before. The units modal shows Weight and Arm from Part A o
 - `UnitFields<T>`: for a key whose value is an array of row objects, the entry is a nested
   `UnitFields<Row>` (only `UnitQuantity` entries, no nested arrays); otherwise a `UnitQuantity`
   (as now). Existing flat maps keep type-checking unchanged.
-- `createRowId()` (`crypto.randomUUID()`, available in browsers and Node ≥ 19 / Vitest).
+- `createRowId()` (module-level counter, `row-<n>`; works in insecure contexts).
 - `withRowIds(formData, unitFields)`: returns a copy where every row of every array unit field
   without a `rowId` gets a new one; rows with an id keep it. No-op for flat maps.
 - `withoutRowIds(formData, unitFields)`: returns a copy without `rowId` on those rows (for
@@ -144,7 +161,8 @@ Required because the ids live in the form values and must never reach the API or
 "unchanged" check:
 
 - `formDefaultValues`: `withRowIds(fromBaseUnits(defaultValues), unitFields)` (when
-  `unitFields` is set).
+  `unitFields` is set). It is only used by the delete reset; `useForm` gets the calculator's own
+  defaults, so Part B passes `withRowIds(defaultValues, unitFields)` to `useForm`.
 - `resetFormFromBase` (import, clear, close) already goes through `unitFormValuesFromBase`, which
   now assigns ids; no other change.
 - `handleSave` and the update in `handleSaveUpdateStart`: send
@@ -288,15 +306,18 @@ weight', 'weight', units.weight, { min: 0, minExclusive: true, max: 10000 }).nul
 
 ### UI
 
-- `Calculator.tsx`: `useFieldArray({ control: form.control, name: 'stations' })`, `field.id` as
-  the React key. Defaults (base units, no `rowId`; `useCalculator` adds ids; PHAK Fig. 10-5
+- `Calculator.tsx`: `useForm({ defaultValues: withRowIds(defaultValues, unitFields) })` (module
+  level, so the default rows have ids even when the units are base units),
+  `useFieldArray({ control: form.control, name: 'stations' })`, `field.id` as
+  the React key. Defaults (base units, no `rowId`; `withRowIds` adds ids; PHAK Fig. 10-5
   p. 10-7, front seat occupants 340 lb split into pilot and front passenger at the same arm),
   written as exact expressions with `POUND_IN_KILOGRAMS`, `INCH_IN_MILLIMETRES`,
   `US_GALLON_IN_LITRES`: Empty aircraft 2,100 lb at 78.3 in; Pilot 170 lb at 85.0 in; Front
   passenger 170 lb at 85.0 in; Rear passengers 350 lb at 121.0 in; Baggage 80 lb at 150.0 in; Fuel
   (fuel row) 75 US gal at 75.0 in; `fuelType: 'avgas'`; `maxTakeoffWeight` 3,400 lb. Each row:
   name `Input`, type `Select`, Weight or Fuel (`NumberInputWithIcon iconType="unit"`, weight or
-  fuel symbol), Arm (arm symbol, `min0={false}`), a remove `ButtonWithIcon` (lucide `Trash2`,
+  fuel symbol), Arm (arm symbol, `min0={false}`,
+  `fractionDigits={getUnitFractionDigits('arm', units.arm)}`), a remove `ButtonWithIcon` (lucide `Trash2`,
   `aria-label="Remove station"`). Below: "Add station" (`Plus`) appends `{ rowId: createRowId(),
 name: 'Station <n>', type: 'weight', weight: 0, fuel: null, arm: 0 }`; Fuel Type select only
   when a fuel row exists; Maximum Takeoff Weight (optional, placeholder "Optional"). Changing a

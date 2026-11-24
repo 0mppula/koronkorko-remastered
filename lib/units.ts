@@ -7,7 +7,9 @@ const SECONDS_IN_HOUR = 3600;
 const INCH_OF_MERCURY_IN_HECTOPASCALS = 33.8639;
 // Exact by definition: US gallon = 231 in³ with 1 in = 2.54 cm; international pound.
 export const US_GALLON_IN_LITRES = 3.785411784;
+// NIST SP 811 App. B.9: inch = 2.54 cm; pound (avoirdupois) = 0.45359237 kg exactly (footnote 22).
 export const POUND_IN_KILOGRAMS = 0.45359237;
+export const INCH_IN_MILLIMETRES = 25.4;
 
 // Values the conversion depends on besides the unit, e.g. the fuel density for fuel masses.
 export interface UnitContext {
@@ -33,6 +35,8 @@ export const unitQuantities = [
 	{ value: 'fuel', label: 'Fuel' },
 	{ value: 'distance', label: 'Distance' },
 	{ value: 'verticalSpeed', label: 'Vertical speed' },
+	{ value: 'weight', label: 'Weight' },
+	{ value: 'arm', label: 'Arm' },
 ] as const;
 
 export type UnitQuantity = (typeof unitQuantities)[number]['value'];
@@ -188,6 +192,55 @@ export const unitOptions = {
 			fromBase: (value: number) => (value * FOOT_IN_METRES) / 60,
 		},
 	],
+	weight: [
+		{
+			value: 'kg',
+			label: 'Kilograms (kg)',
+			symbol: 'kg',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'lb',
+			label: 'Pounds (lb)',
+			symbol: 'lb',
+			toBase: (value: number) => value * POUND_IN_KILOGRAMS,
+			fromBase: (value: number) => value / POUND_IN_KILOGRAMS,
+		},
+	],
+	arm: [
+		{
+			value: 'mm',
+			label: 'Millimetres (mm)',
+			symbol: 'mm',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'cm',
+			label: 'Centimetres (cm)',
+			symbol: 'cm',
+			fractionDigits: 1,
+			toBase: (value: number) => value * 10,
+			fromBase: (value: number) => value / 10,
+		},
+		{
+			value: 'm',
+			label: 'Metres (m)',
+			symbol: 'm',
+			fractionDigits: 3,
+			toBase: (value: number) => value * 1000,
+			fromBase: (value: number) => value / 1000,
+		},
+		{
+			value: 'in',
+			label: 'Inches (in)',
+			symbol: 'in',
+			fractionDigits: 2,
+			toBase: (value: number) => value * INCH_IN_MILLIMETRES,
+			fromBase: (value: number) => value / INCH_IN_MILLIMETRES,
+		},
+	],
 } as const satisfies Record<UnitQuantity, readonly UnitOption[]>;
 
 export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number]['value'];
@@ -201,6 +254,8 @@ export const BASE_UNITS: UnitPreferences = {
 	fuel: 'l',
 	distance: 'nm',
 	verticalSpeed: 'fpm',
+	weight: 'kg',
+	arm: 'mm',
 };
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
@@ -212,6 +267,8 @@ export const unitFractionDigits: Record<UnitQuantity, number> = {
 	fuel: 2,
 	distance: 2,
 	verticalSpeed: 0,
+	weight: 2,
+	arm: 0,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
@@ -279,6 +336,27 @@ export const formatBaseValue = (
 	context?: UnitContext
 ): string => formatUnitValue(fromBaseUnit(baseValue, quantity, unit, context), quantity, unit);
 
+// A moment (weight × arm) in the user's weight and arm units, e.g. lb-in; index divides by 1,000.
+export const formatMoment = (
+	momentKgMm: number,
+	units: Pick<UnitPreferences, 'weight' | 'arm'>,
+	{ index = false }: { index?: boolean } = {}
+): string => {
+	const moment = fromBaseUnit(
+		fromBaseUnit(isNaN(momentKgMm) ? 0 : momentKgMm, 'weight', units.weight),
+		'arm',
+		units.arm
+	);
+	const fractionDigits = index ? 2 : 0;
+	const formatted = new Intl.NumberFormat('en-US', {
+		minimumFractionDigits: fractionDigits,
+		maximumFractionDigits: fractionDigits,
+	}).format(index ? moment / 1000 : moment);
+	const symbol = `${getUnitSymbol('weight', units.weight)}-${getUnitSymbol('arm', units.arm)}`;
+
+	return `${formatted} ${symbol}${index ? '/1000' : ''}`;
+};
+
 // A difference has no offset: 10 °C warmer is 18 °F warmer, not 50 °F.
 export const fromBaseTemperatureDifference = (valueC: number, unit: string): number =>
 	unit === 'f' ? (valueC * 9) / 5 : valueC;
@@ -298,9 +376,9 @@ export const formatUnsignedTemperatureDifference = (baseValue: number, unit: str
 	formatUnitValue(fromBaseTemperatureDifference(baseValue, unit), 'temperature', unit);
 
 // Display only: form state keeps the unrounded value so validation at the limits stays exact.
-export const formatUnitInputValue = <T>(value: T): T | string =>
+export const formatUnitInputValue = <T>(value: T, fractionDigits: number = 2): T | string =>
 	typeof value === 'number' && Number.isFinite(value)
-		? String(Number(value.toFixed(2)) || 0)
+		? String(Number(value.toFixed(Math.max(2, fractionDigits))) || 0)
 		: value;
 
 export const normalizeDegrees = (value: number): number => ((value % 360) + 360) % 360;
@@ -347,21 +425,88 @@ export const withDefaultUnitPreferences = (
 	) as UnitPreferences;
 };
 
-export type UnitFields<TFormData> = Partial<Record<keyof TFormData, UnitQuantity>>;
+export const ROW_ID_FIELD = 'rowId';
+
+type RowUnitFields<TRow> = Partial<Record<keyof TRow, UnitQuantity>>;
+type RowOf<TValue> = TValue extends readonly (infer TRow)[] ? TRow : never;
+
+// A field holding rows (e.g. stations) maps to the unit fields of each row.
+export type UnitFields<TFormData> = {
+	[K in keyof TFormData]?: [RowOf<TFormData[K]>] extends [never]
+		? UnitQuantity
+		: RowUnitFields<RowOf<TFormData[K]>>;
+};
 
 // Gets the context from the record's own fields (e.g. its fuel type), in any units.
 export type GetUnitContext<TFormData> = (formData: TFormData) => UnitContext;
 
-const convertFormData = <T extends object>(
+type DataRecord = Record<string, unknown>;
+type FlatUnitFields = Partial<Record<string, UnitQuantity>>;
+
+const isRecord = (value: unknown): value is DataRecord =>
+	typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const unitFieldEntries = <T>(unitFields: UnitFields<T>) =>
+	Object.entries(unitFields as Record<string, UnitQuantity | FlatUnitFields | undefined>);
+
+const getFlatUnitFields = <T>(unitFields: UnitFields<T>): FlatUnitFields =>
+	Object.fromEntries(
+		unitFieldEntries(unitFields).filter(
+			(e): e is [string, UnitQuantity] => typeof e[1] === 'string'
+		)
+	);
+
+const getRowUnitFields = <T>(unitFields: UnitFields<T>) =>
+	unitFieldEntries(unitFields).filter((e): e is [string, FlatUnitFields] => isRecord(e[1]));
+
+// Returns formData itself when there are no row fields, so flat forms keep their references.
+const mapRows = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
-	convert: (value: number, quantity: UnitQuantity) => number
+	mapRow: (row: DataRecord, rowUnitFields: FlatUnitFields) => DataRecord
 ): T => {
-	const converted = { ...formData };
+	let result = formData;
 
-	for (const field of Object.keys(unitFields) as (keyof T)[]) {
-		const quantity = unitFields[field];
-		const value: unknown = formData[field];
+	for (const [field, rowUnitFields] of getRowUnitFields(unitFields)) {
+		const rows = (formData as DataRecord)[field];
+
+		if (!Array.isArray(rows)) continue;
+
+		result = {
+			...result,
+			[field]: rows.map((row) => (isRecord(row) ? mapRow(row, rowUnitFields) : row)),
+		};
+	}
+
+	return result;
+};
+
+let rowIdCounter = 0;
+
+// Unique within the page; never stored or rendered (server and browser counters differ).
+export const createRowId = (): string => `row-${++rowIdCounter}`;
+
+export const withRowIds = <T extends object>(formData: T, unitFields: UnitFields<T>): T =>
+	mapRows(formData, unitFields, (row) =>
+		typeof row[ROW_ID_FIELD] === 'string' ? row : { ...row, [ROW_ID_FIELD]: createRowId() }
+	);
+
+export const withoutRowIds = <T extends object>(formData: T, unitFields: UnitFields<T>): T =>
+	mapRows(formData, unitFields, (row) => {
+		const { [ROW_ID_FIELD]: _rowId, ...rest } = row;
+
+		return rest;
+	});
+
+const convertFields = (
+	data: DataRecord,
+	unitFields: FlatUnitFields,
+	convert: (value: number, quantity: UnitQuantity) => number
+): DataRecord => {
+	const converted = { ...data };
+
+	for (const [field, quantity] of Object.entries(unitFields)) {
+		const value = data[field];
 
 		// Empty optional values stay empty; non-numeric values stay for zod to report.
 		if (!quantity || value === '' || value === undefined || value === null) continue;
@@ -370,11 +515,22 @@ const convertFormData = <T extends object>(
 
 		if (!Number.isFinite(number)) continue;
 
-		converted[field] = convert(number, quantity) as T[keyof T];
+		converted[field] = convert(number, quantity);
 	}
 
 	return converted;
 };
+
+const convertFormData = <T extends object>(
+	formData: T,
+	unitFields: UnitFields<T>,
+	convert: (value: number, quantity: UnitQuantity) => number
+): T =>
+	mapRows(
+		convertFields(formData as DataRecord, getFlatUnitFields(unitFields), convert) as T,
+		unitFields,
+		(row, rowUnitFields) => convertFields(row, rowUnitFields, convert)
+	);
 
 export const formDataToBaseUnits = <T extends object>(
 	formData: T,
@@ -414,14 +570,52 @@ export const unitFormValuesFromBase = <T extends object>(
 	unitFields: UnitFields<T>,
 	units: UnitPreferences,
 	getContext?: GetUnitContext<T>
-): UnitFormValues<T> => ({
-	formData: formDataFromBaseUnits(baseFormData, unitFields, units, getContext),
-	baseFormData,
-});
+): UnitFormValues<T> => {
+	const baseFormDataWithRowIds = withRowIds(baseFormData, unitFields);
+
+	return {
+		formData: formDataFromBaseUnits(baseFormDataWithRowIds, unitFields, units, getContext),
+		baseFormData: baseFormDataWithRowIds,
+	};
+};
+
+const keepExactBaseValues = (
+	data: DataRecord,
+	baseData: DataRecord,
+	prevData: DataRecord,
+	prevBaseData: DataRecord,
+	prevExactBaseData: DataRecord,
+	unitFields: FlatUnitFields
+): DataRecord => {
+	const result = { ...baseData };
+
+	for (const field of Object.keys(unitFields)) {
+		if (data[field] === prevData[field] && Object.is(baseData[field], prevBaseData[field])) {
+			result[field] = prevExactBaseData[field];
+		}
+	}
+
+	return result;
+};
+
+const getRowsById = (rows: unknown): Map<string, DataRecord> => {
+	const rowsById = new Map<string, DataRecord>();
+
+	if (!Array.isArray(rows)) return rowsById;
+
+	for (const row of rows) {
+		const rowId = isRecord(row) ? row[ROW_ID_FIELD] : undefined;
+
+		if (typeof rowId === 'string' && !rowsById.has(rowId)) rowsById.set(rowId, row);
+	}
+
+	return rowsById;
+};
 
 // Unedited fields (still equal to the values set from base units) use their exact base value;
 // converting the rounded form value would add noise (e.g. 30 kt → mph → m/s → kt = 29.9999999999).
 // A changed context also counts as an edit (e.g. kg after a fuel type change).
+// Rows are matched by rowId, so adding, removing or reordering rows never mixes their values.
 export const formDataToExactBaseUnits = <T extends object>(
 	formData: T,
 	unitFields: UnitFields<T>,
@@ -431,25 +625,61 @@ export const formDataToExactBaseUnits = <T extends object>(
 ): T => {
 	const baseFormData = formDataToBaseUnits(formData, unitFields, units, getContext);
 
-	if (values) {
-		const prevBaseFormData = formDataToBaseUnits(
-			values.formData,
-			unitFields,
-			units,
-			getContext
-		);
+	if (!values) return baseFormData;
 
-		for (const field of Object.keys(unitFields) as (keyof T)[]) {
-			if (
-				formData[field] === values.formData[field] &&
-				Object.is(baseFormData[field], prevBaseFormData[field])
-			) {
-				baseFormData[field] = values.baseFormData[field];
-			}
-		}
+	const data = formData as DataRecord;
+	const prevData = values.formData as DataRecord;
+	const prevExactBaseData = values.baseFormData as DataRecord;
+	const prevBaseData = formDataToBaseUnits(
+		values.formData,
+		unitFields,
+		units,
+		getContext
+	) as DataRecord;
+
+	const result = keepExactBaseValues(
+		data,
+		baseFormData as DataRecord,
+		prevData,
+		prevBaseData,
+		prevExactBaseData,
+		getFlatUnitFields(unitFields)
+	);
+
+	for (const [field, rowUnitFields] of getRowUnitFields(unitFields)) {
+		const rows = data[field];
+		const baseRows = result[field];
+
+		if (!Array.isArray(rows) || !Array.isArray(baseRows)) continue;
+
+		const prevRows = getRowsById(prevData[field]);
+		const prevBaseRows = getRowsById(prevBaseData[field]);
+		const prevExactBaseRows = getRowsById(prevExactBaseData[field]);
+
+		result[field] = baseRows.map((baseRow: unknown, index) => {
+			const row: unknown = rows[index];
+			const rowId = isRecord(row) ? row[ROW_ID_FIELD] : undefined;
+
+			if (!isRecord(row) || !isRecord(baseRow) || typeof rowId !== 'string') return baseRow;
+
+			const prevRow = prevRows.get(rowId);
+			const prevBaseRow = prevBaseRows.get(rowId);
+			const prevExactBaseRow = prevExactBaseRows.get(rowId);
+
+			if (!prevRow || !prevBaseRow || !prevExactBaseRow) return baseRow;
+
+			return keepExactBaseValues(
+				row,
+				baseRow,
+				prevRow,
+				prevBaseRow,
+				prevExactBaseRow,
+				rowUnitFields
+			);
+		});
 	}
 
-	return baseFormData;
+	return result as T;
 };
 
 export const changeFormDataUnits = <T extends object>(
