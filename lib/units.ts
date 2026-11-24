@@ -11,6 +11,9 @@ export const US_GALLON_IN_LITRES = 3.785411784;
 export const POUND_IN_KILOGRAMS = 0.45359237;
 export const INCH_IN_MILLIMETRES = 25.4;
 
+// Relative tolerance for limits checked in base units, so float noise at a limit still passes.
+export const UNIT_LIMIT_TOLERANCE = 1e-9;
+
 // Values the conversion depends on besides the unit, e.g. the fuel density for fuel masses.
 export interface UnitContext {
 	fuelDensityKgPerL?: number;

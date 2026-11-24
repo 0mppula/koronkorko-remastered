@@ -167,4 +167,11 @@ export const calculators = [
 		description:
 			'Calculate where to start the descent or the vertical speed needed, and the descent gradient, given the altitudes and groundspeed. Additionally, logged in users can save their calculations.',
 	},
+	{
+		name: 'Weight and Balance Calculator',
+		url: 'weight-and-balance-calculator',
+		category: 'aviation',
+		description:
+			'Calculate the total weight, moment and center of gravity of an aircraft from its stations, with fuel by volume or weight. Additionally, logged in users can save their calculations.',
+	},
 ] as const;

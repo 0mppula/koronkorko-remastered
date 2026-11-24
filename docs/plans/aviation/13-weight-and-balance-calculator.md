@@ -223,6 +223,30 @@ tested `lib/units` helpers.
 
 ## Part B – Calculator
 
+**Status: done** (commit "Add weight and balance calculator"). Differences from the original
+plan, now reflected below:
+
+- `unitNumberFieldSchema` takes no unit context and its limit message converts the limit, which
+  throws for fuel masses without a density. Fuel uses `positiveNumberFieldSchema('Fuel')` (as in
+  05); the 10,000 kg fuel weight check runs in the object's `superRefine` with the density.
+- All row checks (shown weight or fuel, arm, fuel weight, total weight) run in one object-level
+  `superRefine`, since a row-level one can't see `fuelType`. `arm` is also `z.unknown()`, so an
+  empty arm is "Arm is required" instead of being coerced to 0.
+- Empty shown fields are required ("Weight is required", "Fuel is required"); nothing is set to 0
+  on blur, since a silent zero gives a plausible but wrong CG. Changing a row's type leaves the
+  newly shown field empty, or shows the value typed earlier (hidden values stay in the form).
+- `UNIT_LIMIT_TOLERANCE` moved from `schemas/index.ts` to `lib/units.ts` (exported, used by the
+  schemas and `calculateWeightAndBalance`). The report also has `exceedsMaxTakeoffWeight`
+  (`boolean | null`), using that relative tolerance.
+- The stations are shown in a shadcn `Table` (Station | Weight | Arm | Moment, scrolls sideways on
+  mobile), not one `ReportGroup` per station. A fuel row in a mass fuel unit equal to the weight
+  unit shows the weight once.
+- The maximum takeoff weight is labelled "Maximum Takeoff Weight (optional)" with an empty
+  placeholder, like the optional fields in 05.
+- Each station is a bordered group ("Station n" with a "Remove" button,
+  `aria-label="Remove station n"`), with Name, Type, Weight or Fuel and Arm in one column on
+  mobile and two from `sm:`. The array-level error (`errors.stations.root`) shows under the rows.
+
 Implement in its own chat after Part A is committed. Commit "Add weight and balance calculator".
 Uses only Part A's units, `formatMoment`, array `UnitFields`, `createRowId` and the
 `useCalculator` changes.
@@ -286,11 +310,12 @@ stations")`.
     - row: `rowId` (`z.string().optional()`, kept so `onCalculate` receives it), `name`
       (`z.string().trim().min(1, "Station name is required").max(30, "Station name cannot be
 longer than 30 characters")`), `type` (`z.enum` from `stationTypes` in `constants/data.ts`,
-      labels "Weight", "Fuel", message `"Station type must be weight or fuel"`), `arm`
-      (`unitNumberFieldSchema('Arm', 'arm', units.arm, { min: -20000, max: 20000 })`), `weight`
-      and `fuel` as `z.unknown()`, checked in the row's `superRefine` only for the shown one (07
-      pattern): `unitNumberFieldSchema('Weight', 'weight', ..., { min: 0, max: 10000 })`, fuel
-      `unitNumberFieldSchema('Fuel', 'fuel', ..., { min: 0 })` with the 05 context.
+      labels "Weight", "Fuel", message `"Station type must be weight or fuel"`), and `weight`,
+      `fuel` and `arm` as `z.unknown()`, checked in the object's `superRefine` (empty →
+      `"<Field> is required"`; only the shown one of weight and fuel, 07 pattern):
+      `unitNumberFieldSchema('Weight', 'weight', ..., { min: 0, max: 10000 })`, fuel
+      `positiveNumberFieldSchema('Fuel')`, arm
+      `unitNumberFieldSchema('Arm', 'arm', units.arm, { min: -20000, max: 20000 })`.
     - `fuelType`: `z.enum` from `fuelTypes` (05 message).
     - `maxTakeoffWeight`: `z.preprocess(emptyToUndefined, unitNumberFieldSchema('Maximum takeoff
 weight', 'weight', units.weight, { min: 0, minExclusive: true, max: 10000 }).nullish())`.
@@ -314,20 +339,24 @@ weight', 'weight', units.weight, { min: 0, minExclusive: true, max: 10000 }).nul
   written as exact expressions with `POUND_IN_KILOGRAMS`, `INCH_IN_MILLIMETRES`,
   `US_GALLON_IN_LITRES`: Empty aircraft 2,100 lb at 78.3 in; Pilot 170 lb at 85.0 in; Front
   passenger 170 lb at 85.0 in; Rear passengers 350 lb at 121.0 in; Baggage 80 lb at 150.0 in; Fuel
-  (fuel row) 75 US gal at 75.0 in; `fuelType: 'avgas'`; `maxTakeoffWeight` 3,400 lb. Each row:
-  name `Input`, type `Select`, Weight or Fuel (`NumberInputWithIcon iconType="unit"`, weight or
-  fuel symbol), Arm (arm symbol, `min0={false}`,
-  `fractionDigits={getUnitFractionDigits('arm', units.arm)}`), a remove `ButtonWithIcon` (lucide `Trash2`,
-  `aria-label="Remove station"`). Below: "Add station" (`Plus`) appends `{ rowId: createRowId(),
-name: 'Station <n>', type: 'weight', weight: 0, fuel: null, arm: 0 }`; Fuel Type select only
-  when a fuel row exists; Maximum Takeoff Weight (optional, placeholder "Optional"). Changing a
-  row type clears the form errors. Rows stack on mobile (320 px) and use a grid from `sm:`; don't
-  combine `xs:` and `sm:` on one property.
-- `Report.tsx`: one `ReportGroup` per station (`name`: weight (fuel rows: `75.00 US gal (450.00
-lb)`), arm, moment), `ReportDivider`, Total Weight, Total Moment (`281,430 lb-in`), Moment/1000
-  (`281.43 lb-in/1000`), Center of Gravity (arm unit, signed, `84.77 in`), the maximum takeoff
-  weight line if given, `<CalculatorDisclaimer category="aviation" />`. Values via
-  `formatBaseValue` and `formatMoment`.
+  (fuel row) 75 US gal at 75.0 in; `fuelType: 'avgas'`; `maxTakeoffWeight` 3,400 lb. Each row is
+  a bordered group ("Station n" and a "Remove" `ButtonWithIcon` with lucide `Trash2`,
+  `aria-label="Remove station n"`): name `Input`, type `Select`, Weight or Fuel
+  (`NumberInputWithIcon iconType="unit"`, weight or fuel symbol, empty placeholder), Arm (arm
+  symbol, `min0={false}`, `fractionDigits={getUnitFractionDigits('arm', units.arm)}`). Below:
+  the array-level error (`errors.stations.root`), "Add station" (`Plus`) appends
+  `{ rowId: createRowId(), name: 'Station <n>', type: 'weight', weight: 0, fuel: null, arm: 0 }`;
+  Fuel Type select only when a fuel row exists; "Maximum Takeoff Weight (optional)". Changing a
+  row type clears the form errors; empty fields are never set to 0. Rows stack on mobile (320 px)
+  and use a two-column grid from `sm:`; don't combine `xs:` and `sm:` on one property.
+- `Report.tsx`: a shadcn `Table` (Station | Weight | Arm | Moment; fuel rows `75.00 US gal
+(450.00 lb)`, the weight once when the fuel unit equals the weight unit), `ReportDivider`,
+  Total Weight, Center of Gravity (arm unit, signed, `84.77 in`), Total Moment
+  (`281,430 lb-in`), Moment/1000 (`281.43 lb-in/1000`), Fuel Type with density if there is a
+  fuel row, Maximum Takeoff Weight and a Weight Check line ("Within the maximum takeoff weight
+  (X remaining)" / "Exceeds the maximum takeoff weight by X") if given,
+  `<CalculatorDisclaimer category="aviation" />`. Values via `formatBaseValue` and
+  `formatMoment`.
 - `Info.tsx`: weight × arm = moment, CG = total moment / total weight (PHAK p. 10-7, Figure 10-5
   example), datum and negative arms (p. 10-6), moment index (p. 10-5), fuel density and standard
   weights (p. 10-5; use actual weights and POH values), why the calculator doesn't check the CG
@@ -404,10 +433,11 @@ and 20 accepted; name empty, spaces only, 30 accepted, 31 rejected; invalid type
 rejected, 0 and 10,000 accepted, 10,000.01 rejected (in lb: `"... 22,046.22 lb"`); arm ±20,000
 accepted, beyond rejected (in inches: `"... 787.40 in"`); fuel negative rejected; fuel weight at
 and beyond 10,000 kg for AVGAS and Jet A, in L and US gal (message in kg and lb); hidden fields
-may be missing, `''` or out of range; all weights 0 → `"Total weight must be greater than 0"` on
-`stations`, and not reported when a row already failed; maximum takeoff weight 0 rejected,
-10,000 accepted, 10,000.01 rejected, `''`/`null` → `undefined`; numeric strings coerced; `BUG:`
-case for the zod 3.22 `preprocess` quirk on `maxTakeoffWeight` if it applies.
+may be missing, `''` or out of range; empty shown weight, fuel or arm → `"<Field> is required"`;
+all weights 0 → `"Total weight must be greater than 0"` on `stations`, and not reported when a
+row already failed; maximum takeoff weight 0 rejected, 10,000 accepted, 10,000.01 rejected,
+`''`/`null` → `undefined`; numeric strings coerced; `BUG:` case for the zod 3.22 `preprocess`
+quirk on `maxTakeoffWeight` after a station issue.
 
 ### Acceptance criteria
 

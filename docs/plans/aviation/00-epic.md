@@ -127,6 +127,9 @@ Follow-ups found during the epic (not part of it):
   All five are implemented on that one branch, in order 08 → 12.
   Done: 08, 09, 10, 11, 12. Only 12 extends `lib/units.ts`, Prisma `unitPreferences` and the units
   modal.
+- `13-weight-and-balance-calculator.md` on `feature/weight-and-balance-calculator` (from
+  `master`): adds the weight and arm units, rows with stable row ids (`useFieldArray`) and a list
+  of composite types in Prisma. Done (Part A foundation, Part B calculator).
 
 ## Preview database
 

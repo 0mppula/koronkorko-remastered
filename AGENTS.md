@@ -152,11 +152,13 @@ Follow "Adding a calculator" with these differences:
 - "Solve for" fields are `z.unknown()`, validated in `superRefine` only when shown; `.transform` stores hidden fields as `null`.
 - Check computed results by running `calculate<X>` in `superRefine`; report only the first exceeded limit, on a field always involved (`solveFor`, `elevation`).
 - Cross-field comparisons (dew point vs temperature, headwind vs TAS) use the same relative tolerance as the unit limits.
-- Reuse shared constants and helpers (`NAUTICAL_MILE_IN_METRES`, `FOOT_IN_METRES`, `STANDARD_GRAVITY`, ISA and angle helpers); export them instead of redefining.
+- Reuse shared constants and helpers (`NAUTICAL_MILE_IN_METRES`, `FOOT_IN_METRES`, `STANDARD_GRAVITY`, `UNIT_LIMIT_TOLERANCE`, ISA and angle helpers); export them instead of redefining.
 - zod 3.22 `z.preprocess` skips its inner schema once an earlier field has an issue; document it as a `BUG:` test, don't work around it.
 - Calculators extending `lib/units.ts`, Prisma `unitPreferences` and the units modal: merge one before starting the next (or build them in sequence on one branch).
 - Match rows by `rowId`, never by index: exact base values of rows follow their id through deletes, additions, reorders and unit changes.
 - Row ids are internal only: `rowId` matches rows and `field.id` is the React key. Never render either into DOM attributes (`id`, `htmlFor`, `aria-*`); server and browser counters differ and cause hydration mismatches. Derive DOM ids from the field path (`stations.2.arm`).
+- `z.coerce.number` reads `''` as 0. Where a silent 0 gives a plausible but wrong result (W&B weights, fuel, arms), use `z.unknown()`, report empty values as required in `superRefine`, and don't set empty inputs to 0 on blur.
+- `unitNumberFieldSchema` has no unit context; fuel masses need the density, so check fuel limits in `superRefine` with `createUnitLimits(..., { context })` or a base-unit comparison.
 
 ## Conventions
 

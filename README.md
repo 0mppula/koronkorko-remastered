@@ -19,7 +19,7 @@ Check out the [previous version][KoronKorkoOld] of KoronKorko or its [source cod
 
 The users of KoronKorko can select a preferred currency in which all the monetary values are printed. The preferred currency will be saved either in local storage or in the authenticated users preferences.
 
-Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel, distance and vertical speed) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
+Users can also choose their preferred units (speed, altitude, temperature, pressure, fuel, distance, vertical speed, weight and arm) for the aviation calculators. The unit preferences are stored the same way as the preferred currency.
 
 Authenticated users can:
 
@@ -149,6 +149,10 @@ Calculate the rate of turn, turn radius, load factor, time for a 360° turn and 
 ### [Descent Planning Calculator][23]
 
 Calculate where to start the descent (top of descent) from a vertical speed or descent angle, or the vertical speed needed to descend within a given distance, given the current and target altitude and the groundspeed. Also shows the time to descend and the descent gradient in %, ft/NM and degrees.
+
+### [Weight and Balance Calculator][24]
+
+Calculate the total weight, the moment of each station, the total moment (also divided by 1,000) and the center of gravity of an aircraft, given up to 20 stations with a weight or a fuel quantity and an arm, and optionally check the total against a maximum takeoff weight.
 
 ---
 
@@ -295,5 +299,6 @@ The [CI workflow](.github/workflows/ci.yml) runs the same checks (after `npx pri
 [21]: https://www.koronkorko.com/glide-distance-calculator
 [22]: https://www.koronkorko.com/turn-performance-calculator
 [23]: https://www.koronkorko.com/descent-planning-calculator
+[24]: https://www.koronkorko.com/weight-and-balance-calculator
 [KoronKorkoOld]: https://koronkorko.herokuapp.com/
 [KoronKorkoCodeOld]: https://github.com/0mppula/KoronKorko
