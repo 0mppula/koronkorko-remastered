@@ -11,12 +11,12 @@ import {
 	BASE_UNITS,
 	formatUnitValue,
 	fromBaseUnit,
+	getUnitFractionDigits,
 	getUnitOptions,
 	signedAngleDifference,
 	toBaseUnit,
 	toRadians,
 	UnitContext,
-	unitFractionDigits,
 	UnitPreferences,
 	UnitQuantity,
 	UnitValue,
@@ -98,7 +98,7 @@ const createUnitLimits = (
 	unit: string,
 	{ context, symbolSuffix = '' }: { context?: UnitContext; symbolSuffix?: string } = {}
 ) => {
-	const digits = unitFractionDigits[quantity];
+	const digits = getUnitFractionDigits(quantity, unit);
 	const step = 10 ** -digits;
 
 	// Relative, so values stripped of float noise on import (12 significant digits) still pass.
@@ -903,6 +903,7 @@ export const unitPreferencesSchema = z.object(
 		pressure: unitValueSchema('pressure'),
 		fuel: unitValueSchema('fuel'),
 		distance: unitValueSchema('distance'),
+		verticalSpeed: unitValueSchema('verticalSpeed'),
 	},
 	{ required_error: 'Unit preferences are required' }
 ) satisfies z.ZodType<UnitPreferences>;

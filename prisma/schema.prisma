@@ -27,12 +27,13 @@ model Account {
 }
 
 type unitPreferences {
-  speed       String?
-  altitude    String?
-  temperature String?
-  pressure    String?
-  fuel        String?
-  distance    String?
+  speed         String?
+  altitude      String?
+  temperature   String?
+  pressure      String?
+  fuel          String?
+  distance      String?
+  verticalSpeed String?
 }
 
 type preferences {

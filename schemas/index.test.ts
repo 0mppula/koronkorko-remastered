@@ -2398,10 +2398,26 @@ describe('unitPreferencesSchema', () => {
 		pressure: 'inhg',
 		fuel: 'lb',
 		distance: 'sm',
+		verticalSpeed: 'ms',
 	};
 
 	it('accepts valid input', () => {
 		expect(unitPreferencesSchema.parse(base)).toEqual(base);
+	});
+
+	it('accepts every vertical speed unit', () => {
+		for (const verticalSpeed of ['fpm', 'ms']) {
+			expect(unitPreferencesSchema.parse({ ...base, verticalSpeed }).verticalSpeed).toBe(
+				verticalSpeed
+			);
+		}
+	});
+
+	it('rejects an unknown vertical speed unit', () => {
+		const result = unitPreferencesSchema.safeParse({ ...base, verticalSpeed: 'kt' });
+
+		expect(issueFields(result)).toEqual(['verticalSpeed']);
+		expect(issueMessages(result)).toEqual(['Invalid verticalSpeed unit']);
 	});
 
 	it('accepts every distance unit', () => {
@@ -2451,6 +2467,7 @@ describe('userPreferencesSchema', () => {
 			pressure: 'hpa',
 			fuel: 'l',
 			distance: 'nm',
+			verticalSpeed: 'fpm',
 		},
 	};
 

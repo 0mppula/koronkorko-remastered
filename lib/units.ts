@@ -19,6 +19,8 @@ export interface UnitOption {
 	readonly label: string;
 	readonly symbol: string;
 	readonly kind?: 'volume' | 'mass';
+	// Overrides the quantity's display precision for this unit.
+	readonly fractionDigits?: number;
 	readonly toBase: (value: number, context?: UnitContext) => number;
 	readonly fromBase: (value: number, context?: UnitContext) => number;
 }
@@ -30,6 +32,7 @@ export const unitQuantities = [
 	{ value: 'pressure', label: 'Pressure' },
 	{ value: 'fuel', label: 'Fuel' },
 	{ value: 'distance', label: 'Distance' },
+	{ value: 'verticalSpeed', label: 'Vertical speed' },
 ] as const;
 
 export type UnitQuantity = (typeof unitQuantities)[number]['value'];
@@ -168,6 +171,23 @@ export const unitOptions = {
 			fromBase: (value: number) => (value * NAUTICAL_MILE_IN_METRES) / MILE_IN_METRES,
 		},
 	],
+	verticalSpeed: [
+		{
+			value: 'fpm',
+			label: 'Feet per minute (ft/min)',
+			symbol: 'ft/min',
+			toBase: identity,
+			fromBase: identity,
+		},
+		{
+			value: 'ms',
+			label: 'Metres per second (m/s)',
+			symbol: 'm/s',
+			fractionDigits: 2,
+			toBase: (value: number) => (value * 60) / FOOT_IN_METRES,
+			fromBase: (value: number) => (value * FOOT_IN_METRES) / 60,
+		},
+	],
 } as const satisfies Record<UnitQuantity, readonly UnitOption[]>;
 
 export type UnitValue<Q extends UnitQuantity> = (typeof unitOptions)[Q][number]['value'];
@@ -180,6 +200,7 @@ export const BASE_UNITS: UnitPreferences = {
 	pressure: 'hpa',
 	fuel: 'l',
 	distance: 'nm',
+	verticalSpeed: 'fpm',
 };
 export const DEFAULT_UNIT_PREFERENCES: UnitPreferences = BASE_UNITS;
 
@@ -190,6 +211,7 @@ export const unitFractionDigits: Record<UnitQuantity, number> = {
 	pressure: 2,
 	fuel: 2,
 	distance: 2,
+	verticalSpeed: 0,
 };
 
 export const getUnitOptions = (quantity: UnitQuantity): readonly UnitOption[] =>
@@ -230,11 +252,14 @@ export const getPairedFuelUnit = (unit: UnitValue<'fuel'>): UnitValue<'fuel'> =>
 export const getUnitSymbol = (quantity: UnitQuantity, unit: string): string =>
 	getUnitOption(quantity, unit).symbol;
 
+export const getUnitFractionDigits = (quantity: UnitQuantity, unit: string): number =>
+	getUnitOption(quantity, unit).fractionDigits ?? unitFractionDigits[quantity];
+
 export const formatUnitValue = (
 	value: number,
 	quantity: UnitQuantity,
 	unit: string,
-	fractionDigits: number = unitFractionDigits[quantity]
+	fractionDigits: number = getUnitFractionDigits(quantity, unit)
 ): string => {
 	// Fixed locale, so reports and messages don't depend on the browser locale.
 	const formatted = new Intl.NumberFormat('en-US', {
