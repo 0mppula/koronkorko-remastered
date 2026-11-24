@@ -22,8 +22,8 @@ preference (ft/min, m/s; base ft/min).
 - **Solve for:** a "Solve for" radio group: Top of descent (distance) or Required vertical speed.
   Stored as a Prisma enum `solveFor` (`topOfDescent`, `verticalSpeed`).
 - **Descent input (top of descent only):** a second radio group: Vertical speed or Descent angle.
-  Stored as a Prisma enum `descentInput` (`verticalSpeed`, `angle`); ignored when solving for the
-  vertical speed.
+  Stored as a Prisma enum `descentInput` (`verticalSpeed`, `angle`); always required and validated,
+  but ignored when solving for the vertical speed.
 - **Gradient outputs** (%, ft/NM, degrees) are extra outputs in every mode; there is no separate
   gradient converter mode.
 - **Time to descend** (Δh / vertical speed) is shown in every mode.
@@ -85,7 +85,8 @@ groundspeed: 'speed', verticalSpeed: 'verticalSpeed', distance: 'distance' }`.
   `unitFractionDigits.verticalSpeed = 0`; the `ms` option has `fractionDigits: 2`. Use
   `getUnitFractionDigits` as the default in `formatUnitValue` and in `createUnitLimits`
   (`schemas/index.ts`) instead of `unitFractionDigits[quantity]`; other quantities are unchanged.
-- `unitPreferencesSchema`: `verticalSpeed: unitValueSchema('verticalSpeed')`; Prisma
+- `unitPreferencesSchema`: `verticalSpeed: unitValueSchema('verticalSpeed')` (message `"Invalid
+verticalSpeed unit"`); Prisma
   `type unitPreferences`: `verticalSpeed String?`; every test fixture listing all units
   (`lib/queryFns/auth.test.ts`, units tests) includes `verticalSpeed`.
 
@@ -126,7 +127,10 @@ atan(gradientFeetPerNm / NM_IN_FEET)`.
 ## Zod schema rules (`schemas/index.ts`)
 
 - `createDescentPlanningFormDataSchema(units)`: `solveFor` and `descentInput` as `z.enum` from
-  `descentSolveForOptions` / `descentInputOptions` (`constants/data.ts`); `currentAltitude`,
+  `descentSolveForOptions` / `descentInputOptions` (`constants/data.ts`; labels "Top of descent",
+  "Required vertical speed" and "Vertical speed", "Descent angle"; messages `"Solve for must be
+top of descent or required vertical speed"`, `"Descent by must be vertical speed or descent
+angle"`); `currentAltitude`,
   `targetAltitude` (`unitNumberFieldSchema`, `min: -1500, max: 60000`), `groundspeed`
   (`min: 20, max: 1000`) always given; `verticalSpeed`, `descentAngle`, `distance` as `z.unknown()`
   and checked in `superRefine` only when given in the current mode, as in 07 (empty →
@@ -137,7 +141,9 @@ atan(gradientFeetPerNm / NM_IN_FEET)`.
 - Cross-field, each only when the involved fields passed their own checks:
     - target ≥ current → path `targetAltitude`, `"Target altitude must be below the current
 altitude"`.
-    - computed values (same relative tolerance as the unit limits), path `solveFor`:
+    - computed values (same relative tolerance as the unit limits), path `solveFor`, checked by
+      running `calculateDescentPlanning` on the base values; only the first exceeded one is
+      reported, in this order:
       `"The resulting distance would exceed 500.00 NM"`, `"The resulting vertical speed would
 exceed 6,000 ft/min"` (`30.48 m/s`), `"The resulting descent angle would exceed 10°"`.
 - `.transform` returns `null` for the hidden fields, so the API stores `null` (`POST` saves `null`
@@ -152,12 +158,14 @@ exceed 6,000 ft/min"` (`30.48 m/s`), `"The resulting descent angle would exceed 
   group clears the form errors (07). Inputs: "Current Altitude", "Target Altitude" (altitude symbol,
   `min0={false}`), "Groundspeed" (speed), "Vertical Speed" (vertical speed symbol), "Descent Angle"
   (`°`), "Distance" (distance symbol).
-- `Report.tsx`: inputs, `ReportDivider`, the solved value first (Top of Descent: "Start descent
-  20.00 NM before the target", or Required Vertical Speed), then Vertical Speed / Distance, Time to
-  Descend (`formatHoursMinutes`), Descent Gradient (`4.94 %`, `300 ft/NM`, `2.83°`),
-  `<CalculatorDisclaimer category="aviation" />`.
+- `Report.tsx`: inputs (altitudes, groundspeed and the given field: Vertical Speed, Descent Angle
+  `3°` or Distance), `ReportDivider`, the solved value first (Top of Descent: "Start descent
+  20.00 NM before the target", or Required Vertical Speed), then Vertical Speed (only for top of
+  descent by angle, where it is computed), Time to Descend (`formatHoursMinutes`), and one Descent
+  Gradient group `4.94 % (300 ft/NM, 2.83°)` (fixed `en-US`: `toFixed(2)`, whole ft/NM with
+  grouping), `<CalculatorDisclaimer category="aviation" />`.
 - `Info.tsx`: the formulas, the IPH examples and rules of thumb (÷ 300, GS × 5, 318 ft/NM ≈ 3°),
-  groundspeed (not TAS) and why wind matters, a link to the Time-Speed-Distance Calculator,
+  groundspeed (not TAS) and why wind matters, a link to the Time Speed Distance Calculator,
   `<p>{calculatorDisclaimers.aviation}</p>`, `ReportSource` to the IPH page
   (`https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/instrument_procedures_handbook`,
   text `"FAA Instrument Procedures Handbook"`).
@@ -189,6 +197,8 @@ groundspeed. Additionally, logged in users can save their calculations.' }`.
     `Info.tsx`.
 11. `README.md` aviation entry and units sentence (vertical speed); `00-epic.md` follow-up (mark 12
     done).
+
+Status: implemented on `feature/aviation-wave-3`.
 
 ## Test cases
 
